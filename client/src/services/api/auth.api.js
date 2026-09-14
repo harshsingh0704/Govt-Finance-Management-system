@@ -1,86 +1,51 @@
-const DEMO_USERS = [
-  {
-    id: "EMP001",
-    employeeId: "EMP001",
-    name: "Sahaj Dubey",
-    email: "employee@fms.gov.in",
-    password: "Employee@123",
-    role: "employee",
-    designation: "Senior Assistant",
-    department: "Finance Department",
-  },
+// client/src/services/api/auth.api.js
 
-  {
-    id: "ADM001",
-    employeeId: "ADM001",
-    name: "FMS Administrator",
-    email: "admin@fms.gov.in",
-    password: "Admin@123",
-    role: "admin",
-    designation: "Accountant",
-    department: "Finance Administration",
-  },
-
-  {
-    id: "SADM001",
-    employeeId: "SADM001",
-    name: "FMS Super Administrator",
-    email: "superadmin@fms.gov.in",
-    password: "SuperAdmin@123",
-    role: "super_admin",
-    designation: "Chief Executive / Management",
-    department: "Organization Management",
-  },
-];
+const API_BASE = 'http://localhost:5000/api/auth';
 
 export async function loginUser({ email, password, role }) {
-  await new Promise((resolve) => setTimeout(resolve, 700));
+  const response = await fetch(`${API_BASE}/login`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      email: email.trim(),
+      password,
+      role,
+    }),
+  });
 
-  const user = DEMO_USERS.find(
-    (item) =>
-      item.email.toLowerCase() === email.trim().toLowerCase() &&
-      item.password === password,
-  );
+  const data = await response.json().catch(() => ({}));
 
-  if (!user) {
-    throw new Error("Invalid email or password.");
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Invalid email or password.');
   }
 
-  /*
-   * The selected role is only an attempted role.
-   * The actual role stored against the account is authoritative.
-   */
-  if (user.role !== role) {
-    throw new Error(
-      `This account is not registered as ${getRoleLabel(role)}.`,
-    );
+  // Token persist karo agar server return karta hai
+  if (data.token) {
+    localStorage.setItem('token', data.token);
   }
-
-  const { password: _password, ...safeUser } = user;
 
   return {
-    user: safeUser,
-    token: `fms-demo-token-${safeUser.id}`,
+    user: data.user || data.data || data,
+    token: data.token,
   };
 }
 
-export async function registerUser(data) {
-  await new Promise((resolve) => setTimeout(resolve, 700));
+export async function registerUser(payload) {
+  const response = await fetch(`${API_BASE}/register`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+  });
 
-  return {
-    success: true,
-    message:
-      "Registration request created successfully. Your account will be activated after verification.",
-    data,
-  };
-}
+  const data = await response.json().catch(() => ({}));
 
-function getRoleLabel(role) {
-  const labels = {
-    super_admin: "Super Admin",
-    admin: "Admin",
-    employee: "Employee",
-  };
+  if (!response.ok) {
+    throw new Error(data.message || data.error || 'Registration failed.');
+  }
 
-  return labels[role] || "the selected role";
+  return data;
 }

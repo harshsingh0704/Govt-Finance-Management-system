@@ -2268,3 +2268,56 @@
     grid-template-columns: 1fr;
   }
 }
+
+.auth-role-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.auth-role-card {
+  border: 1px solid #d8dee8;
+  background: #ffffff;
+  border-radius: 10px;
+  padding: 13px 10px;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.auth-role-card:hover {
+  border-color: #9aa8ba;
+  transform: translateY(-1px);
+}
+
+.auth-role-card.active {
+  border-color: #183b63;
+  background: #f1f5f9;
+  box-shadow: 0 0 0 1px #183b63;
+}
+
+.auth-role-card strong {
+  display: block;
+  color: #172033;
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.auth-role-card span {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+@media (max-width: 640px) {
+  .auth-role-grid {
+    grid-template-columns: 1fr;
+  }
+}

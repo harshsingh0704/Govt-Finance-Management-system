@@ -6,6 +6,7 @@ const initialState = storedAuth
   ? JSON.parse(storedAuth)
   : {
       user: null,
+      role: null,
       token: null,
       isAuthenticated: false,
       status: "idle",
@@ -23,6 +24,7 @@ const authSlice = createSlice({
 
     loginSuccess(state, action) {
       state.user = action.payload.user;
+      state.role = action.payload.user.role;
       state.token = action.payload.token;
       state.isAuthenticated = true;
       state.status = "authenticated";
@@ -31,6 +33,7 @@ const authSlice = createSlice({
         "fms_auth",
         JSON.stringify({
           user: action.payload.user,
+          role: action.payload.user.role,
           token: action.payload.token,
           isAuthenticated: true,
           status: "authenticated",
@@ -44,6 +47,7 @@ const authSlice = createSlice({
 
     logout(state) {
       state.user = null;
+      state.role = null;
       state.token = null;
       state.isAuthenticated = false;
       state.status = "idle";

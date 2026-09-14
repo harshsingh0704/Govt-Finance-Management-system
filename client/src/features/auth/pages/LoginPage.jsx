@@ -13,9 +13,10 @@ export default function LoginPage() {
   const { status } = useSelector((state) => state.auth);
 
   const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  role: "employee",
+  email: "",
+  password: "",
+});
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -38,10 +39,10 @@ export default function LoginPage() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!form.email || !form.password) {
-      setError("Please enter your email and password.");
-      return;
-    }
+    if (!form.role || !form.email || !form.password) {
+  setError("Please select your account type and enter your email and password.");
+  return;
+}
 
     try {
       setError("");
@@ -136,6 +137,59 @@ export default function LoginPage() {
 
             <form onSubmit={handleSubmit} className="auth-form">
               <div className="auth-field">
+  <label>Account type</label>
+
+  <div className="auth-role-grid">
+    <button
+      type="button"
+      className={`auth-role-card ${
+        form.role === "super_admin" ? "active" : ""
+      }`}
+      onClick={() =>
+        setForm((current) => ({
+          ...current,
+          role: "super_admin",
+        }))
+      }
+    >
+      <strong>Super Admin</strong>
+      <span>Management</span>
+    </button>
+
+    <button
+      type="button"
+      className={`auth-role-card ${
+        form.role === "admin" ? "active" : ""
+      }`}
+      onClick={() =>
+        setForm((current) => ({
+          ...current,
+          role: "admin",
+        }))
+      }
+    >
+      <strong>Admin</strong>
+      <span>Finance Operations</span>
+    </button>
+
+    <button
+      type="button"
+      className={`auth-role-card ${
+        form.role === "employee" ? "active" : ""
+      }`}
+      onClick={() =>
+        setForm((current) => ({
+          ...current,
+          role: "employee",
+        }))
+      }
+    >
+      <strong>Employee</strong>
+      <span>Staff Access</span>
+    </button>
+  </div>
+</div>
+              <div className="auth-field">
                 <label htmlFor="email">Email address</label>
 
                 <input
@@ -213,16 +267,20 @@ export default function LoginPage() {
             </Link>
 
             <div className="auth-demo-note">
-              <strong>Development access</strong>
+  <strong>Development access</strong>
 
-              <span>
-                Employee: employee@fms.gov.in / Employee@123
-              </span>
+  <span>
+    Employee: employee@fms.gov.in / Employee@123
+  </span>
 
-              <span>
-                Admin: admin@fms.gov.in / Admin@123
-              </span>
-            </div>
+  <span>
+    Admin: admin@fms.gov.in / Admin@123
+  </span>
+
+  <span>
+    Super Admin: superadmin@fms.gov.in / SuperAdmin@123
+  </span>
+</div>
           </div>
         </section>
       </div>

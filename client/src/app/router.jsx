@@ -8,6 +8,8 @@ import SignupPage from "../features/auth/pages/SignupPage";
 import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
 
 import DashboardPage from "../features/dashboard/DashboardPage";
+import AdminPage from "../features/admin/AdminPage";
+import SuperAdminPage from "../features/admin/SuperAdminPage";
 
 export const router = createBrowserRouter([
   {
@@ -29,14 +31,31 @@ export const router = createBrowserRouter([
     element: <ProtectedRoute />,
     children: [
       {
-        path: "/dashboard",
-        element: (
-          <RoleRoute allowedRoles={["employee", "admin"]} />
-        ),
+        element: <RoleRoute allowedRoles={["employee"]} />,
         children: [
           {
-            index: true,
+            path: "/dashboard",
             element: <DashboardPage />,
+          },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["admin"]} />,
+        children: [
+          {
+            path: "/admin",
+            element: <AdminPage />,
+          },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["super_admin"]} />,
+        children: [
+          {
+            path: "/super-admin",
+            element: <SuperAdminPage />,
           },
         ],
       },

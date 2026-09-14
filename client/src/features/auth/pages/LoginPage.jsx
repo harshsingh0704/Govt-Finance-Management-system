@@ -52,9 +52,16 @@ export default function LoginPage() {
 
       dispatch(loginSuccess(result));
 
-      const destination = location.state?.from?.pathname || "/dashboard";
+     const destinationByRole = {
+  employee: "/dashboard",
+  admin: "/admin",
+  super_admin: "/super-admin",
+};
 
-      navigate(destination, { replace: true });
+const destination =
+  destinationByRole[result.user.role] || "/dashboard";
+
+navigate(destination, { replace: true });
     } catch (err) {
       dispatch(loginFailure());
       setError(err.message || "Unable to sign in.");

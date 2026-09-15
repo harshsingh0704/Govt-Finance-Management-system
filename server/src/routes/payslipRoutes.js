@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const payslipController = require('../controllers/payslipController');
+const authMiddleware = require('../middleware/authMiddleware');
 
-router.post('/generate', payslipController.generatePayslip);
-router.get('/:employeeId', payslipController.getPayslipsByEmployee);
-router.get('/download/:id', payslipController.downloadPayslip);
+router.post('/generate', authMiddleware, payslipController.generatePayslip);
+router.get('/:employeeId', authMiddleware, payslipController.getPayslipsByEmployee);
+router.get('/download/:id', authMiddleware, payslipController.downloadPayslip);
 
 module.exports = router;

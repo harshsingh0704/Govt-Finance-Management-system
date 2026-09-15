@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Activity,
   ArrowUpRight,
@@ -173,31 +174,31 @@ function App() {
 
         <nav className="sidebar-nav">
           <SidebarSection label="Workspace">
-  <SidebarItem
-    icon={LayoutDashboard}
-    label="Dashboard"
-    active={activeNav === "Dashboard"}
-    onClick={handleNavigation}
-  />
+            <SidebarItem
+              icon={LayoutDashboard}
+              label="Dashboard"
+              active={activeNav === "Dashboard"}
+              onClick={handleNavigation}
+            />
 
-  <SidebarItem
-    icon={UserCircle}
-    label="My Profile"
-    active={activeNav === "My Profile"}
-    onClick={() => {
-      setActiveNav("My Profile");
-      setSidebarOpen(false);
-      navigate("/profile");
-    }}
-  />
+            <SidebarItem
+              icon={UserCircle}
+              label="My Profile"
+              active={activeNav === "My Profile"}
+              onClick={() => {
+                setActiveNav("My Profile");
+                setSidebarOpen(false);
+                navigate("/profile");
+              }}
+            />
 
-  <SidebarItem
-    icon={Activity}
-    label="My Activity"
-    active={activeNav === "My Activity"}
-    onClick={handleNavigation}
-  />
-</SidebarSection>
+            <SidebarItem
+              icon={Activity}
+              label="My Activity"
+              active={activeNav === "My Activity"}
+              onClick={handleNavigation}
+            />
+          </SidebarSection>
 
           <SidebarSection label="My Finance">
             <SidebarItem
@@ -378,7 +379,7 @@ function App() {
                 <ChevronDown size={16} />
               </button>
 
-             {profileOpen && <ProfilePanel onNavigate={navigate} />}
+              {profileOpen && <ProfilePanel onNavigate={navigate} />}
             </div>
           </div>
         </header>
@@ -404,12 +405,14 @@ function App() {
 
             <div className="page-header-date">
               <Clock3 size={15} />
-              <span>14 September 2026</span>
+              <span>16 September 2026</span>
             </div>
           </div>
 
           {activeNav === "Dashboard" ? (
             <Dashboard onNavigate={handleNavigation} />
+          ) : activeNav === "Pay Slips" ? (
+            <PayslipsView />
           ) : (
             <PlaceholderPage section={activeNav} />
           )}
@@ -929,13 +932,13 @@ function ProfilePanel({ onNavigate }) {
       <div className="profile-panel-divider" />
 
       <button
-  className="profile-menu-item"
-  type="button"
-  onClick={() => onNavigate("/profile")}
->
-  <UserCircle size={17} />
-  My Profile
-</button>
+        className="profile-menu-item"
+        type="button"
+        onClick={() => onNavigate("/profile")}
+      >
+        <UserCircle size={17} />
+        My Profile
+      </button>
 
       <button className="profile-menu-item" type="button">
         <Settings size={17} />
@@ -984,6 +987,150 @@ function SidebarItem({
 
       {badge && <small>{badge}</small>}
     </button>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/* Pay Slips View (Live Connected)                                            */
+/* -------------------------------------------------------------------------- */
+
+function PayslipsView() {
+  const [payslips, setPayslips] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState(null);
+
+  const token = localStorage.getItem("token");
+  const fmsAuth = localStorage.getItem("fms_auth") ? JSON.parse(localStorage.getItem("fms_auth")) : null;
+  const user = fmsAuth?.user || (localStorage.getItem("user") ? JSON.parse(localStorage.getItem("user")) : null);
+
+  useEffect(() => {
+    const fetchPayslips = async () => {
+      try {
+        const userId = user?.id || user?._id;
+        if (!userId) {
+          setLoading(false);
+          return;
+        }
+
+        const res = await axios.get(
+          `http://localhost:5000/api/payslips/${userId}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+        setPayslips(res.data);
+      } catch (err) {
+        console.error("Failed to load payslips", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPayslips();
+  }, [token]);
+
+  const handleDownload = async (payslipId, month, year) => {
+    try {
+      setDownloadingId(payslipId);
+      const res = await axios.get(
+        `http://localhost:5000/api/payslips/download/${payslipId}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: "blob",
+        }
+      );
+
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.setAttribute("download", `Payslip_${month}_${year}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+    } catch (err) {
+      console.error("PDF download failed", err);
+      alert("Failed to download PDF.");
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  return (
+    <div className="panel claims-panel">
+      <div className="panel-header">
+        <div>
+          <h3>Monthly Pay Slips</h3>
+          <p>Download official salary statements generated by finance.</p>
+        </div>
+      </div>
+
+      <div className="claims-table-wrapper">
+        {loading ? (
+          <div className="table-empty">
+            <strong>Loading payslips...</strong>
+          </div>
+        ) : payslips.length === 0 ? (
+          <div className="table-empty">
+            <FileText size={28} />
+            <strong>No payslips found</strong>
+            <span>You have no generated payslips in the system yet.</span>
+          </div>
+        ) : (
+          <table className="claims-table">
+            <thead>
+              <tr>
+                <th>Period</th>
+                <th>Basic Pay</th>
+                <th>Allowances</th>
+                <th>Deductions</th>
+                <th>Net Salary</th>
+                <th />
+              </tr>
+            </thead>
+            <tbody>
+              {payslips.map((ps) => (
+                <tr key={ps._id}>
+                  <td>
+                    <div className="claim-cell">
+                      <div className="claim-type-icon">
+                        <IndianRupee size={16} />
+                      </div>
+                      <div>
+                        <strong>Month {ps.month} / {ps.year}</strong>
+                        <span>Salary Slip</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="amount-cell">₹{ps.basicPay}</td>
+                  <td className="muted-cell" style={{ color: "#16a34a" }}>
+                    +₹{ps.allowances}
+                  </td>
+                  <td className="muted-cell" style={{ color: "#dc2626" }}>
+                    -₹{ps.deductions}
+                  </td>
+                  <td className="amount-cell" style={{ fontWeight: "700" }}>
+                    ₹{ps.netPay}
+                  </td>
+                  <td>
+                    <button
+                      className="row-action"
+                      type="button"
+                      disabled={downloadingId === ps._id}
+                      onClick={() => handleDownload(ps._id, ps.month, ps.year)}
+                    >
+                      {downloadingId === ps._id ? "Downloading..." : "Download PDF"}
+                      <ArrowUpRight size={14} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </div>
   );
 }
 

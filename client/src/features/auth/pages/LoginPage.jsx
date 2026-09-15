@@ -264,30 +264,6 @@ navigate(destination, { replace: true });
                 {isLoading ? "Signing in..." : "Sign in"}
               </button>
             </form>
-
-            <div className="auth-divider">
-              <span>New to FMS?</span>
-            </div>
-
-            <Link to="/signup" className="auth-secondary-button">
-              Create an account
-            </Link>
-
-            <div className="auth-demo-note">
-  <strong>Development access</strong>
-
-  <span>
-    Employee: employee@fms.gov.in / Employee@123
-  </span>
-
-  <span>
-    Admin: admin@fms.gov.in / Admin@123
-  </span>
-
-  <span>
-    Super Admin: superadmin@fms.gov.in / SuperAdmin@123
-  </span>
-</div>
           </div>
         </section>
       </div>

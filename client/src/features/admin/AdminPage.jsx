@@ -27,6 +27,7 @@ import {
 } from "lucide-react";
 
 import { logout } from "../auth/authSlice";
+import CreateEmployeeModal from "./components/CreateEmployeeModal";
 
 const ADMIN_STATS = [
   {
@@ -333,10 +334,11 @@ export default function AdminPage() {
 
   const user = useSelector((state) => state.auth.user);
 
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [period, setPeriod] = useState("Today");
-  const [showProfile, setShowProfile] = useState(false);
-  const [selectedClaimType, setSelectedClaimType] = useState(null);
+const [sidebarOpen, setSidebarOpen] = useState(false);
+const [period, setPeriod] = useState("Today");
+const [showProfile, setShowProfile] = useState(false);
+const [selectedClaimType, setSelectedClaimType] = useState(null);
+const [showCreateEmployee, setShowCreateEmployee] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -578,7 +580,17 @@ export default function AdminPage() {
               </p>
             </div>
 
-            <div className="ad-header-period">
+            <div className="ad-header-actions">
+  <button
+    type="button"
+    className="ad-add-employee-button"
+    onClick={() => setShowCreateEmployee(true)}
+  >
+    <Plus size={17} />
+    Add Employee
+  </button>
+
+  <div className="ad-header-period"></div>
               <span>View period</span>
 
               <select
@@ -888,6 +900,10 @@ export default function AdminPage() {
           </section>
         </div>
       </main>
+      <CreateEmployeeModal
+      isOpen={showCreateEmployee}
+      onClose={() => setShowCreateEmployee(false)}
+      />
     </div>
   );
 }

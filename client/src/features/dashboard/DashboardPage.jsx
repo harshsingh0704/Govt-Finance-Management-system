@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Activity,
   ArrowUpRight,
@@ -122,6 +123,7 @@ const notifications = [
 ];
 
 function App() {
+  const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
@@ -171,19 +173,31 @@ function App() {
 
         <nav className="sidebar-nav">
           <SidebarSection label="Workspace">
-            <SidebarItem
-              icon={LayoutDashboard}
-              label="Dashboard"
-              active={activeNav === "Dashboard"}
-              onClick={handleNavigation}
-            />
-            <SidebarItem
-              icon={Activity}
-              label="My Activity"
-              active={activeNav === "My Activity"}
-              onClick={handleNavigation}
-            />
-          </SidebarSection>
+  <SidebarItem
+    icon={LayoutDashboard}
+    label="Dashboard"
+    active={activeNav === "Dashboard"}
+    onClick={handleNavigation}
+  />
+
+  <SidebarItem
+    icon={UserCircle}
+    label="My Profile"
+    active={activeNav === "My Profile"}
+    onClick={() => {
+      setActiveNav("My Profile");
+      setSidebarOpen(false);
+      navigate("/profile");
+    }}
+  />
+
+  <SidebarItem
+    icon={Activity}
+    label="My Activity"
+    active={activeNav === "My Activity"}
+    onClick={handleNavigation}
+  />
+</SidebarSection>
 
           <SidebarSection label="My Finance">
             <SidebarItem
@@ -364,7 +378,7 @@ function App() {
                 <ChevronDown size={16} />
               </button>
 
-              {profileOpen && <ProfilePanel />}
+             {profileOpen && <ProfilePanel onNavigate={navigate} />}
             </div>
           </div>
         </header>
@@ -900,7 +914,7 @@ function NotificationPanel({ onClose }) {
 /* Profile Panel                                                              */
 /* -------------------------------------------------------------------------- */
 
-function ProfilePanel() {
+function ProfilePanel({ onNavigate }) {
   return (
     <div className="dropdown-panel profile-panel">
       <div className="profile-panel-header">
@@ -914,10 +928,14 @@ function ProfilePanel() {
 
       <div className="profile-panel-divider" />
 
-      <button className="profile-menu-item" type="button">
-        <UserCircle size={17} />
-        My Profile
-      </button>
+      <button
+  className="profile-menu-item"
+  type="button"
+  onClick={() => onNavigate("/profile")}
+>
+  <UserCircle size={17} />
+  My Profile
+</button>
 
       <button className="profile-menu-item" type="button">
         <Settings size={17} />

@@ -5,7 +5,7 @@ const User = require("../models/User");
 // POST /api/auth/register
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, employeeId } = req.body;
+    const { name, email, password, employeeId } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -29,7 +29,7 @@ const register = async (req, res, next) => {
       name,
       email: email.toLowerCase(),
       password: hashedPassword,
-      role: role || "employee",
+      role: "employee",
       employeeId,
     });
 

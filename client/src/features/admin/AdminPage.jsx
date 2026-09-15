@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
   Activity,
   AlertTriangle,
@@ -11,9 +12,11 @@ import {
   CircleDollarSign,
   ClipboardCheck,
   CreditCard,
+  Download,
   FileBarChart,
   FileCheck2,
   FileSearch,
+  IndianRupee,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -328,17 +331,418 @@ function PaymentPanel() {
   );
 }
 
+/* -------------------------------------------------------------------------- */
+/* Generate Payslip Modal                                                     */
+/* -------------------------------------------------------------------------- */
+
+function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
+  const [employeeId, setEmployeeId] = useState("6aa83f97fe1f2ed44ec18f16");
+  const [month, setMonth] = useState(10);
+  const [year, setYear] = useState(2026);
+  const [basicPay, setBasicPay] = useState(45000);
+  const [allowances, setAllowances] = useState(7500);
+  const [deductions, setDeductions] = useState(3750);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  if (!isOpen) return null;
+
+  const netPay = Number(basicPay || 0) + Number(allowances || 0) - Number(deductions || 0);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!employeeId.trim()) {
+      setError("Please enter a valid Employee MongoDB ID.");
+      return;
+    }
+
+    try {
+      setSubmitting(true);
+      const token = localStorage.getItem("token");
+
+      await axios.post(
+        "http://localhost:5000/api/payslips/generate",
+        {
+          employeeId: employeeId.trim(),
+          month: Number(month),
+          year: Number(year),
+          basicPay: Number(basicPay),
+          allowances: Number(allowances),
+          deductions: Number(deductions),
+          netPay: Number(netPay),
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      alert("Payslip generated successfully!");
+      if (onSuccess) onSuccess();
+      onClose();
+    } catch (err) {
+      console.error("Failed to generate payslip:", err);
+      setError(
+        err.response?.data?.error ||
+          err.response?.data?.message ||
+          "Failed to generate payslip. Verify the Employee ID and admin permissions."
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: "rgba(15, 23, 42, 0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 9999,
+        padding: "1rem",
+      }}
+    >
+      <div
+        style={{
+          background: "#ffffff",
+          borderRadius: "16px",
+          width: "100%",
+          maxWidth: "520px",
+          padding: "24px",
+          boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: "16px",
+          }}
+        >
+          <div>
+            <h3 style={{ margin: 0, fontSize: "1.25rem", color: "#0f172a" }}>
+              Generate Employee Payslip
+            </h3>
+            <p style={{ margin: "4px 0 0", fontSize: "0.875rem", color: "#64748b" }}>
+              Creates salary record &amp; PDF for official employee download.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            style={{
+              background: "transparent",
+              border: "none",
+              cursor: "pointer",
+              color: "#64748b",
+            }}
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        {error && (
+          <div
+            style={{
+              padding: "10px 14px",
+              backgroundColor: "#fef2f2",
+              border: "1px solid #fee2e2",
+              color: "#b91c1c",
+              borderRadius: "8px",
+              fontSize: "0.875rem",
+              marginBottom: "14px",
+            }}
+          >
+            {error}
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit}>
+          <div style={{ marginBottom: "12px" }}>
+            <label
+              style={{
+                display: "block",
+                fontSize: "0.8rem",
+                fontWeight: "600",
+                color: "#334155",
+                marginBottom: "4px",
+              }}
+            >
+              Employee MongoDB ID
+            </label>
+            <input
+              type="text"
+              placeholder="e.g. 6aa83f97fe1f2ed44ec18f16"
+              value={employeeId}
+              onChange={(e) => setEmployeeId(e.target.value)}
+              style={{
+                width: "100%",
+                padding: "8px 12px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                fontSize: "0.9rem",
+              }}
+              required
+            />
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Month (1 - 12)
+              </label>
+              <select
+                value={month}
+                onChange={(e) => setMonth(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                }}
+              >
+                {[...Array(12)].map((_, i) => (
+                  <option key={i + 1} value={i + 1}>
+                    Month {i + 1}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Year
+              </label>
+              <input
+                type="number"
+                value={year}
+                onChange={(e) => setYear(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                }}
+                required
+              />
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "10px", marginBottom: "16px" }}>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Basic (₹)
+              </label>
+              <input
+                type="number"
+                value={basicPay}
+                onChange={(e) => setBasicPay(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                }}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Allowances (₹)
+              </label>
+              <input
+                type="number"
+                value={allowances}
+                onChange={(e) => setAllowances(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                }}
+                required
+              />
+            </div>
+
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "0.8rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Deductions (₹)
+              </label>
+              <input
+                type="number"
+                value={deductions}
+                onChange={(e) => setDeductions(e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "8px 10px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                }}
+                required
+              />
+            </div>
+          </div>
+
+          <div
+            style={{
+              padding: "12px 14px",
+              backgroundColor: "#f8fafc",
+              borderRadius: "8px",
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: "18px",
+              border: "1px solid #e2e8f0",
+            }}
+          >
+            <span style={{ fontSize: "0.875rem", color: "#475569" }}>Calculated Net Pay:</span>
+            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>₹{netPay.toLocaleString()}</strong>
+          </div>
+
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                padding: "8px 16px",
+                borderRadius: "8px",
+                border: "1px solid #cbd5e1",
+                background: "#ffffff",
+                cursor: "pointer",
+                fontWeight: "500",
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={submitting}
+              className="ad-primary-button"
+              style={{ margin: 0, padding: "8px 20px" }}
+            >
+              {submitting ? "Generating..." : "Generate Slip"}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminPage() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const user = useSelector((state) => state.auth.user);
 
-const [sidebarOpen, setSidebarOpen] = useState(false);
-const [period, setPeriod] = useState("Today");
-const [showProfile, setShowProfile] = useState(false);
-const [selectedClaimType, setSelectedClaimType] = useState(null);
-const [showCreateEmployee, setShowCreateEmployee] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [period, setPeriod] = useState("Today");
+  const [showProfile, setShowProfile] = useState(false);
+  const [selectedClaimType, setSelectedClaimType] = useState(null);
+  const [showCreateEmployee, setShowCreateEmployee] = useState(false);
+  const [showGeneratePayslip, setShowGeneratePayslip] = useState(false);
+  const [payslips, setPayslips] = useState([]);
+  const [loadingPayslips, setLoadingPayslips] = useState(false);
+
+  // Fetch all recent payslips for the admin view
+  const fetchPayslips = async () => {
+    try {
+      setLoadingPayslips(true);
+      const token = localStorage.getItem("token");
+      const targetEmpId = "6aa83f97fe1f2ed44ec18f16";
+      const res = await axios.get(`http://localhost:5000/api/payslips/${targetEmpId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPayslips(res.data.payslips || []);
+    } catch (err) {
+      console.warn("Could not fetch payslips for admin table:", err);
+    } finally {
+      setLoadingPayslips(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchPayslips();
+  }, []);
+
+  const handleDownloadPdf = async (payslipId, month, year) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`http://localhost:5000/api/payslips/download/${payslipId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: "blob",
+      });
+      const blob = new Blob([res.data], { type: "application/pdf" });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Payslip-${month}-${year}.pdf`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error("PDF download failed:", err);
+      alert("Failed to download PDF.");
+    }
+  };
 
   const handleLogout = () => {
     dispatch(logout());
@@ -435,6 +839,15 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
               <span>Payment Processing</span>
             </button>
 
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => setShowGeneratePayslip(true)}
+            >
+              <IndianRupee size={18} />
+              <span>Generate Payslip</span>
+            </button>
+
             <button type="button" className="ad-nav-item">
               <BarChart3 size={18} />
               <span>Expenditure</span>
@@ -489,7 +902,7 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
 
             <div>
               <strong>{user?.name || "FMS Administrator"}</strong>
-              <span>Finance & Accounts</span>
+              <span>Finance &amp; Accounts</span>
             </div>
           </div>
 
@@ -548,7 +961,7 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
 
                 <div className="ad-profile-text">
                   <strong>{user?.name || "FMS Administrator"}</strong>
-                  <span>Finance & Accounts</span>
+                  <span>Finance &amp; Accounts</span>
                 </div>
 
                 <ChevronDown size={16} />
@@ -581,27 +994,147 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
             </div>
 
             <div className="ad-header-actions">
-  <button
-    type="button"
-    className="ad-add-employee-button"
-    onClick={() => setShowCreateEmployee(true)}
-  >
-    <Plus size={17} />
-    Add Employee
-  </button>
-
-  <div className="ad-header-period"></div>
-              <span>View period</span>
-
-              <select
-                value={period}
-                onChange={(event) => setPeriod(event.target.value)}
+              <button
+                type="button"
+                className="ad-add-employee-button"
+                onClick={() => setShowCreateEmployee(true)}
               >
-                <option>Today</option>
-                <option>This week</option>
-                <option>This month</option>
-                <option>Current quarter</option>
-              </select>
+                <Plus size={17} />
+                Add Employee
+              </button>
+
+              <button
+                type="button"
+                className="ad-add-employee-button"
+                style={{
+                  backgroundColor: "#0284c7",
+                  borderColor: "#0284c7",
+                }}
+                onClick={() => setShowGeneratePayslip(true)}
+              >
+                <IndianRupee size={17} />
+                Generate Payslip
+              </button>
+
+              <div className="ad-header-period">
+                <span>View period</span>
+
+                <select
+                  value={period}
+                  onChange={(event) => setPeriod(event.target.value)}
+                >
+                  <option>Today</option>
+                  <option>This week</option>
+                  <option>This month</option>
+                  <option>Current quarter</option>
+                </select>
+              </div>
+            </div>
+          </section>
+
+          {/* Generated Payslips Admin Section */}
+          <section style={{ marginBottom: "2rem" }}>
+            <div
+              style={{
+                background: "#ffffff",
+                borderRadius: "16px",
+                border: "1px solid #e2e8f0",
+                padding: "20px 24px",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "16px",
+                }}
+              >
+                <div>
+                  <h2 style={{ fontSize: "1.15rem", fontWeight: "700", color: "#0f172a", margin: 0 }}>
+                    Recent Generated Payslips
+                  </h2>
+                  <p style={{ margin: "4px 0 0", fontSize: "0.85rem", color: "#64748b" }}>
+                    Official salary slips generated for employees with binary download access.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={fetchPayslips}
+                  style={{
+                    padding: "6px 14px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    background: "#f8fafc",
+                    fontSize: "0.85rem",
+                    fontWeight: "600",
+                    cursor: "pointer",
+                  }}
+                >
+                  Refresh List
+                </button>
+              </div>
+
+              {loadingPayslips ? (
+                <div style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>Loading slips...</div>
+              ) : payslips.length === 0 ? (
+                <div style={{ padding: "20px", textAlign: "center", color: "#64748b" }}>
+                  No payslips generated yet. Click "Generate Payslip" above to create one.
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.875rem" }}>
+                    <thead>
+                      <tr style={{ borderBottom: "1px solid #f1f5f9", color: "#64748b" }}>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>EMPLOYEE ID</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>PERIOD</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>BASIC PAY</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>ALLOWANCES</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>DEDUCTIONS</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>NET PAY</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600", textAlign: "right" }}>ACTION</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {payslips.map((slip) => (
+                        <tr key={slip._id} style={{ borderBottom: "1px solid #f8fafc" }}>
+                          <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#475569" }}>
+                            {slip.employee?.slice(0, 8)}...
+                          </td>
+                          <td style={{ padding: "12px 14px", fontWeight: "600", color: "#0f172a" }}>
+                            Month {slip.month} / {slip.year}
+                          </td>
+                          <td style={{ padding: "12px 14px", color: "#334155" }}>₹{slip.basicPay}</td>
+                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+₹{slip.allowances}</td>
+                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-₹{slip.deductions}</td>
+                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>₹{slip.netPay}</td>
+                          <td style={{ padding: "12px 14px", textAlign: "right" }}>
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadPdf(slip._id, slip.month, slip.year)}
+                              style={{
+                                display: "inline-flex",
+                                alignItems: "center",
+                                gap: "6px",
+                                padding: "6px 12px",
+                                borderRadius: "6px",
+                                border: "1px solid #0284c7",
+                                color: "#0284c7",
+                                background: "#f0f9ff",
+                                fontWeight: "600",
+                                fontSize: "0.8rem",
+                                cursor: "pointer",
+                              }}
+                            >
+                              <Download size={14} /> Download PDF
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </section>
 
@@ -795,7 +1328,7 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
               <div className="ad-card-header">
                 <div>
                   <span className="ad-card-eyebrow">Workflow exceptions</span>
-                  <h2>Exceptions & Queries</h2>
+                  <h2>Exceptions &amp; Queries</h2>
                 </div>
 
                 <AlertTriangle size={20} />
@@ -852,14 +1385,18 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
               </div>
 
               <div className="ad-quick-actions">
-                <button type="button" className="ad-quick-action primary">
+                <button
+                  type="button"
+                  className="ad-quick-action primary"
+                  onClick={() => setShowGeneratePayslip(true)}
+                >
                   <span>
-                    <ClipboardCheck size={19} />
+                    <IndianRupee size={19} />
                   </span>
 
                   <div>
-                    <strong>Review Claims</strong>
-                    <small>Open pending claim queue</small>
+                    <strong>Generate Payslip</strong>
+                    <small>Create employee salary slip</small>
                   </div>
                 </button>
 
@@ -900,9 +1437,16 @@ const [showCreateEmployee, setShowCreateEmployee] = useState(false);
           </section>
         </div>
       </main>
+
       <CreateEmployeeModal
-      isOpen={showCreateEmployee}
-      onClose={() => setShowCreateEmployee(false)}
+        isOpen={showCreateEmployee}
+        onClose={() => setShowCreateEmployee(false)}
+      />
+
+      <GeneratePayslipModal
+        isOpen={showGeneratePayslip}
+        onClose={() => setShowGeneratePayslip(false)}
+        onSuccess={fetchPayslips}
       />
     </div>
   );

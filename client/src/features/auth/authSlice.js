@@ -1,67 +1,63 @@
-import { createSlice } from "@reduxjs/toolkit";
+﻿import { createSlice } from "@reduxjs/toolkit";
 
-const storedAuth = localStorage.getItem("fms_auth");
-
-const initialState = storedAuth
-  ? JSON.parse(storedAuth)
-  : {
-      user: null,
-      role: null,
-      token: null,
-      isAuthenticated: false,
-      status: "idle",
-    };
+const getInitialState = () => {
+  try {
+    const storedAuth = localStorage.getItem("fms_auth");
+    if (storedAuth) {
+      return JSON.parse(storedAuth);
+    }
+  } catch (e) {
+    localStorage.removeItem("fms_auth");
+  }
+  return {
+    user: null,
+    role: null,
+    token: null,
+    isAuthenticated: false,
+    status: "idle",
+  };
+};
 
 const authSlice = createSlice({
   name: "auth",
-
-  initialState,
-
+  initialState: getInitialState(),
   reducers: {
     loginStart(state) {
       state.status = "loading";
     },
-
     loginSuccess(state, action) {
-      state.user = action.payload.user;
-      state.role = action.payload.user.role;
-      state.token = action.payload.token;
+      const user = action.payload.user;
+      const token = action.payload.token;
+      state.user = user;
+      state.role = user ? user.role : null;
+      state.token = token;
       state.isAuthenticated = true;
       state.status = "authenticated";
 
       localStorage.setItem(
         "fms_auth",
         JSON.stringify({
-          user: action.payload.user,
-          role: action.payload.user.role,
-          token: action.payload.token,
+          user,
+          role: user ? user.role : null,
+          token,
           isAuthenticated: true,
           status: "authenticated",
-        }),
+        })
       );
     },
-
     loginFailure(state) {
       state.status = "failed";
     },
-
     logout(state) {
       state.user = null;
       state.role = null;
       state.token = null;
       state.isAuthenticated = false;
       state.status = "idle";
-
       localStorage.removeItem("fms_auth");
     },
   },
 });
 
-export const {
-  loginStart,
-  loginSuccess,
-  loginFailure,
-  logout,
-} = authSlice.actions;
-
+export const { loginStart, loginSuccess, loginFailure, logout } = authSlice.actions;
 export default authSlice.reducer;

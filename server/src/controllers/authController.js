@@ -1,11 +1,11 @@
-const bcrypt = require("bcryptjs");
+﻿const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 
 // POST /api/auth/register
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, employeeId } = req.body;
+    const { name, email, password, employeeId, role } = req.body;
 
     if (!email || !password) {
       return res.status(400).json({
@@ -14,7 +14,9 @@ const register = async (req, res, next) => {
       });
     }
 
-    const existingUser = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const existingUser = await User.findOne({ email: normalizedEmail });
+
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -27,10 +29,10 @@ const register = async (req, res, next) => {
 
     const user = await User.create({
       name,
-      email: email.toLowerCase(),
+      email: normalizedEmail,
       password: hashedPassword,
-      role: "employee",
-      employeeId,
+      role: role || "employee",
+      employeeId: employeeId || null,
     });
 
     const token = jwt.sign(
@@ -64,13 +66,15 @@ const login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         success: false,
-        message: "Please enter email and password.",
+        message: "Email and password are required.",
       });
     }
 
-    const user = await User.findOne({ email: email.toLowerCase() });
+    const normalizedEmail = email.toLowerCase().trim();
+    const user = await User.findOne({ email: normalizedEmail });
+
     if (!user) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: "Invalid email or password.",
       });
@@ -78,14 +82,14 @@ const login = async (req, res, next) => {
 
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({
+      return res.status(401).json({
         success: false,
         message: "Invalid email or password.",
       });
     }
 
     if (role && user.role !== role) {
-      return res.status(400).json({
+      return res.status(403).json({
         success: false,
         message: `This account is not registered as ${role}.`,
       });

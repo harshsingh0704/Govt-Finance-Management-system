@@ -1,7 +1,8 @@
-import { Navigate, createBrowserRouter } from "react-router-dom";
+﻿import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
+import RootRedirect from "../components/auth/RootRedirect";
 
 import LoginPage from "../features/auth/pages/LoginPage";
 import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
@@ -16,23 +17,20 @@ export const router = createBrowserRouter([
     path: "/login",
     element: <LoginPage />,
   },
-
   {
     path: "/unauthorized",
     element: <UnauthorizedPage />,
   },
-
   {
     element: <ProtectedRoute />,
     children: [
       {
-  element: <RoleRoute allowedRoles={["employee"]} />,
-  children: [
-    { path: "/dashboard", element: <DashboardPage /> },
-    { path: "/profile", element: <ProfilePage /> },
-  ],
-},
-
+        element: <RoleRoute allowedRoles={["employee"]} />,
+        children: [
+          { path: "/dashboard", element: <DashboardPage /> },
+          { path: "/profile", element: <ProfilePage /> },
+        ],
+      },
       {
         element: <RoleRoute allowedRoles={["admin"]} />,
         children: [
@@ -42,7 +40,6 @@ export const router = createBrowserRouter([
           },
         ],
       },
-
       {
         element: <RoleRoute allowedRoles={["super_admin"]} />,
         children: [
@@ -54,14 +51,12 @@ export const router = createBrowserRouter([
       },
     ],
   },
-
   {
     path: "/",
-    element: <Navigate to="/dashboard" replace />,
+    element: <RootRedirect />,
   },
-
   {
     path: "*",
-    element: <Navigate to="/dashboard" replace />,
+    element: <RootRedirect />,
   },
 ]);

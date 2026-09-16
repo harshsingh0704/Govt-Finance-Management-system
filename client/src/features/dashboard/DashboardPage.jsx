@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 
 import "../../App.css";
+import "./DashboardPage.css";
 
 const claims = [
   {
@@ -138,6 +139,10 @@ function App() {
   const handleNavigation = (label) => {
     setActiveNav(label);
     setSidebarOpen(false);
+
+    if (label === "My Claims") {
+    navigate("/claims");
+  }
   };
 
   return (

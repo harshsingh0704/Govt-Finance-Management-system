@@ -1,0 +1,892 @@
+/* =========================================================
+   CREATE EMPLOYEE WORKFLOW
+   ========================================================= */
+
+.ce-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(8, 20, 38, 0.62);
+  backdrop-filter: blur(4px);
+  overflow-y: auto;
+}
+
+.ce-modal {
+  width: min(980px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  background: #ffffff;
+  border: 1px solid #dfe6ee;
+  border-radius: 18px;
+  box-shadow: 0 24px 70px rgba(15, 35, 60, 0.22);
+  overflow: hidden;
+}
+
+/* ---------- Header ---------- */
+
+.ce-modal-header {
+  min-height: 76px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 24px;
+  border-bottom: 1px solid #e7edf3;
+  background: #ffffff;
+}
+
+.ce-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.ce-modal-icon {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  background: #edf4fb;
+  color: #174a7c;
+}
+
+.ce-modal-title > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ce-modal-title span {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #748399;
+}
+
+.ce-modal-title h2 {
+  margin: 0;
+  color: #102a43;
+  font-size: 19px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.ce-close-button {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  place-items: center;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: #718096;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.ce-close-button:hover {
+  background: #f3f6f9;
+  border-color: #dfe6ee;
+  color: #1e344d;
+}
+
+/* ---------- Stepper ---------- */
+
+.ce-stepper {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 20px 24px 18px;
+  border-bottom: 1px solid #edf1f5;
+  background: #fafcfe;
+}
+
+.ce-step-wrapper {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.ce-step-wrapper:last-child {
+  flex: 0 0 auto;
+}
+
+.ce-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: max-content;
+}
+
+.ce-step-number {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #718096;
+  font-size: 12px;
+  font-weight: 700;
+  transition: all 0.2s ease;
+}
+
+.ce-step-label {
+  color: #7a8798;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ce-step.active .ce-step-number {
+  border-color: #174a7c;
+  background: #174a7c;
+  color: #ffffff;
+}
+
+.ce-step.active .ce-step-label {
+  color: #174a7c;
+  font-weight: 700;
+}
+
+.ce-step.completed .ce-step-number {
+  border-color: #2f7d5b;
+  background: #2f7d5b;
+  color: #ffffff;
+}
+
+.ce-step.completed .ce-step-label {
+  color: #2f7d5b;
+}
+
+.ce-step-line {
+  height: 1px;
+  flex: 1;
+  margin: 0 12px;
+  background: #d9e1e9;
+}
+
+.ce-step-line.completed {
+  background: #8db9a3;
+}
+
+/* ---------- Body ---------- */
+
+.ce-modal-body {
+  min-height: 480px;
+  overflow-y: auto;
+}
+
+.ce-step-content {
+  padding: 30px 32px 34px;
+}
+
+.ce-section-heading {
+  margin-bottom: 24px;
+}
+
+.ce-section-heading > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #174a7c;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ce-section-heading h3 {
+  margin: 0;
+  color: #132f4c;
+  font-size: 22px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.ce-section-heading p {
+  max-width: 680px;
+  margin: 7px 0 0;
+  color: #6b7a8c;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+/* ---------- Information banners ---------- */
+
+.ce-info-banner,
+.ce-reporting-banner,
+.ce-account-note,
+.ce-review-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid #dbe7f1;
+  border-radius: 10px;
+  background: #f5f9fc;
+}
+
+.ce-info-banner {
+  margin-bottom: 26px;
+  padding: 14px 16px;
+}
+
+.ce-info-banner-icon,
+.ce-reporting-icon {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #e4eff8;
+  color: #174a7c;
+}
+
+.ce-info-banner strong,
+.ce-reporting-banner strong,
+.ce-account-note strong,
+.ce-review-notice strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #243b53;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ce-info-banner p,
+.ce-reporting-banner p,
+.ce-account-note p,
+.ce-review-notice p {
+  margin: 0;
+  color: #68798c;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+/* ---------- Forms ---------- */
+
+.ce-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px 22px;
+}
+
+.ce-field {
+  min-width: 0;
+}
+
+.ce-field label,
+.ce-role-heading label {
+  display: block;
+  margin-bottom: 7px;
+  color: #334e68;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.ce-field label span,
+.ce-role-heading label span {
+  color: #c2413a;
+}
+
+.ce-field input,
+.ce-field select,
+.ce-select-wrapper input,
+.ce-select-wrapper select {
+  width: 100%;
+  height: 44px;
+  box-sizing: border-box;
+  border: 1px solid #ccd6e0;
+  border-radius: 9px;
+  outline: none;
+  background: #ffffff;
+  color: #243b53;
+  font-family: inherit;
+  font-size: 13px;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    background 0.18s ease;
+}
+
+.ce-field input,
+.ce-field select {
+  padding: 0 13px;
+}
+
+.ce-field input::placeholder {
+  color: #a0acba;
+}
+
+.ce-field input:focus,
+.ce-field select:focus,
+.ce-select-wrapper:focus-within {
+  border-color: #5a88b2;
+  box-shadow: 0 0 0 3px rgba(23, 74, 124, 0.08);
+}
+
+.ce-field input.error,
+.ce-field select.error,
+.ce-select-wrapper input.error {
+  border-color: #c2413a;
+}
+
+.ce-field-error {
+  display: block;
+  margin-top: 6px;
+  color: #b9382f;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.ce-field-help {
+  display: block;
+  margin-top: 7px;
+  color: #7b8797;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* ---------- Role selection ---------- */
+
+.ce-role-section {
+  margin-top: 28px;
+}
+
+.ce-role-heading {
+  margin-bottom: 12px;
+}
+
+.ce-role-heading > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 15px;
+}
+
+.ce-role-heading p {
+  margin: 0 0 12px;
+  color: #7a8798;
+  font-size: 11px;
+}
+
+.ce-role-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ce-role-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  min-height: 96px;
+  padding: 15px;
+  border: 1px solid #d7e0e8;
+  border-radius: 11px;
+  background: #ffffff;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ce-role-card:hover {
+  border-color: #91abc2;
+  background: #fbfdff;
+  box-shadow: 0 5px 16px rgba(22, 50, 79, 0.06);
+}
+
+.ce-role-card.selected {
+  border-color: #2c6597;
+  background: #f2f7fb;
+  box-shadow: 0 0 0 2px rgba(44, 101, 151, 0.08);
+}
+
+.ce-role-radio {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border: 1.5px solid #aebbc8;
+  border-radius: 50%;
+  background: #ffffff;
+}
+
+.ce-role-card.selected .ce-role-radio {
+  border-color: #174a7c;
+}
+
+.ce-role-radio span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #174a7c;
+}
+
+.ce-role-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ce-role-card-content strong {
+  color: #243b53;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.ce-role-card-content small {
+  color: #728197;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ---------- Locked system role ---------- */
+
+.ce-locked-role {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  margin-top: 20px;
+  padding: 12px 14px;
+  border: 1px solid #e1e7ed;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.ce-locked-role-icon {
+  width: 31px;
+  height: 31px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 7px;
+  background: #e9eef4;
+  color: #5c6f82;
+}
+
+.ce-locked-role > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ce-locked-role span {
+  color: #7b8797;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ce-locked-role strong {
+  color: #334e68;
+  font-size: 13px;
+}
+
+.ce-locked-role > small {
+  margin-left: auto;
+  padding: 4px 8px;
+  border-radius: 5px;
+  background: #e9eef4;
+  color: #718096;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+/* ---------- Reporting ---------- */
+
+.ce-reporting-banner {
+  margin-bottom: 24px;
+  padding: 15px 16px;
+}
+
+.ce-select-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  height: 44px;
+  border: 1px solid #ccd6e0;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #7b8797;
+  transition:
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.ce-select-wrapper > svg:first-child {
+  margin-left: 13px;
+  flex-shrink: 0;
+}
+
+.ce-select-wrapper input,
+.ce-select-wrapper select {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  background: transparent;
+}
+
+.ce-select-wrapper input {
+  flex: 1;
+  min-width: 0;
+  padding: 0 8px 0 10px;
+}
+
+.ce-select-wrapper select {
+  appearance: none;
+  padding: 0 34px 0 10px;
+  color: #243b53;
+  cursor: pointer;
+}
+
+.ce-select-wrapper > svg:last-child {
+  position: absolute;
+  right: 12px;
+  pointer-events: none;
+}
+
+.ce-account-note {
+  margin-top: 26px;
+  padding: 14px 16px;
+  color: #174a7c;
+}
+
+/* ---------- Review ---------- */
+
+.ce-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ce-review-card {
+  padding: 18px;
+  border: 1px solid #e0e6ec;
+  border-radius: 11px;
+  background: #ffffff;
+}
+
+.ce-review-card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid #edf1f4;
+}
+
+.ce-review-card-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  border-radius: 8px;
+  background: #edf4fa;
+  color: #174a7c;
+}
+
+.ce-review-card-header > div:last-child {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.ce-review-card-header span {
+  color: #8996a5;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.ce-review-card-header h3 {
+  margin: 0;
+  color: #243b53;
+  font-size: 13px;
+}
+
+.ce-review-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.ce-review-list > div {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 11px 0;
+  border-bottom: 1px solid #f0f3f6;
+}
+
+.ce-review-list > div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.ce-review-list span {
+  color: #7b8797;
+  font-size: 11px;
+}
+
+.ce-review-list strong {
+  max-width: 62%;
+  color: #334e68;
+  font-size: 12px;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.ce-review-role {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 16px;
+}
+
+.ce-review-role strong {
+  color: #174a7c;
+  font-size: 14px;
+}
+
+.ce-review-role span {
+  color: #7b8797;
+  font-size: 11px;
+}
+
+.ce-review-notice {
+  margin-top: 18px;
+  padding: 14px 16px;
+  color: #174a7c;
+}
+
+/* ---------- Footer ---------- */
+
+.ce-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 15px 24px;
+  border-top: 1px solid #e7edf3;
+  background: #fbfcfd;
+}
+
+.ce-secondary-button,
+.ce-primary-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 15px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.ce-secondary-button {
+  border: 1px solid #d4dde6;
+  background: #ffffff;
+  color: #52667a;
+}
+
+.ce-secondary-button:hover {
+  border-color: #b8c5d1;
+  background: #f6f8fa;
+}
+
+.ce-primary-button {
+  border: 1px solid #174a7c;
+  background: #174a7c;
+  color: #ffffff;
+  box-shadow: 0 3px 9px rgba(23, 74, 124, 0.16);
+}
+
+.ce-primary-button:hover {
+  background: #123e68;
+  box-shadow: 0 5px 13px rgba(23, 74, 124, 0.2);
+  transform: translateY(-1px);
+}
+
+.ce-primary-button:active,
+.ce-secondary-button:active {
+  transform: translateY(0);
+}
+
+/* ---------- Success ---------- */
+
+.ce-success-state {
+  min-height: 520px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
+  text-align: center;
+}
+
+.ce-success-icon {
+  width: 64px;
+  height: 64px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  background: #e7f4ed;
+  color: #2f7d5b;
+}
+
+.ce-success-eyebrow {
+  margin-bottom: 7px;
+  color: #2f7d5b;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ce-success-state h2 {
+  margin: 0;
+  color: #17324d;
+  font-size: 22px;
+}
+
+.ce-success-state > p {
+  max-width: 570px;
+  margin: 10px auto 20px;
+  color: #6b7a8c;
+  font-size: 13px;
+  line-height: 1.65;
+}
+
+.ce-success-summary {
+  min-width: min(390px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 24px;
+  padding: 15px 20px;
+  border: 1px solid #e0e7ed;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.ce-success-summary strong {
+  color: #243b53;
+  font-size: 14px;
+}
+
+.ce-success-summary span {
+  color: #718096;
+  font-size: 11px;
+}
+
+/* =========================================================
+   CREATE EMPLOYEE RESPONSIVE
+   ========================================================= */
+
+@media (max-width: 820px) {
+  .ce-modal-backdrop {
+    align-items: flex-start;
+    padding: 14px;
+  }
+
+  .ce-modal {
+    max-height: calc(100vh - 28px);
+    border-radius: 14px;
+  }
+
+  .ce-stepper {
+    overflow-x: auto;
+    padding: 16px 18px;
+  }
+
+  .ce-step-wrapper {
+    min-width: max-content;
+  }
+
+  .ce-step-line {
+    min-width: 28px;
+  }
+
+  .ce-step-content {
+    padding: 24px 22px 28px;
+  }
+
+  .ce-form-grid,
+  .ce-role-grid,
+  .ce-review-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .ce-modal-header {
+    padding: 14px 16px;
+  }
+
+  .ce-modal-title h2 {
+    font-size: 16px;
+  }
+
+  .ce-modal-body {
+    min-height: 0;
+  }
+
+  .ce-step-content {
+    padding: 20px 16px 24px;
+  }
+
+  .ce-section-heading h3 {
+    font-size: 19px;
+  }
+
+  .ce-modal-footer {
+    padding: 12px 16px;
+  }
+
+  .ce-primary-button,
+  .ce-secondary-button {
+    flex: 1;
+  }
+
+  .ce-success-state {
+    min-height: 440px;
+    padding: 36px 22px;
+  }
+
+  .ce-success-summary {
+    min-width: 0;
+    width: 100%;
+  }
+}

@@ -12,6 +12,8 @@ import {
   X,
 } from "lucide-react";
 
+import "./CreateEmployeeModal.css";
+
 const FUNCTIONAL_ROLES = [
   {
     id: "bill_clerk",

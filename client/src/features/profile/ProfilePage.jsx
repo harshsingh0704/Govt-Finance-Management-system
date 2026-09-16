@@ -15,6 +15,8 @@ import {
 } from "lucide-react";
 import { useSelector } from "react-redux";
 
+import "./ProfilePage.css";
+
 const profileSchema = z.object({
   dateOfBirth: z.string().min(1, "Date of birth is required."),
   gender: z.string().min(1, "Please select gender."),

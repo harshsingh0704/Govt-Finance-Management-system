@@ -41,6 +41,8 @@ import {
   X,
 } from "lucide-react";
 
+import "./AdminPage.css";
+
 import { logout } from "../auth/authSlice";
 import CreateEmployeeModal from "./components/CreateEmployeeModal";
 

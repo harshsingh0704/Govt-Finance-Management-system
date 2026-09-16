@@ -24,7 +24,7 @@ import {
   Users,
   X,
 } from "lucide-react";
-
+import "./SuperAdminPage.css";
 import { logout } from "../auth/authSlice";
 import ApprovalQueueModal from "./components/ApprovalQueueModal";
 

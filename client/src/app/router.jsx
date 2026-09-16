@@ -9,6 +9,7 @@ import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
 
 import DashboardPage from "../features/dashboard/DashboardPage";
 import ProfilePage from "../features/profile/ProfilePage";
+import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
 
@@ -29,6 +30,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/dashboard", element: <DashboardPage /> },
           { path: "/profile", element: <ProfilePage /> },
+          { path: "/claims", element: <ClaimsPage /> },
         ],
       },
       {

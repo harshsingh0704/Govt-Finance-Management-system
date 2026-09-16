@@ -1,4 +1,6 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
+import CreateClaimModal from "./CreateClaimModal";
+import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
@@ -38,7 +40,7 @@ const claims = [
     type: "TA Final",
     description: "Official travel reimbursement",
     date: "12 Sep 2026",
-    amount: "₹18,450",
+    amount: "â‚¹18,450",
     status: "Under Review",
     statusType: "review",
   },
@@ -47,7 +49,7 @@ const claims = [
     type: "Medical",
     description: "Medical reimbursement claim",
     date: "08 Sep 2026",
-    amount: "₹7,820",
+    amount: "â‚¹7,820",
     status: "Approved",
     statusType: "approved",
   },
@@ -56,7 +58,7 @@ const claims = [
     type: "LTC",
     description: "Leave travel concession",
     date: "04 Sep 2026",
-    amount: "₹25,000",
+    amount: "â‚¹25,000",
     status: "Pending",
     statusType: "pending",
   },
@@ -65,7 +67,7 @@ const claims = [
     type: "TA Advance",
     description: "Advance for official tour",
     date: "28 Aug 2026",
-    amount: "₹12,500",
+    amount: "â‚¹12,500",
     status: "Paid",
     statusType: "paid",
   },
@@ -89,7 +91,7 @@ const activities = [
   {
     icon: IndianRupee,
     title: "TA Advance processed",
-    description: "₹12,500 has been credited.",
+    description: "â‚¹12,500 has been credited.",
     time: "Yesterday",
     type: "payment",
   },
@@ -124,6 +126,8 @@ const notifications = [
 ];
 
 function App() {
+  const currentUser = useSelector((state) => state.auth.user);
+  const [showClaimModal, setShowClaimModal] = useState(false);
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -328,7 +332,7 @@ function App() {
                 </button>
               )}
 
-              <span className="search-shortcut">⌘ K</span>
+              <span className="search-shortcut">âŒ˜ K</span>
             </div>
           </div>
 
@@ -410,13 +414,14 @@ function App() {
           </div>
 
           {activeNav === "Dashboard" ? (
-            <Dashboard onNavigate={handleNavigation} />
+            <Dashboard onNavigate={handleNavigation} onOpenClaim={() => setShowClaimModal(true)} />
           ) : activeNav === "Pay Slips" ? (
             <PayslipsView />
           ) : (
             <PlaceholderPage section={activeNav} />
           )}
-        </div>
+        
+      <CreateClaimModal isOpen={showClaimModal} onClose={() => setShowClaimModal(false)} employeeId={currentUser?.employeeId || currentUser?._id} onSuccess={() => alert('Claim submitted successfully! It is now in the Approval Queue.')} /></div>
       </main>
     </div>
   );
@@ -426,7 +431,7 @@ function App() {
 /* Dashboard                                                                  */
 /* -------------------------------------------------------------------------- */
 
-function Dashboard({ onNavigate }) {
+function Dashboard({ onNavigate, onOpenClaim }) {
   return (
     <div className="dashboard">
       {/* Welcome */}
@@ -437,7 +442,8 @@ function Dashboard({ onNavigate }) {
             Finance Management System
           </div>
 
-          <h2>Good morning, Sahaj 👋</h2>
+          <h2>Good morning, Sahaj ðŸ‘‹</h2>
+          <button type="button" onClick={onOpenClaim} style={{ marginTop: '12px', padding: '8px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>+ Submit New Claim</button>
 
           <p>
             Stay on top of your claims, reimbursements and financial records.
@@ -492,7 +498,7 @@ function Dashboard({ onNavigate }) {
         <StatCard
           icon={IndianRupee}
           label="Last Payslip"
-          value="₹48,750"
+          value="â‚¹48,750"
           description="September 2026"
           trend="View"
           trendDirection="action"
@@ -826,12 +832,12 @@ function FinancialOverview() {
       <div className="financial-summary">
         <div>
           <span>Total claimed</span>
-          <strong>₹86,420</strong>
+          <strong>â‚¹86,420</strong>
         </div>
 
         <div className="financial-approved">
           <span>Approved</span>
-          <strong>₹61,250</strong>
+          <strong>â‚¹61,250</strong>
         </div>
       </div>
 
@@ -1103,15 +1109,15 @@ function PayslipsView() {
                       </div>
                     </div>
                   </td>
-                  <td className="amount-cell">₹{ps.basicPay}</td>
+                  <td className="amount-cell">â‚¹{ps.basicPay}</td>
                   <td className="muted-cell" style={{ color: "#16a34a" }}>
-                    +₹{ps.allowances}
+                    +â‚¹{ps.allowances}
                   </td>
                   <td className="muted-cell" style={{ color: "#dc2626" }}>
-                    -₹{ps.deductions}
+                    -â‚¹{ps.deductions}
                   </td>
                   <td className="amount-cell" style={{ fontWeight: "700" }}>
-                    ₹{ps.netPay}
+                    â‚¹{ps.netPay}
                   </td>
                   <td>
                     <button
@@ -1158,3 +1164,4 @@ function PlaceholderPage({ section }) {
 }
 
 export default App;
+

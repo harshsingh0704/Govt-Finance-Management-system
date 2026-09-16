@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 
 import { logout } from "../auth/authSlice";
+import ApprovalQueueModal from "./components/ApprovalQueueModal";
 
 const KPI_DATA = [
   {
@@ -44,8 +45,8 @@ const KPI_DATA = [
   },
   {
     label: "Total Expenditure",
-    value: "₹2.84 Cr",
-    change: "FY 2026–27",
+    value: "â‚¹2.84 Cr",
+    change: "FY 2026â€“27",
     changeText: "current financial year",
     icon: CircleDollarSign,
   },
@@ -63,35 +64,35 @@ const DEPARTMENT_DATA = [
     name: "Engineering",
     claims: 56,
     approved: 44,
-    amount: "₹31.8L",
+    amount: "â‚¹31.8L",
     percentage: 86,
   },
   {
     name: "Finance",
     claims: 42,
     approved: 38,
-    amount: "₹24.5L",
+    amount: "â‚¹24.5L",
     percentage: 72,
   },
   {
     name: "Operations",
     claims: 37,
     approved: 29,
-    amount: "₹22.1L",
+    amount: "â‚¹22.1L",
     percentage: 63,
   },
   {
     name: "Administration",
     claims: 31,
     approved: 27,
-    amount: "₹18.2L",
+    amount: "â‚¹18.2L",
     percentage: 54,
   },
   {
     name: "Human Resources",
     claims: 18,
     approved: 16,
-    amount: "₹9.4L",
+    amount: "â‚¹9.4L",
     percentage: 38,
   },
 ];
@@ -111,7 +112,7 @@ const ACTIVITIES = [
   },
   {
     title: "Payment batch processed",
-    description: "₹18.4L processed successfully",
+    description: "â‚¹18.4L processed successfully",
     time: "2 hours ago",
     type: "payment",
   },
@@ -320,9 +321,10 @@ export default function SuperAdminPage() {
   const user = useSelector((state) => state.auth.user);
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [period, setPeriod] = useState("FY 2026–27");
+  const [period, setPeriod] = useState("FY 2026â€“27");
   const [showProfile, setShowProfile] = useState(false);
   const [showAdminModal, setShowAdminModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const handleLogout = () => {
     dispatch(logout());
@@ -380,9 +382,7 @@ export default function SuperAdminPage() {
               <span>All Claims</span>
             </button>
 
-            <button className="sa-nav-item">
-              <FileCheck2 size={18} />
-              <span>Approval Queue</span>
+            <button className="sa-nav-item" onClick={() => setShowApprovalModal(true)}><FileCheck2 size={18} /><span>Approval Queue</span>
               <small>27</small>
             </button>
 
@@ -478,7 +478,7 @@ export default function SuperAdminPage() {
                 placeholder="Search employees, claims, reports..."
                 aria-label="Search"
               />
-              <kbd>⌘ K</kbd>
+              <kbd>âŒ˜ K</kbd>
             </div>
           </div>
 
@@ -541,9 +541,9 @@ export default function SuperAdminPage() {
                 value={period}
                 onChange={(event) => setPeriod(event.target.value)}
               >
-                <option>FY 2026–27</option>
-                <option>FY 2025–26</option>
-                <option>FY 2024–25</option>
+                <option>FY 2026â€“27</option>
+                <option>FY 2025â€“26</option>
+                <option>FY 2024â€“25</option>
               </select>
             </div>
           </section>
@@ -593,12 +593,12 @@ export default function SuperAdminPage() {
               <div className="sa-financial-summary">
                 <div>
                   <span>Total expenditure</span>
-                  <strong>₹2.84 Cr</strong>
+                  <strong>â‚¹2.84 Cr</strong>
                 </div>
 
                 <div>
                   <span>Approved claims</span>
-                  <strong>₹2.31 Cr</strong>
+                  <strong>â‚¹2.31 Cr</strong>
                 </div>
 
                 <div>
@@ -631,7 +631,7 @@ export default function SuperAdminPage() {
                     <span>Claims requiring immediate attention</span>
                   </div>
 
-                  <span className="sa-arrow">→</span>
+                  <span className="sa-arrow">â†’</span>
                 </button>
 
                 <button type="button" className="sa-queue-item warning">
@@ -644,7 +644,7 @@ export default function SuperAdminPage() {
                     <span>Awaiting administrative action</span>
                   </div>
 
-                  <span className="sa-arrow">→</span>
+                  <span className="sa-arrow">â†’</span>
                 </button>
 
                 <button type="button" className="sa-queue-item success">
@@ -657,13 +657,11 @@ export default function SuperAdminPage() {
                     <span>Approved during the current month</span>
                   </div>
 
-                  <span className="sa-arrow">→</span>
+                  <span className="sa-arrow">â†’</span>
                 </button>
               </div>
 
-              <button type="button" className="sa-primary-button full">
-                Open Approval Queue
-              </button>
+              <button type="button" className="sa-primary-button full" onClick={() => setShowApprovalModal(true)}>Open Approval Queue</button>
             </article>
           </section>
 
@@ -676,7 +674,7 @@ export default function SuperAdminPage() {
                 </div>
 
                 <button type="button" className="sa-text-button">
-                  View report →
+                  View report â†’
                 </button>
               </div>
 
@@ -716,7 +714,7 @@ export default function SuperAdminPage() {
                 </div>
 
                 <button type="button" className="sa-text-button">
-                  Audit trail →
+                  Audit trail â†’
                 </button>
               </div>
 
@@ -761,7 +759,7 @@ export default function SuperAdminPage() {
                     <span>Review the delayed claims queue.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
 
                 <button type="button">
@@ -771,10 +769,10 @@ export default function SuperAdminPage() {
 
                   <div>
                     <strong>Payment batch awaiting processing</strong>
-                    <span>₹12.6L is ready for processing.</span>
+                    <span>â‚¹12.6L is ready for processing.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
 
                 <button type="button">
@@ -787,7 +785,7 @@ export default function SuperAdminPage() {
                     <span>Awaiting account activation.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
               </div>
             </article>
@@ -854,9 +852,17 @@ export default function SuperAdminPage() {
         </div>
       </main>
 
+      {showApprovalModal && (
+        <ApprovalQueueModal
+          isOpen={showApprovalModal}
+          onClose={() => setShowApprovalModal(false)}
+        />
+      )}
+
       {showAdminModal && (
         <QuickActionModal onClose={() => setShowAdminModal(false)} />
       )}
     </div>
   );
 }
+

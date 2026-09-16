@@ -1,3 +1,15 @@
+// Helper to extract JWT token from localStorage (fms_auth or plain token)
+function getStoredAuthToken() {
+  try {
+    const raw = localStorage.getItem("fms_auth");
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed.token) return parsed.token;
+    }
+  } catch (e) {}
+  return localStorage.getItem("token") || "";
+}
+
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -336,7 +348,9 @@ function PaymentPanel() {
 /* -------------------------------------------------------------------------- */
 
 function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
-  const [employeeId, setEmployeeId] = useState("6aa83f97fe1f2ed44ec18f16");
+  const [employees, setEmployees] = useState([]);
+  const [loadingEmployees, setLoadingEmployees] = useState(false);
+  const [employeeId, setEmployeeId] = useState("");
   const [month, setMonth] = useState(10);
   const [year, setYear] = useState(2026);
   const [basicPay, setBasicPay] = useState(45000);
@@ -344,6 +358,30 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
   const [deductions, setDeductions] = useState(3750);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const fetchEmployees = async () => {
+      try {
+        setLoadingEmployees(true);
+        const token = getStoredAuthToken();
+        const res = await axios.get("http://localhost:5000/api/employees", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const list = res.data.employees || [];
+        setEmployees(list);
+        if (list.length > 0 && !employeeId) {
+          setEmployeeId(list[0]._id);
+          if (list[0].basicPay) setBasicPay(list[0].basicPay);
+        }
+      } catch (err) {
+        console.warn("Could not fetch employees for dropdown:", err);
+      } finally {
+        setLoadingEmployees(false);
+      }
+    };
+    fetchEmployees();
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -360,7 +398,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
 
     try {
       setSubmitting(true);
-      const token = localStorage.getItem("token");
+      const token = getStoredAuthToken();
 
       await axios.post(
         "http://localhost:5000/api/payslips/generate",
@@ -471,30 +509,44 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
         <form onSubmit={handleSubmit}>
           <div style={{ marginBottom: "12px" }}>
             <label
-              style={{
-                display: "block",
-                fontSize: "0.8rem",
-                fontWeight: "600",
-                color: "#334155",
-                marginBottom: "4px",
-              }}
-            >
-              Employee MongoDB ID
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. 6aa83f97fe1f2ed44ec18f16"
-              value={employeeId}
-              onChange={(e) => setEmployeeId(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                fontSize: "0.9rem",
-              }}
-              required
-            />
+                style={{
+                  display: "block",
+                  fontSize: "0.85rem",
+                  fontWeight: "600",
+                  color: "#334155",
+                  marginBottom: "4px",
+                }}
+              >
+                Select Employee
+              </label>
+              <select
+                value={employeeId}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  setEmployeeId(id);
+                  const found = employees.find((emp) => emp._id === id);
+                  if (found && found.basicPay) setBasicPay(found.basicPay);
+                }}
+                style={{
+                  width: "100%",
+                  padding: "8px 12px",
+                  borderRadius: "8px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "0.9rem",
+                  backgroundColor: "#fff",
+                }}
+                required
+              >
+                {loadingEmployees && <option value="">Loading employees...</option>}
+                {!loadingEmployees && employees.length === 0 && (
+                  <option value="">No employees found</option>
+                )}
+                {employees.map((emp) => (
+                  <option key={emp._id} value={emp._id}>
+                    {emp.name} ({emp.employeeCode || emp.designation || "Staff"}) - {emp.email}
+                  </option>
+                ))}
+              </select>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", marginBottom: "12px" }}>
@@ -705,9 +757,8 @@ export default function AdminPage() {
   const fetchPayslips = async () => {
     try {
       setLoadingPayslips(true);
-      const token = localStorage.getItem("token");
-      const targetEmpId = "6aa83f97fe1f2ed44ec18f16";
-      const res = await axios.get(`http://localhost:5000/api/payslips/${targetEmpId}`, {
+      const token = getStoredAuthToken();
+      const res = await axios.get("http://localhost:5000/api/payslips", {
         headers: { Authorization: `Bearer ${token}` },
       });
       setPayslips(res.data.payslips || []);
@@ -724,7 +775,7 @@ export default function AdminPage() {
 
   const handleDownloadPdf = async (payslipId, month, year) => {
     try {
-      const token = localStorage.getItem("token");
+      const token = getStoredAuthToken();
       const res = await axios.get(`http://localhost:5000/api/payslips/download/${payslipId}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
@@ -1086,7 +1137,7 @@ export default function AdminPage() {
                   <table style={{ width: "100%", borderCollapse: "collapse", textAlign: "left", fontSize: "0.875rem" }}>
                     <thead>
                       <tr style={{ borderBottom: "1px solid #f1f5f9", color: "#64748b" }}>
-                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>EMPLOYEE ID</th>
+                        <th style={{ padding: "10px 14px", fontWeight: "600" }}>EMPLOYEE</th>
                         <th style={{ padding: "10px 14px", fontWeight: "600" }}>PERIOD</th>
                         <th style={{ padding: "10px 14px", fontWeight: "600" }}>BASIC PAY</th>
                         <th style={{ padding: "10px 14px", fontWeight: "600" }}>ALLOWANCES</th>
@@ -1099,7 +1150,7 @@ export default function AdminPage() {
                       {payslips.map((slip) => (
                         <tr key={slip._id} style={{ borderBottom: "1px solid #f8fafc" }}>
                           <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#475569" }}>
-                            {slip.employee?.slice(0, 8)}...
+                            {slip.employeeId?.userId?.name || slip.employee?.name || slip.employee?.slice?.(0, 8) || "Employee"}
                           </td>
                           <td style={{ padding: "12px 14px", fontWeight: "600", color: "#0f172a" }}>
                             Month {slip.month} / {slip.year}

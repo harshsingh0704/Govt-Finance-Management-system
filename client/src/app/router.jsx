@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
@@ -12,6 +12,7 @@ import ProfilePage from "../features/profile/ProfilePage";
 import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
+import EmployeeManagementPage from "../features/admin/employee-management/EmployeeManagementPage";
 
 export const router = createBrowserRouter([
   {
@@ -39,6 +40,10 @@ export const router = createBrowserRouter([
           {
             path: "/admin",
             element: <AdminPage />,
+          },
+          {
+            path: "/admin/employee-management",
+            element: <EmployeeManagementPage />,
           },
         ],
       },

@@ -1,4 +1,4 @@
-// Helper to extract JWT token from localStorage (fms_auth or plain token)
+﻿// Helper to extract JWT token from localStorage (fms_auth or plain token)
 function getStoredAuthToken() {
   try {
     const raw = localStorage.getItem("fms_auth");
@@ -63,14 +63,14 @@ const ADMIN_STATS = [
   },
   {
     label: "Approved / Sanctioned",
-    value: "₹18.6L",
+    value: "â‚¹18.6L",
     highlight: "32",
     detail: "claims this month",
     icon: CheckCircle2,
   },
   {
     label: "Payment Processing",
-    value: "₹12.6L",
+    value: "â‚¹12.6L",
     highlight: "24",
     detail: "claims ready",
     icon: CreditCard,
@@ -82,28 +82,28 @@ const CLAIMS = [
     id: "TA-2026-1042",
     employee: "Rahul Kumar",
     type: "TA",
-    amount: "₹24,500",
+    amount: "â‚¹24,500",
     status: "Review",
   },
   {
     id: "LTC-2026-0871",
     employee: "Priya Sharma",
     type: "LTC",
-    amount: "₹38,200",
+    amount: "â‚¹38,200",
     status: "Review",
   },
   {
     id: "MED-2026-2194",
     employee: "Amit Verma",
     type: "Medical",
-    amount: "₹12,800",
+    amount: "â‚¹12,800",
     status: "Query",
   },
   {
     id: "TA-2026-1038",
     employee: "Neha Singh",
     type: "TA",
-    amount: "₹18,600",
+    amount: "â‚¹18,600",
     status: "Review",
   },
 ];
@@ -113,38 +113,38 @@ const DEPARTMENTS = [
     name: "Engineering",
     pending: 12,
     processing: 8,
-    amount: "₹4.2L",
+    amount: "â‚¹4.2L",
   },
   {
     name: "Finance",
     pending: 9,
     processing: 5,
-    amount: "₹3.1L",
+    amount: "â‚¹3.1L",
   },
   {
     name: "Operations",
     pending: 8,
     processing: 6,
-    amount: "₹2.8L",
+    amount: "â‚¹2.8L",
   },
   {
     name: "Administration",
     pending: 7,
     processing: 4,
-    amount: "₹1.9L",
+    amount: "â‚¹1.9L",
   },
   {
     name: "Human Resources",
     pending: 6,
     processing: 3,
-    amount: "₹1.4L",
+    amount: "â‚¹1.4L",
   },
 ];
 
 const OPERATIONS = [
   {
     title: "Claim TA-2026-1042 approved",
-    description: "₹24,500",
+    description: "â‚¹24,500",
     time: "8 min ago",
     type: "success",
   },
@@ -162,7 +162,7 @@ const OPERATIONS = [
   },
   {
     title: "Payment batch PB-2026-091 processed",
-    description: "₹4.2L",
+    description: "â‚¹4.2L",
     time: "2 hours ago",
     type: "payment",
   },
@@ -261,7 +261,7 @@ function VerificationPanel() {
             <span>Employee action required</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">â†’</span>
         </button>
 
         <button type="button" className="ad-verification-item warning">
@@ -274,7 +274,7 @@ function VerificationPanel() {
             <span>Ready for document review</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">â†’</span>
         </button>
 
         <button type="button" className="ad-verification-item success">
@@ -287,7 +287,7 @@ function VerificationPanel() {
             <span>Completed today</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">â†’</span>
         </button>
       </div>
 
@@ -308,7 +308,7 @@ function PaymentPanel() {
         </div>
 
         <button type="button" className="ad-text-button">
-          View all →
+          View all â†’
         </button>
       </div>
 
@@ -320,20 +320,20 @@ function PaymentPanel() {
 
           <div>
             <span>Ready for payment</span>
-            <strong>₹12.6L</strong>
+            <strong>â‚¹12.6L</strong>
             <small>24 claims</small>
           </div>
         </div>
 
         <div className="ad-payment-line">
           <span>Processing</span>
-          <strong>₹7.8L</strong>
+          <strong>â‚¹7.8L</strong>
           <small>15 claims</small>
         </div>
 
         <div className="ad-payment-line">
           <span>Completed today</span>
-          <strong>₹4.2L</strong>
+          <strong>â‚¹4.2L</strong>
           <small>9 claims</small>
         </div>
       </div>
@@ -622,7 +622,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Basic (₹)
+                Basic (â‚¹)
               </label>
               <input
                 type="number"
@@ -649,7 +649,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Allowances (₹)
+                Allowances (â‚¹)
               </label>
               <input
                 type="number"
@@ -676,7 +676,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Deductions (₹)
+                Deductions (â‚¹)
               </label>
               <input
                 type="number"
@@ -707,7 +707,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
             }}
           >
             <span style={{ fontSize: "0.875rem", color: "#475569" }}>Calculated Net Pay:</span>
-            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>₹{netPay.toLocaleString()}</strong>
+            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>â‚¹{netPay.toLocaleString()}</strong>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -850,6 +850,44 @@ export default function AdminPage() {
               <span>Operations Overview</span>
             </button>
 
+
+            <span className="ad-nav-label">Employee Management</span>
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => setShowCreateEmployee(true)}
+            >
+              <Plus size={18} />
+              <span>Add Employee</span>
+            </button>
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => navigate("/admin/employee-management/map")}
+            >
+              <Users size={18} />
+              <span>Map Employee</span>
+            </button>
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => navigate("/admin/employee-management")}
+            >
+              <UserRound size={18} />
+              <span>Manage Employee</span>
+            </button>
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => navigate("/admin/employee-management/audit-log")}
+            >
+              <FileSearch size={18} />
+              <span>Employee Audit Log</span>
+            </button>
             <span className="ad-nav-label">Claims</span>
 
             <button type="button" className="ad-nav-item">
@@ -990,7 +1028,7 @@ export default function AdminPage() {
                 aria-label="Search"
               />
 
-              <kbd>⌘ K</kbd>
+              <kbd>âŒ˜ K</kbd>
             </div>
           </div>
 
@@ -1157,10 +1195,10 @@ export default function AdminPage() {
                           <td style={{ padding: "12px 14px", fontWeight: "600", color: "#0f172a" }}>
                             Month {slip.month} / {slip.year}
                           </td>
-                          <td style={{ padding: "12px 14px", color: "#334155" }}>₹{slip.basicPay}</td>
-                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+₹{slip.allowances}</td>
-                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-₹{slip.deductions}</td>
-                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>₹{slip.netPay}</td>
+                          <td style={{ padding: "12px 14px", color: "#334155" }}>â‚¹{slip.basicPay}</td>
+                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+â‚¹{slip.allowances}</td>
+                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-â‚¹{slip.deductions}</td>
+                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>â‚¹{slip.netPay}</td>
                           <td style={{ padding: "12px 14px", textAlign: "right" }}>
                             <button
                               type="button"
@@ -1229,7 +1267,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View all →
+                  View all â†’
                 </button>
               </div>
 
@@ -1240,7 +1278,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setSelectedClaimType(null)}
                   >
-                    ×
+                    Ã—
                   </button>
                 </div>
               )}
@@ -1316,7 +1354,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View report →
+                  View report â†’
                 </button>
               </div>
 
@@ -1350,7 +1388,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View activity →
+                  View activity â†’
                 </button>
               </div>
 
@@ -1398,7 +1436,7 @@ export default function AdminPage() {
                     <span>Awaiting correction or additional information.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
 
                 <button type="button">
@@ -1411,7 +1449,7 @@ export default function AdminPage() {
                     <span>Supporting documents need attention.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
 
                 <button type="button">
@@ -1424,7 +1462,7 @@ export default function AdminPage() {
                     <span>Immediate administrative action recommended.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>â†’</span>
                 </button>
               </div>
             </article>

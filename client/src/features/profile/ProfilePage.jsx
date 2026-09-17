@@ -20,20 +20,41 @@ import "./ProfilePage.css";
 const profileSchema = z.object({
   dateOfBirth: z.string().min(1, "Date of birth is required."),
   gender: z.string().min(1, "Please select gender."),
-  address: z.string().min(5, "Please enter your address."),
   nationality: z.string().min(2, "Nationality is required."),
   religion: z.string().min(1, "Religion is required."),
   caste: z.string().min(1, "Caste is required."),
   subCaste: z.string().optional(),
-  category: z.enum(["GM", "OBC", "SC", "ST"], {
-    errorMap: () => ({ message: "Please select a category." }),
-  }),
-  phone: z
+
+  correspondingAddress: z
     .string()
-    .regex(/^[0-9]{10}$/, "Enter a valid 10-digit phone number."),
-  personalEmail: z
+    .min(5, "Please enter your corresponding address."),
+  permanentAddress: z
     .string()
-    .email("Enter a valid personal email address."),
+    .min(5, "Please enter your permanent address."),
+
+  bloodGroup: z.string().min(1, "Please select blood group."),
+  maritalStatus: z.string().min(1, "Please select marital status."),
+
+  fatherName: z.string().min(2, "Father's name is required."),
+  motherName: z.string().min(2, "Mother's name is required."),
+
+  spouseName: z.string().optional(),
+
+  children: z
+  .array(
+    z.object({
+      name: z.string().optional(),
+    }),
+  )
+  .optional(),
+}).superRefine((data, ctx) => {
+  if (data.maritalStatus === "Married" && !data.spouseName?.trim()) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ["spouseName"],
+      message: "Spouse name is required for married employees.",
+    });
+  }
 });
 
 const PROFILE_STORAGE_KEY = "fms_employee_profile";
@@ -41,14 +62,22 @@ const PROFILE_STORAGE_KEY = "fms_employee_profile";
 const EMPTY_PROFILE = {
   dateOfBirth: "",
   gender: "",
-  address: "",
   nationality: "",
   religion: "",
   caste: "",
   subCaste: "",
-  category: "",
-  phone: "",
-  personalEmail: "",
+
+  correspondingAddress: "",
+  permanentAddress: "",
+
+  bloodGroup: "",
+  maritalStatus: "",
+
+  fatherName: "",
+  motherName: "",
+  spouseName: "",
+
+  children: [],
 };
 
 function FieldLabel({ children, required = false }) {
@@ -165,77 +194,79 @@ export default function ProfilePage() {
   );
 
   const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isDirty },
-  } = useForm({
-    resolver: zodResolver(profileSchema),
-    defaultValues: savedProfile,
-  });
+  register,
+  handleSubmit,
+  reset,
+  watch,
+  setValue,
+  clearErrors,
+  formState: { errors, isDirty },
+} = useForm({
+  resolver: zodResolver(profileSchema),
+  defaultValues: savedProfile,
+});
 
-  useEffect(() => {
-    reset(savedProfile);
-  }, [reset, savedProfile]);
+const maritalStatus = watch("maritalStatus");
+const children = watch("children") || [];
+
+useEffect(() => {
+  reset(savedProfile);
+}, [reset, savedProfile]);
+
+useEffect(() => {
+  if (maritalStatus !== "Married") {
+    setValue("spouseName", "");
+    setValue("children", []);
+    clearErrors("spouseName");
+    clearErrors("children");
+  }
+}, [maritalStatus, setValue, clearErrors]);
 
   const profileFields = [
+  { key: "dateOfBirth", label: "Date of Birth" },
+  { key: "gender", label: "Gender" },
+  { key: "nationality", label: "Nationality" },
+  { key: "religion", label: "Religion" },
+  { key: "caste", label: "Caste" },
+  { key: "subCaste", label: "Sub-Caste" },
+  { key: "correspondingAddress", label: "Corresponding Address" },
+  { key: "permanentAddress", label: "Permanent Address" },
+  { key: "bloodGroup", label: "Blood Group" },
+  { key: "maritalStatus", label: "Marital Status" },
+  { key: "fatherName", label: "Father's Name" },
+  { key: "motherName", label: "Mother's Name" },
   {
-    key: "dateOfBirth",
-    label: "Date of Birth",
-  },
-  {
-    key: "gender",
-    label: "Gender",
-  },
-  {
-    key: "address",
-    label: "Address",
-  },
-  {
-    key: "nationality",
-    label: "Nationality",
-  },
-  {
-    key: "religion",
-    label: "Religion",
-  },
-  {
-    key: "caste",
-    label: "Caste",
-  },
-  {
-    key: "subCaste",
-    label: "Sub-caste",
-  },
-  {
-    key: "category",
-    label: "Category",
-  },
-  {
-    key: "phone",
-    label: "Phone",
-  },
-  {
-    key: "personalEmail",
-    label: "Personal Email",
+    key: "spouseName",
+    label: "Spouse Name",
+    conditional: true,
   },
 ];
 
-const completedFields = profileFields.filter(
-  (field) =>
-    String(savedProfile[field.key] || "").trim() !== "",
-).length;
+  const requiredProfileFields = profileFields.filter(
+    (field) =>
+      !field.optional &&
+      !(
+        field.conditional &&
+        savedProfile.maritalStatus !== "Married"
+      ),
+  );
 
-const totalFields = profileFields.length;
+  const completedFields = requiredProfileFields.filter(
+    (field) =>
+      String(savedProfile[field.key] || "").trim() !== "",
+  ).length;
 
-const remainingFields = profileFields.filter(
-  (field) =>
-    String(savedProfile[field.key] || "").trim() === "",
-);
+  const totalFields = requiredProfileFields.length;
 
-const completion = Math.round(
-  (completedFields / totalFields) * 100,
-);
+  const remainingFields = requiredProfileFields.filter(
+    (field) =>
+      String(savedProfile[field.key] || "").trim() === "",
+  );
+
+  const completion =
+    totalFields === 0
+      ? 100
+      : Math.round((completedFields / totalFields) * 100);
 
   function handleEdit() {
     setSaveMessage("");
@@ -462,127 +493,294 @@ const completion = Math.round(
           </div>
 
           <div className="profile-form-grid">
-            <FormField
-              label="Date of Birth"
-              name="dateOfBirth"
-              register={register}
-              error={errors.dateOfBirth}
-              required
-              type="date"
-              isEditing={isEditing}
-            />
+            <div className="profile-form-subsection">
+              <div className="profile-form-subsection-header">
+                <h3>Personal Details</h3>
+                <p>Basic personal information required for your employee profile.</p>
+              </div>
 
-            <SelectField
-              label="Gender"
-              name="gender"
-              register={register}
-              error={errors.gender}
-              required
-              isEditing={isEditing}
-            >
-              <option value="">Select gender</option>
-              <option value="Male">Male</option>
-              <option value="Female">Female</option>
-              <option value="Other">Other</option>
-              <option value="Prefer not to say">
-                Prefer not to say
-              </option>
-            </SelectField>
+              <div className="profile-form-subsection-grid">
+                <FormField
+                  label="Date of Birth"
+                  name="dateOfBirth"
+                  register={register}
+                  error={errors.dateOfBirth}
+                  required
+                  type="date"
+                  isEditing={isEditing}
+                />
 
-            <FormField
-              label="Phone"
-              name="phone"
-              register={register}
-              error={errors.phone}
-              required
-              placeholder="10-digit mobile number"
-              isEditing={isEditing}
-            />
+                <SelectField
+                  label="Gender"
+                  name="gender"
+                  register={register}
+                  error={errors.gender}
+                  required
+                  isEditing={isEditing}
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">
+                    Prefer not to say
+                  </option>
+                </SelectField>
 
-            <FormField
-              label="Personal Email"
-              name="personalEmail"
-              register={register}
-              error={errors.personalEmail}
-              required
-              type="email"
-              placeholder="name@example.com"
-              isEditing={isEditing}
-            />
+                <FormField
+                  label="Nationality"
+                  name="nationality"
+                  register={register}
+                  error={errors.nationality}
+                  required
+                  placeholder="Enter nationality"
+                  isEditing={isEditing}
+                />
 
-            <FormField
-              label="Nationality"
-              name="nationality"
-              register={register}
-              error={errors.nationality}
-              required
-              placeholder="Enter nationality"
-              isEditing={isEditing}
-            />
+                <FormField
+                  label="Religion"
+                  name="religion"
+                  register={register}
+                  error={errors.religion}
+                  required
+                  placeholder="Enter religion"
+                  isEditing={isEditing}
+                />
 
-            <SelectField
-              label="Category"
-              name="category"
-              register={register}
-              error={errors.category}
-              required
-              isEditing={isEditing}
-            >
-              <option value="">Select category</option>
-              <option value="GM">GM</option>
-              <option value="OBC">OBC</option>
-              <option value="SC">SC</option>
-              <option value="ST">ST</option>
-            </SelectField>
+                <FormField
+                  label="Caste"
+                  name="caste"
+                  register={register}
+                  error={errors.caste}
+                  required
+                  placeholder="Enter caste"
+                  isEditing={isEditing}
+                />
 
-            <FormField
-              label="Religion"
-              name="religion"
-              register={register}
-              error={errors.religion}
-              required
-              placeholder="Enter religion"
-              isEditing={isEditing}
-            />
+                <FormField
+                  label="Sub-caste"
+                  name="subCaste"
+                  register={register}
+                  error={errors.subCaste}
+                  placeholder="Enter sub-caste"
+                  isEditing={isEditing}
+                />
 
-            <FormField
-              label="Caste"
-              name="caste"
-              register={register}
-              error={errors.caste}
-              required
-              placeholder="Enter caste"
-              isEditing={isEditing}
-            />
+                <SelectField
+                  label="Blood Group"
+                  name="bloodGroup"
+                  register={register}
+                  error={errors.bloodGroup}
+                  required
+                  isEditing={isEditing}
+                >
+                  <option value="">Select blood group</option>
+                  <option value="A+">A+</option>
+                  <option value="A-">A-</option>
+                  <option value="B+">B+</option>
+                  <option value="B-">B-</option>
+                  <option value="AB+">AB+</option>
+                  <option value="AB-">AB-</option>
+                  <option value="O+">O+</option>
+                  <option value="O-">O-</option>
+                </SelectField>
 
-            <FormField
-              label="Sub-caste"
-              name="subCaste"
-              register={register}
-              error={errors.subCaste}
-              placeholder="Enter sub-caste"
-              isEditing={isEditing}
-            />
-
-            <div className="profile-form-field profile-address-field">
-              <FieldLabel required>Address</FieldLabel>
-
-              <textarea
-                rows="4"
-                placeholder="Enter your complete address"
-                disabled={!isEditing}
-                className={`profile-input profile-textarea ${
-                  errors.address ? "profile-input-error" : ""
-                }`}
-                {...register("address")}
-              />
-
-              {errors.address && (
-                <p className="profile-error">
-                  {errors.address.message}
-                </p>
-              )}
+                <SelectField
+                  label="Marital Status"
+                  name="maritalStatus"
+                  register={register}
+                  error={errors.maritalStatus}
+                  required
+                  isEditing={isEditing}
+                >
+                  <option value="">Select marital status</option>
+                  <option value="Unmarried">Unmarried</option>
+                  <option value="Married">Married</option>
+                  <option value="Widowed">Widowed</option>
+                  <option value="Divorced">Divorced</option>
+                  <option value="Separated">Separated</option>
+                </SelectField>
+              </div>
             </div>
+
+            <div className="profile-form-subsection profile-form-subsection-full">
+              <div className="profile-form-subsection-header">
+                <h3>Address Information</h3>
+                <p>Provide your current corresponding and permanent addresses.</p>
+              </div>
+
+              <div className="profile-form-subsection-grid">
+                <div className="profile-form-field profile-address-field">
+                  <FieldLabel required>Corresponding Address</FieldLabel>
+
+                  <textarea
+                    rows="4"
+                    placeholder="Enter your complete corresponding address"
+                    disabled={!isEditing}
+                    className={`profile-input profile-textarea ${
+                      errors.correspondingAddress
+                        ? "profile-input-error"
+                        : ""
+                    }`}
+                    {...register("correspondingAddress")}
+                  />
+
+                  {errors.correspondingAddress && (
+                    <p className="profile-error">
+                      {errors.correspondingAddress.message}
+                    </p>
+                  )}
+                </div>
+
+                <div className="profile-form-field profile-address-field">
+                  <FieldLabel required>Permanent Address</FieldLabel>
+
+                  <textarea
+                    rows="4"
+                    placeholder="Enter your complete permanent address"
+                    disabled={!isEditing}
+                    className={`profile-input profile-textarea ${
+                      errors.permanentAddress
+                        ? "profile-input-error"
+                        : ""
+                    }`}
+                    {...register("permanentAddress")}
+                  />
+
+                  {errors.permanentAddress && (
+                    <p className="profile-error">
+                      {errors.permanentAddress.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="profile-form-subsection">
+              <div className="profile-form-subsection-header">
+                <h3>Family Information</h3>
+                <p>Provide the required immediate family details.</p>
+              </div>
+
+              <div className="profile-form-subsection-grid">
+                <FormField
+                  label="Father's Name"
+                  name="fatherName"
+                  register={register}
+                  error={errors.fatherName}
+                  required
+                  placeholder="Enter father's name"
+                  isEditing={isEditing}
+                />
+
+                <FormField
+                  label="Mother's Name"
+                  name="motherName"
+                  register={register}
+                  error={errors.motherName}
+                  required
+                  placeholder="Enter mother's name"
+                  isEditing={isEditing}
+                />
+
+                {maritalStatus === "Married" && (
+                  <FormField
+                    label="Spouse Name"
+                    name="spouseName"
+                    register={register}
+                    error={errors.spouseName}
+                    required
+                    placeholder="Enter spouse name"
+                    isEditing={isEditing}
+                  />
+                )}
+              </div>
+            </div>
+
+            {maritalStatus === "Married" && (
+              <div className="profile-form-subsection">
+                <div className="profile-form-subsection-header">
+                  <h3>Children Information</h3>
+                  <p>
+                    Add the names of your children where applicable. You can
+                    add as many children as required.
+                  </p>
+                </div>
+
+                <div className="profile-children-list">
+                  {children.map((child, index) => (
+                    <div
+                      className="profile-child-row"
+                      key={`child-${index}`}
+                    >
+                      <div className="profile-form-field">
+                        <FieldLabel>
+                          {`Child ${index + 1} Name`}
+                        </FieldLabel>
+
+                        <input
+                          type="text"
+                          placeholder="Enter child's full name"
+                          disabled={!isEditing}
+                          className={`profile-input ${
+                            errors.children?.[index]?.name
+                              ? "profile-input-error"
+                              : ""
+                          }`}
+                          {...register(`children.${index}.name`)}
+                        />
+
+                        {errors.children?.[index]?.name && (
+                          <p className="profile-error">
+                            {errors.children[index].name.message}
+                          </p>
+                        )}
+                      </div>
+
+                      {isEditing && (
+                        <button
+                          type="button"
+                          className="profile-remove-child-button"
+                          onClick={() => {
+                            const updatedChildren = children.filter(
+                              (_, childIndex) => childIndex !== index,
+                            );
+
+                            setValue("children", updatedChildren, {
+                              shouldDirty: true,
+                              shouldValidate: true,
+                            });
+                          }}
+                        >
+                          <X size={16} />
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  ))}
+
+                  {isEditing && (
+                    <button
+                      type="button"
+                      className="profile-add-child-button"
+                      onClick={() => {
+                        setValue(
+                          "children",
+                          [...children, { name: "" }],
+                          {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                          },
+                        );
+                      }}
+                    >
+                      <span className="profile-add-child-icon">+</span>
+                      Add Another Child
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
 
           {!isEditing && (

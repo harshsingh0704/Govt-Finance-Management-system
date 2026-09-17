@@ -890,3 +890,105 @@
     width: 100%;
   }
 }
+/* =========================================================
+   Supervisor / Parent Lab / Deputation Choice Buttons
+   ========================================================= */
+
+.ce-supervisor-choice {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 14px;
+}
+
+.ce-supervisor-choice-button {
+  flex: 1;
+  min-height: 76px;
+  padding: 16px 18px;
+  border: 1px solid #d7e2ee;
+  border-radius: 12px;
+  background: #ffffff;
+  color: #29415f;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 5px;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease,
+    transform 160ms ease;
+}
+
+.ce-supervisor-choice-button strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: #183b63;
+}
+
+.ce-supervisor-choice-button span {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #71839a;
+}
+
+.ce-supervisor-choice-button:hover {
+  border-color: #9db9d5;
+  background: #f8fbfe;
+  box-shadow: 0 4px 12px rgba(20, 57, 91, 0.06);
+}
+
+.ce-supervisor-choice-button:focus-visible {
+  outline: none;
+  border-color: #2f73ad;
+  box-shadow: 0 0 0 3px rgba(47, 115, 173, 0.14);
+}
+
+.ce-supervisor-choice-button.active {
+  border-color: #2f73ad;
+  background: #eef6fd;
+  box-shadow: 0 0 0 1px rgba(47, 115, 173, 0.08);
+}
+
+.ce-supervisor-choice-button.active strong {
+  color: #185487;
+}
+
+.ce-supervisor-choice-button.active span {
+  color: #58718d;
+}
+
+/* Disabled state — used when Parent Lab = Yes
+   and Deputation is automatically fixed to No. */
+
+.ce-supervisor-choice-button.disabled,
+.ce-supervisor-choice-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.58;
+  background: #f3f5f7;
+  border-color: #d8dde3;
+  box-shadow: none;
+}
+
+.ce-supervisor-choice-button.disabled:hover,
+.ce-supervisor-choice-button:disabled:hover {
+  background: #f3f5f7;
+  border-color: #d8dde3;
+  box-shadow: none;
+  transform: none;
+}
+
+/* Small screens */
+@media (max-width: 700px) {
+  .ce-supervisor-choice {
+    flex-direction: column;
+  }
+
+  .ce-supervisor-choice-button {
+    width: 100%;
+  }
+}

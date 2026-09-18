@@ -1,4 +1,4 @@
-﻿// Helper to extract JWT token from localStorage (fms_auth or plain token)
+// Helper to extract JWT token from localStorage (fms_auth or plain token)
 function getStoredAuthToken() {
   try {
     const raw = localStorage.getItem("fms_auth");
@@ -63,14 +63,14 @@ const ADMIN_STATS = [
   },
   {
     label: "Approved / Sanctioned",
-    value: "â‚¹18.6L",
+    value: "₹18.6L",
     highlight: "32",
     detail: "claims this month",
     icon: CheckCircle2,
   },
   {
     label: "Payment Processing",
-    value: "â‚¹12.6L",
+    value: "₹12.6L",
     highlight: "24",
     detail: "claims ready",
     icon: CreditCard,
@@ -82,28 +82,28 @@ const CLAIMS = [
     id: "TA-2026-1042",
     employee: "Rahul Kumar",
     type: "TA",
-    amount: "â‚¹24,500",
+    amount: "₹24,500",
     status: "Review",
   },
   {
     id: "LTC-2026-0871",
     employee: "Priya Sharma",
     type: "LTC",
-    amount: "â‚¹38,200",
+    amount: "₹38,200",
     status: "Review",
   },
   {
     id: "MED-2026-2194",
     employee: "Amit Verma",
     type: "Medical",
-    amount: "â‚¹12,800",
+    amount: "₹12,800",
     status: "Query",
   },
   {
     id: "TA-2026-1038",
     employee: "Neha Singh",
     type: "TA",
-    amount: "â‚¹18,600",
+    amount: "₹18,600",
     status: "Review",
   },
 ];
@@ -113,38 +113,38 @@ const DEPARTMENTS = [
     name: "Engineering",
     pending: 12,
     processing: 8,
-    amount: "â‚¹4.2L",
+    amount: "₹4.2L",
   },
   {
     name: "Finance",
     pending: 9,
     processing: 5,
-    amount: "â‚¹3.1L",
+    amount: "₹3.1L",
   },
   {
     name: "Operations",
     pending: 8,
     processing: 6,
-    amount: "â‚¹2.8L",
+    amount: "₹2.8L",
   },
   {
     name: "Administration",
     pending: 7,
     processing: 4,
-    amount: "â‚¹1.9L",
+    amount: "₹1.9L",
   },
   {
     name: "Human Resources",
     pending: 6,
     processing: 3,
-    amount: "â‚¹1.4L",
+    amount: "₹1.4L",
   },
 ];
 
 const OPERATIONS = [
   {
     title: "Claim TA-2026-1042 approved",
-    description: "â‚¹24,500",
+    description: "₹24,500",
     time: "8 min ago",
     type: "success",
   },
@@ -162,7 +162,7 @@ const OPERATIONS = [
   },
   {
     title: "Payment batch PB-2026-091 processed",
-    description: "â‚¹4.2L",
+    description: "₹4.2L",
     time: "2 hours ago",
     type: "payment",
   },
@@ -261,7 +261,7 @@ function VerificationPanel() {
             <span>Employee action required</span>
           </div>
 
-          <span className="ad-arrow">â†’</span>
+          <span className="ad-arrow">→</span>
         </button>
 
         <button type="button" className="ad-verification-item warning">
@@ -274,7 +274,7 @@ function VerificationPanel() {
             <span>Ready for document review</span>
           </div>
 
-          <span className="ad-arrow">â†’</span>
+          <span className="ad-arrow">→</span>
         </button>
 
         <button type="button" className="ad-verification-item success">
@@ -287,7 +287,7 @@ function VerificationPanel() {
             <span>Completed today</span>
           </div>
 
-          <span className="ad-arrow">â†’</span>
+          <span className="ad-arrow">→</span>
         </button>
       </div>
 
@@ -308,7 +308,7 @@ function PaymentPanel() {
         </div>
 
         <button type="button" className="ad-text-button">
-          View all â†’
+          View all →
         </button>
       </div>
 
@@ -320,20 +320,20 @@ function PaymentPanel() {
 
           <div>
             <span>Ready for payment</span>
-            <strong>â‚¹12.6L</strong>
+            <strong>₹12.6L</strong>
             <small>24 claims</small>
           </div>
         </div>
 
         <div className="ad-payment-line">
           <span>Processing</span>
-          <strong>â‚¹7.8L</strong>
+          <strong>₹7.8L</strong>
           <small>15 claims</small>
         </div>
 
         <div className="ad-payment-line">
           <span>Completed today</span>
-          <strong>â‚¹4.2L</strong>
+          <strong>₹4.2L</strong>
           <small>9 claims</small>
         </div>
       </div>
@@ -622,7 +622,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Basic (â‚¹)
+                Basic (₹)
               </label>
               <input
                 type="number"
@@ -649,7 +649,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Allowances (â‚¹)
+                Allowances (₹)
               </label>
               <input
                 type="number"
@@ -676,7 +676,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Deductions (â‚¹)
+                Deductions (₹)
               </label>
               <input
                 type="number"
@@ -707,7 +707,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
             }}
           >
             <span style={{ fontSize: "0.875rem", color: "#475569" }}>Calculated Net Pay:</span>
-            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>â‚¹{netPay.toLocaleString()}</strong>
+            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>₹{netPay.toLocaleString()}</strong>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -754,6 +754,7 @@ export default function AdminPage() {
   const [showGeneratePayslip, setShowGeneratePayslip] = useState(false);
   const [payslips, setPayslips] = useState([]);
   const [loadingPayslips, setLoadingPayslips] = useState(false);
+  const [expandedService, setExpandedService] = useState(null);
 
   // Fetch all recent payslips for the admin view
   const fetchPayslips = async () => {
@@ -943,23 +944,149 @@ export default function AdminPage() {
               <BarChart3 size={18} />
               <span>Expenditure</span>
             </button>
-
             <span className="ad-nav-label">Services</span>
 
-            <button type="button" className="ad-nav-item">
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() => navigate("/admin/services/accommodation")}
+            >
               <FileCheck2 size={18} />
-              <span>TA Claims</span>
+              <span>Accommodation</span>
             </button>
 
-            <button type="button" className="ad-nav-item">
-              <FileCheck2 size={18} />
-              <span>LTC Claims</span>
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() =>
+                setExpandedService((value) => (value === "LTC" ? null : "LTC"))
+              }
+              aria-expanded={expandedService === "LTC"}
+            >
+              <ChevronDown
+                size={16}
+                style={{
+                  transform:
+                    expandedService === "LTC"
+                      ? "rotate(0deg)"
+                      : "rotate(-90deg)",
+                  transition: "transform 160ms ease",
+                }}
+              />
+              <span>LTC</span>
             </button>
 
-            <button type="button" className="ad-nav-item">
-              <FileCheck2 size={18} />
-              <span>Medical Claims</span>
+            {expandedService === "LTC" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate("/admin/services/ltc/claim")}
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>LTC Claim</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>LTC Advance</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() =>
+                setExpandedService((value) =>
+                  value === "Medical" ? null : "Medical",
+                )
+              }
+              aria-expanded={expandedService === "Medical"}
+            >
+              <ChevronDown
+                size={16}
+                style={{
+                  transform:
+                    expandedService === "Medical"
+                      ? "rotate(0deg)"
+                      : "rotate(-90deg)",
+                  transition: "transform 160ms ease",
+                }}
+              />
+              <span>Medical</span>
             </button>
+
+            {expandedService === "Medical" && (
+              <>
+                <button
+                  type="button"
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>Medical Claim</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>Medical Advance</span>
+                </button>
+              </>
+            )}
+
+            <button
+              type="button"
+              className="ad-nav-item"
+              onClick={() =>
+                setExpandedService((value) => (value === "TA" ? null : "TA"))
+              }
+              aria-expanded={expandedService === "TA"}
+            >
+              <ChevronDown
+                size={16}
+                style={{
+                  transform:
+                    expandedService === "TA"
+                      ? "rotate(0deg)"
+                      : "rotate(-90deg)",
+                  transition: "transform 160ms ease",
+                }}
+              />
+              <span>TA</span>
+            </button>
+
+            {expandedService === "TA" && (
+              <>
+                <button
+                  type="button"
+                  onClick={() => navigate("/admin/services/ta/claim")}
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>TA Claim</span>
+                </button>
+
+                <button
+                  type="button"
+                  className="ad-nav-item"
+                  style={{ paddingLeft: "42px" }}
+                >
+                  <FileCheck2 size={17} />
+                  <span>TA Advance</span>
+                </button>
+              </>
+            )}
 
             <span className="ad-nav-label">Reports</span>
 
@@ -1028,7 +1155,7 @@ export default function AdminPage() {
                 aria-label="Search"
               />
 
-              <kbd>âŒ˜ K</kbd>
+              <kbd>⌘ K</kbd>
             </div>
           </div>
 
@@ -1195,10 +1322,10 @@ export default function AdminPage() {
                           <td style={{ padding: "12px 14px", fontWeight: "600", color: "#0f172a" }}>
                             Month {slip.month} / {slip.year}
                           </td>
-                          <td style={{ padding: "12px 14px", color: "#334155" }}>â‚¹{slip.basicPay}</td>
-                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+â‚¹{slip.allowances}</td>
-                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-â‚¹{slip.deductions}</td>
-                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>â‚¹{slip.netPay}</td>
+                          <td style={{ padding: "12px 14px", color: "#334155" }}>₹{slip.basicPay}</td>
+                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+₹{slip.allowances}</td>
+                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-₹{slip.deductions}</td>
+                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>₹{slip.netPay}</td>
                           <td style={{ padding: "12px 14px", textAlign: "right" }}>
                             <button
                               type="button"
@@ -1267,7 +1394,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View all â†’
+                  View all →
                 </button>
               </div>
 
@@ -1278,7 +1405,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setSelectedClaimType(null)}
                   >
-                    Ã—
+                    ×
                   </button>
                 </div>
               )}
@@ -1354,7 +1481,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View report â†’
+                  View report →
                 </button>
               </div>
 
@@ -1388,7 +1515,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View activity â†’
+                  View activity →
                 </button>
               </div>
 
@@ -1436,7 +1563,7 @@ export default function AdminPage() {
                     <span>Awaiting correction or additional information.</span>
                   </div>
 
-                  <span>â†’</span>
+                  <span>→</span>
                 </button>
 
                 <button type="button">
@@ -1449,7 +1576,7 @@ export default function AdminPage() {
                     <span>Supporting documents need attention.</span>
                   </div>
 
-                  <span>â†’</span>
+                  <span>→</span>
                 </button>
 
                 <button type="button">
@@ -1462,7 +1589,7 @@ export default function AdminPage() {
                     <span>Immediate administrative action recommended.</span>
                   </div>
 
-                  <span>â†’</span>
+                  <span>→</span>
                 </button>
               </div>
             </article>
@@ -1542,3 +1669,4 @@ export default function AdminPage() {
     </div>
   );
 }
+

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+﻿import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
@@ -13,6 +13,9 @@ import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
 import EmployeeManagementPage from "../features/admin/employee-management/EmployeeManagementPage";
+import AccommodationPage from "../features/accommodation/AccommodationPage";
+import TAClaimPage from "../features/ta/TAClaimPage";
+import LTCClaimPage from "../features/ltc/LTCClaimPage";
 
 export const router = createBrowserRouter([
   {
@@ -45,6 +48,18 @@ export const router = createBrowserRouter([
             path: "/admin/employee-management",
             element: <EmployeeManagementPage />,
           },
+          {
+            path: "/admin/services/accommodation",
+            element: <AccommodationPage />,
+          },
+          {
+            path: "/admin/services/ltc/claim",
+            element: <LTCClaimPage />,
+          },
+          {
+  path: "/admin/services/ta/claim",
+  element: <TAClaimPage />,
+},
         ],
       },
       {
@@ -67,3 +82,7 @@ export const router = createBrowserRouter([
     element: <RootRedirect />,
   },
 ]);
+
+
+
+

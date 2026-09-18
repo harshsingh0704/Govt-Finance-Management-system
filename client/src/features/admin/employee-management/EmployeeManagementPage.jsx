@@ -5,9 +5,7 @@ import {
   CheckCircle2,
   ChevronDown,
   Edit3,
-  Mail,
-  MapPin,
-  Search,
+  Mail,  Search,
   ShieldCheck,
   UserRound,
   Users,
@@ -504,7 +502,7 @@ function EmployeeManagementPage() {
                       <small>{employee.departmentName}</small>
                     </div>
 
-                    <span className="employee-list-arrow">›</span>
+                    <span className="employee-list-arrow">â€º</span>
                   </button>
                 );
               })
@@ -910,71 +908,6 @@ function EmployeeManagementPage() {
                     disabled={!isEditing}
                     onChange={(value) =>
                       updateEmployee("accountsOfficer", value)
-                    }
-                  />
-                </div>
-              </section>
-
-              <section className="employee-section accommodation-section">
-                <SectionHeader
-                  icon={MapPin}
-                  title="Accommodation Information"
-                  description="Organization-controlled accommodation records. These details may change during an employee's service."
-                />
-
-                <div className="accommodation-highlight">
-                  <div className="accommodation-icon">
-                    <MapPin size={21} />
-                  </div>
-
-                  <div>
-                    <strong>Office Accommodation</strong>
-                    <span>
-                      Maintain the employee's current accommodation status,
-                      allotment date and quarters type.
-                    </span>
-                  </div>
-                </div>
-
-                <div className="employee-form-grid">
-                  <SelectField
-                    label="Office Accommodation"
-                    value={selectedEmployee.accommodation.officeAccommodation}
-                    options={["Yes", "No"]}
-                    disabled={!isEditing}
-                    onChange={handleAccommodationChange}
-                  />
-
-                  <Field
-                    label="Office Accommodation Date"
-                    value={
-                      selectedEmployee.accommodation.officeAccommodationDate
-                    }
-                    type="date"
-                    disabled={
-                      !isEditing ||
-                      selectedEmployee.accommodation.officeAccommodation !==
-                        "Yes"
-                    }
-                    onChange={(value) =>
-                      updateAccommodation(
-                        "officeAccommodationDate",
-                        value,
-                      )
-                    }
-                  />
-
-                  <SelectField
-                    label="Quarters Type"
-                    value={selectedEmployee.accommodation.quartersType}
-                    options={QUARTERS_TYPES}
-                    disabled={
-                      !isEditing ||
-                      selectedEmployee.accommodation.officeAccommodation !==
-                        "Yes"
-                    }
-                    onChange={(value) =>
-                      updateAccommodation("quartersType", value)
                     }
                   />
                 </div>

@@ -16,6 +16,7 @@ import EmployeeManagementPage from "../features/admin/employee-management/Employ
 import AccommodationPage from "../features/accommodation/AccommodationPage";
 import TAClaimPage from "../features/ta/TAClaimPage";
 import LTCClaimPage from "../features/ltc/LTCClaimPage";
+import MedicalClaimPage from "../features/medical/MedicalClaimPage";
 
 export const router = createBrowserRouter([
   {
@@ -53,6 +54,10 @@ export const router = createBrowserRouter([
             element: <AccommodationPage />,
           },
           {
+            path: "/admin/services/medical/claim",
+            element: <MedicalClaimPage />,
+          },
+          {
             path: "/admin/services/ltc/claim",
             element: <LTCClaimPage />,
           },
@@ -82,6 +87,7 @@ export const router = createBrowserRouter([
     element: <RootRedirect />,
   },
 ]);
+
 
 
 

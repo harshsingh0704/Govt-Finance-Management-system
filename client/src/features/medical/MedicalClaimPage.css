@@ -1,0 +1,561 @@
+.medical-page {
+  padding: 28px 32px 40px;
+  background: #f8fafc;
+  min-height: 100%;
+  color: #0f172a;
+}
+
+.medical-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.medical-breadcrumb {
+  color: #64748b;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.medical-page-header h1 {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+}
+
+.medical-page-header p {
+  margin: 7px 0 0;
+  color: #64748b;
+  font-size: 14px;
+}
+
+.medical-date-indicator {
+  min-width: 130px;
+  padding: 12px 16px;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(15, 23, 42, 0.04);
+}
+
+.medical-date-indicator span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  margin-bottom: 4px;
+}
+
+.medical-date-indicator strong {
+  font-size: 14px;
+}
+
+.medical-form,
+.medical-records-section {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+}
+
+.medical-form {
+  overflow: hidden;
+}
+
+.medical-section-heading {
+  padding: 20px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.medical-section-heading span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.medical-section-heading h2 {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.medical-section-heading p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.medical-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px 24px;
+}
+
+.medical-field {
+  min-width: 0;
+}
+
+.medical-field-wide {
+  grid-column: span 2;
+}
+
+.medical-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #334155;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.medical-field label span {
+  color: #dc2626;
+  margin-left: 3px;
+}
+
+.medical-input-wrapper {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  background: #ffffff;
+  overflow: hidden;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.medical-input-wrapper:focus-within {
+  border-color: #64748b;
+  box-shadow: 0 0 0 3px rgba(100, 116, 139, 0.1);
+}
+
+.medical-input-wrapper.has-error {
+  border-color: #dc2626;
+}
+
+.medical-input-wrapper input,
+.medical-input-wrapper select,
+.medical-input-wrapper textarea {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #0f172a;
+  font: inherit;
+  font-size: 13px;
+  box-sizing: border-box;
+}
+
+.medical-input-wrapper input,
+.medical-input-wrapper select {
+  height: 42px;
+  padding: 0 12px;
+}
+
+.medical-input-wrapper textarea {
+  padding: 11px 12px;
+  resize: vertical;
+  min-height: 92px;
+}
+
+.medical-input-wrapper select {
+  cursor: pointer;
+}
+
+.medical-amount-input span {
+  padding-left: 12px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.medical-amount-input input {
+  padding-left: 7px;
+}
+
+.medical-error {
+  display: block;
+  margin-top: 5px;
+  color: #dc2626;
+  font-size: 11px;
+}
+
+.medical-claim-summary {
+  display: flex;
+  justify-content: flex-end;
+  padding: 0 24px 22px;
+}
+
+.medical-claim-summary > div {
+  min-width: 240px;
+  padding: 16px 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: #f8fafc;
+  text-align: right;
+}
+
+.medical-claim-summary span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  margin-bottom: 5px;
+}
+
+.medical-claim-summary strong {
+  font-size: 20px;
+}
+
+.medical-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 20px 24px;
+  border-top: 1px solid #e2e8f0;
+  background: #f8fafc;
+}
+
+.medical-primary-button,
+.medical-secondary-button {
+  min-height: 40px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.medical-primary-button {
+  border: 1px solid #0f172a;
+  background: #0f172a;
+  color: #ffffff;
+}
+
+.medical-secondary-button {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+
+.medical-records-section {
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+.medical-records-section > .medical-section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.medical-record-count {
+  padding: 7px 11px;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #64748b;
+  background: #f8fafc;
+  font-size: 11px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.medical-empty-state {
+  padding: 44px 24px;
+  text-align: center;
+  color: #64748b;
+}
+
+.medical-empty-state h3 {
+  margin: 0 0 6px;
+  color: #334155;
+  font-size: 15px;
+}
+
+.medical-empty-state p {
+  margin: 0;
+  font-size: 12px;
+}
+
+.medical-table-wrapper {
+  overflow-x: auto;
+}
+
+.medical-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 900px;
+}
+
+.medical-table th,
+.medical-table td {
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  text-align: left;
+  font-size: 12px;
+}
+
+.medical-table th {
+  color: #64748b;
+  background: #f8fafc;
+  font-weight: 700;
+}
+
+.medical-table td {
+  color: #334155;
+}
+
+.medical-employee-cell strong,
+.medical-employee-cell span {
+  display: block;
+}
+
+.medical-employee-cell strong {
+  color: #0f172a;
+}
+
+.medical-employee-cell span {
+  margin-top: 3px;
+  color: #94a3b8;
+  font-size: 10px;
+}
+
+.medical-status-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #15803d;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+@media (max-width: 1050px) {
+  .medical-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .medical-page {
+    padding: 20px 16px 30px;
+  }
+
+  .medical-page-header {
+    flex-direction: column;
+  }
+
+  .medical-date-indicator {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .medical-form-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .medical-field-wide {
+    grid-column: span 1;
+  }
+
+  .medical-section-heading {
+    padding: 17px 18px;
+  }
+
+  .medical-form-actions {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .medical-primary-button,
+  .medical-secondary-button {
+    flex: 1;
+  }
+}
+/* ==========================================================
+   Medical Claim — Document Uploads
+   Documents are optional and are not marked as required.
+   ========================================================== */
+
+.medical-document-upload {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.medical-document-upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 42px;
+  padding: 7px 10px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  background: #f8fafc;
+  box-sizing: border-box;
+}
+
+.medical-document-upload-row.has-file {
+  border-style: solid;
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+.medical-document-upload input[type="file"] {
+  display: none;
+}
+
+.medical-document-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 11px;
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.medical-document-upload-button:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.medical-document-file-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #334155;
+  font-size: 11px;
+}
+
+.medical-document-empty {
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.medical-document-remove {
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 0;
+  background: transparent;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 5px;
+}
+
+.medical-document-remove:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+.medical-document-hint {
+  color: #94a3b8;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+
+/* ==========================================================
+   Medical Claim — Declaration & Consent
+   ========================================================== */
+
+.medical-consent-section {
+  margin: 0 24px 22px;
+  padding: 18px;
+  border: 1px solid #cbd5e1;
+  border-radius: 11px;
+  background: #f8fafc;
+}
+
+.medical-consent-heading {
+  margin-bottom: 12px;
+}
+
+.medical-consent-heading > span {
+  display: block;
+  margin-bottom: 4px;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.medical-consent-heading h3 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.medical-consent-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  color: #334155;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.medical-consent-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: #0f172a;
+  cursor: pointer;
+}
+
+.medical-consent-checkbox span {
+  flex: 1;
+}
+
+.medical-consent-section .medical-error {
+  margin-left: 26px;
+}
+
+
+/* ==========================================================
+   Responsive adjustments
+   ========================================================== */
+
+@media (max-width: 720px) {
+  .medical-consent-section {
+    margin: 0 18px 18px;
+    padding: 15px;
+  }
+
+  .medical-document-upload-row {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .medical-document-file-name {
+    flex: 1;
+    min-width: 120px;
+  }
+
+  .medical-document-remove {
+    margin-left: 0;
+  }
+}

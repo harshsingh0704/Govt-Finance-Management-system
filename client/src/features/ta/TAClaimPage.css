@@ -5,6 +5,10 @@
   color: #172033;
 }
 
+/* ============================================================
+   PAGE HEADER
+============================================================ */
+
 .ta-page-header {
   display: flex;
   align-items: flex-start;
@@ -14,10 +18,10 @@
 }
 
 .ta-breadcrumb {
+  margin-bottom: 10px;
   color: #718096;
   font-size: 13px;
   font-weight: 500;
-  margin-bottom: 10px;
 }
 
 .ta-breadcrumb span {
@@ -36,7 +40,6 @@
   display: grid;
   place-items: center;
   flex-shrink: 0;
-  border-radius: 10px;
   background: #eaf1ff;
   color: #1f4f96;
 }
@@ -44,6 +47,7 @@
 .ta-title-icon {
   width: 44px;
   height: 44px;
+  border-radius: 10px;
 }
 
 .ta-title-row h1 {
@@ -91,6 +95,10 @@
   font-size: 13px;
 }
 
+/* ============================================================
+   FORM
+============================================================ */
+
 .ta-form {
   display: flex;
   flex-direction: column;
@@ -98,11 +106,16 @@
 }
 
 .ta-card {
+  overflow: hidden;
   border: 1px solid #e1e7f0;
   border-radius: 13px;
   background: #ffffff;
   box-shadow: 0 2px 7px rgba(25, 42, 70, 0.035);
 }
+
+/* ============================================================
+   SECTION HEADER
+============================================================ */
 
 .ta-section-heading {
   display: flex;
@@ -131,6 +144,10 @@
   font-size: 12px;
 }
 
+/* ============================================================
+   FORM GRID
+============================================================ */
+
 .ta-form-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -138,11 +155,24 @@
   padding: 22px;
 }
 
+.ta-form-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* ============================================================
+   FIELD
+============================================================ */
+
 .ta-field {
   min-width: 0;
 }
 
-.ta-field label {
+.ta-field-wide {
+  grid-column: span 2;
+}
+
+.ta-field label,
+.ta-document-header label {
   display: block;
   margin-bottom: 7px;
   color: #344158;
@@ -150,7 +180,8 @@
   font-weight: 650;
 }
 
-.ta-field label span {
+.ta-field label > span,
+.ta-document-header label > span {
   margin-left: 3px;
   color: #c43c3c;
 }
@@ -162,7 +193,9 @@
   border: 1px solid #d9e0eb;
   border-radius: 8px;
   background: #ffffff;
-  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
 }
 
 .ta-input-wrapper:focus-within {
@@ -206,16 +239,295 @@
   cursor: pointer;
 }
 
-.ta-field small {
+.ta-currency-symbol {
+  padding-left: 12px;
+  color: #738198;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ta-currency-symbol + input {
+  padding-left: 7px;
+}
+
+.ta-error {
   display: block;
   margin-top: 5px;
+  color: #c43c3c;
+  font-size: 11px;
+}
+
+/* ============================================================
+   RADIO GROUP
+============================================================ */
+
+.ta-radio-group {
+  width: 100%;
+}
+
+.ta-radio-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ta-radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid #dce3ed;
+  border-radius: 9px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ta-radio-option:hover {
+  border-color: #aebed4;
+  background: #fafcff;
+}
+
+.ta-radio-option.selected {
+  border-color: #4a76b8;
+  background: #f5f8fd;
+  box-shadow: 0 0 0 2px rgba(74, 118, 184, 0.08);
+}
+
+.ta-radio-option input {
+  margin-top: 3px;
+  accent-color: #1f4f96;
+}
+
+.ta-radio-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ta-radio-option strong {
+  color: #2b3950;
+  font-size: 13px;
+}
+
+.ta-radio-option small {
+  color: #8490a3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   TA APPROVAL
+============================================================ */
+
+.ta-approval-content {
+  padding: 22px;
+}
+
+.ta-question-label {
+  display: block;
+  margin-bottom: 12px;
+  color: #344158;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ta-question-label b {
+  margin-left: 3px;
+  color: #c43c3c;
+}
+
+.ta-approval-card .ta-radio-row {
+  max-width: 760px;
+}
+
+/* ============================================================
+   DOCUMENTS
+============================================================ */
+
+.ta-documents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px;
+}
+
+.ta-document-field {
+  min-width: 0;
+}
+
+.ta-document-header {
+  margin-bottom: 8px;
+}
+
+.ta-document-header label {
+  margin-bottom: 3px;
+}
+
+.ta-document-header small {
   color: #8994a6;
   font-size: 11px;
 }
 
-.ta-field .ta-error {
-  color: #c43c3c;
+.ta-document-upload-row {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  background: #fafbfd;
 }
+
+.ta-document-upload-row.has-file {
+  border-style: solid;
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+.ta-document-upload-row.has-error {
+  border-color: #d55a5a;
+}
+
+.ta-document-upload-row input[type="file"] {
+  display: none;
+}
+
+.ta-document-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #d3dce8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #40526c;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ta-document-upload-button:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.ta-document-file-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #46556d;
+  font-size: 11px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ta-document-empty {
+  overflow: hidden;
+  color: #9aa5b5;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ta-document-remove {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #7b8799;
+  cursor: pointer;
+}
+
+.ta-document-remove:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+/* ============================================================
+   CLAIM SUMMARY
+============================================================ */
+
+.ta-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid #d9e3ef;
+  border-radius: 8px;
+  background: #f7faff;
+}
+
+.ta-summary-total span {
+  color: #59687e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ta-summary-total strong {
+  color: #1f4f96;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+/* ============================================================
+   DECLARATION
+============================================================ */
+
+.ta-declaration-content {
+  padding: 22px;
+}
+
+.ta-declaration {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+}
+
+.ta-declaration input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: #1f4f96;
+}
+
+.ta-declaration span {
+  color: #536178;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.ta-declaration-error {
+  margin-left: 27px;
+}
+
+/* ============================================================
+   ACTIONS
+============================================================ */
 
 .ta-form-actions {
   display: flex;
@@ -229,13 +541,15 @@
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 40px;
-  padding: 0 17px;
+  min-height: 42px;
+  padding: 0 18px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 650;
   cursor: pointer;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .ta-primary-button {
@@ -259,9 +573,12 @@
   box-shadow: 0 5px 14px rgba(31, 79, 150, 0.18);
 }
 
+/* ============================================================
+   RECORDS
+============================================================ */
+
 .ta-records-card {
   margin-top: 22px;
-  overflow: hidden;
 }
 
 .ta-records-header {
@@ -315,6 +632,10 @@
   font-size: 12px;
 }
 
+/* ============================================================
+   TABLE
+============================================================ */
+
 .ta-table-wrapper {
   width: 100%;
   overflow-x: auto;
@@ -322,7 +643,7 @@
 
 .ta-table {
   width: 100%;
-  min-width: 1000px;
+  min-width: 950px;
   border-collapse: collapse;
 }
 
@@ -366,6 +687,32 @@
   font-size: 10px;
 }
 
+.ta-journey-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.ta-approval-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ta-approval-badge.approved {
+  background: #eaf6ef;
+  color: #287a4b;
+}
+
+.ta-approval-badge.pending {
+  background: #fff6df;
+  color: #9a6b08;
+}
+
 .ta-status-badge {
   display: inline-flex;
   align-items: center;
@@ -379,9 +726,21 @@
   white-space: nowrap;
 }
 
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
 @media (max-width: 1050px) {
   .ta-form-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ta-field-wide {
+    grid-column: span 2;
+  }
+
+  .ta-documents {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -404,8 +763,34 @@
     padding: 18px;
   }
 
+  .ta-field-wide {
+    grid-column: span 1;
+  }
+
   .ta-section-heading {
     padding: 17px 18px;
+  }
+
+  .ta-approval-content,
+  .ta-declaration-content {
+    padding: 18px;
+  }
+
+  .ta-radio-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ta-documents {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .ta-document-upload-row {
+    flex-wrap: wrap;
+  }
+
+  .ta-document-file-name {
+    min-width: 120px;
   }
 
   .ta-form-actions {

@@ -502,7 +502,7 @@ function EmployeeManagementPage() {
                       <small>{employee.departmentName}</small>
                     </div>
 
-                    <span className="employee-list-arrow">â€º</span>
+                    <span className="employee-list-arrow">›</span>
                   </button>
                 );
               })

@@ -13,6 +13,9 @@ import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
 import EmployeeManagementPage from "../features/admin/employee-management/EmployeeManagementPage";
+import EmployeeAuditLogPage from "../features/admin/employee-management/EmployeeAuditLogPage";
+import EmployeeAuditLogDetailPage from "../features/admin/employee-management/EmployeeAuditLogDetailPage";
+import MapEmployeePage from "../features/admin/employee-management/MapEmployeePage";
 import AccommodationPage from "../features/accommodation/AccommodationPage";
 import TAClaimPage from "../features/ta/TAClaimPage";
 import LTCClaimPage from "../features/ltc/LTCClaimPage";
@@ -49,6 +52,18 @@ export const router = createBrowserRouter([
           {
             path: "/admin/employee-management",
             element: <EmployeeManagementPage />,
+          },
+          {
+            path: "/admin/employee-management/audit-log",
+            element: <EmployeeAuditLogPage />,
+          },
+          {
+            path: "/admin/employee-management/audit-log/:auditId",
+            element: <EmployeeAuditLogDetailPage />,
+          },
+          {
+            path: "/admin/employee-management/map",
+            element: <MapEmployeePage />,
           },
           {
             path: "/admin/services/accommodation",
@@ -92,6 +107,9 @@ export const router = createBrowserRouter([
     element: <RootRedirect />,
   },
 ]);
+
+
+
 
 
 

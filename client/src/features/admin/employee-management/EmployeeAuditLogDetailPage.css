@@ -1,0 +1,337 @@
+﻿.employee-audit-detail-page {
+  width: 100%;
+  min-height: 100%;
+  padding: 28px 32px 40px;
+  box-sizing: border-box;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+.employee-audit-detail-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.employee-audit-detail-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 13px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.employee-audit-detail-back:hover {
+  border-color: #6366f1;
+  background: #f5f7ff;
+  color: #4338ca;
+}
+
+.employee-audit-detail-readonly {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 13px;
+  border: 1px solid #dbeafe;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.employee-audit-detail-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 15px;
+  margin-bottom: 24px;
+}
+
+.employee-audit-detail-header-icon {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+
+.employee-audit-detail-header span {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.employee-audit-detail-header h1 {
+  margin: 0;
+  font-size: 25px;
+  line-height: 1.25;
+  color: #0f172a;
+}
+
+.employee-audit-detail-header p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.employee-audit-detail-card {
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.04);
+}
+
+.employee-audit-detail-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.employee-audit-detail-card-header h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #0f172a;
+}
+
+.employee-audit-detail-card-header p {
+  margin: 5px 0 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.employee-audit-detail-success {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ecfdf3;
+  color: #15803d;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.employee-audit-detail-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.employee-audit-detail-info-item {
+  min-height: 90px;
+  padding: 20px 24px;
+  border-right: 1px solid #eef2f7;
+  border-bottom: 1px solid #eef2f7;
+  box-sizing: border-box;
+}
+
+.employee-audit-detail-info-item:nth-child(3n) {
+  border-right: 0;
+}
+
+.employee-audit-detail-info-item:nth-last-child(-n + 3) {
+  border-bottom: 0;
+}
+
+.employee-audit-detail-info-item span {
+  display: block;
+  margin-bottom: 8px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.employee-audit-detail-info-item strong {
+  display: block;
+  color: #1e293b;
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.employee-audit-detail-with-icon {
+  display: flex !important;
+  align-items: center;
+  gap: 7px;
+}
+
+.employee-audit-change-table-wrapper {
+  overflow-x: auto;
+}
+
+.employee-audit-change-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.employee-audit-change-table th {
+  padding: 14px 20px;
+  text-align: left;
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.employee-audit-change-table td {
+  padding: 18px 20px;
+  border-bottom: 1px solid #eef2f7;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.employee-audit-change-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.employee-audit-change-before,
+.employee-audit-change-after {
+  display: inline-block;
+  padding: 7px 10px;
+  border-radius: 7px;
+  line-height: 1.4;
+}
+
+.employee-audit-change-before {
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.employee-audit-change-after {
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.employee-audit-detail-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 18px 20px;
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.employee-audit-detail-notice strong {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 14px;
+}
+
+.employee-audit-detail-notice p {
+  margin: 0;
+  color: #475569;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.employee-audit-detail-not-found {
+  max-width: 520px;
+  margin: 80px auto;
+  padding: 40px;
+  text-align: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.employee-audit-detail-not-found > svg {
+  color: #64748b;
+}
+
+.employee-audit-detail-not-found h1 {
+  margin: 15px 0 7px;
+  font-size: 22px;
+}
+
+.employee-audit-detail-not-found p {
+  margin: 0 0 20px;
+  color: #64748b;
+}
+
+.employee-audit-detail-not-found button {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 40px;
+  padding: 0 14px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #334155;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (max-width: 850px) {
+  .employee-audit-detail-page {
+    padding: 20px 16px 32px;
+  }
+
+  .employee-audit-detail-info-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .employee-audit-detail-info-item:nth-child(3n) {
+    border-right: 1px solid #eef2f7;
+  }
+
+  .employee-audit-detail-info-item:nth-child(2n) {
+    border-right: 0;
+  }
+
+  .employee-audit-detail-info-item:nth-last-child(-n + 3) {
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .employee-audit-detail-info-item:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .employee-audit-detail-topbar {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .employee-audit-detail-info-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .employee-audit-detail-info-item,
+  .employee-audit-detail-info-item:nth-child(2n),
+  .employee-audit-detail-info-item:nth-child(3n) {
+    border-right: 0;
+    border-bottom: 1px solid #eef2f7;
+  }
+
+  .employee-audit-detail-info-item:last-child {
+    border-bottom: 0;
+  }
+
+  .employee-audit-detail-card-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

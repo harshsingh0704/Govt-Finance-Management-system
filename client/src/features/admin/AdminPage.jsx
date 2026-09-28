@@ -1036,6 +1036,7 @@ export default function AdminPage() {
 
                 <button
                   type="button"
+                  onClick={() => navigate("/admin/services/medical/advance")}
                   className="ad-nav-item"
                   style={{ paddingLeft: "42px" }}
                 >
@@ -1670,5 +1671,6 @@ export default function AdminPage() {
     </div>
   );
 }
+
 
 

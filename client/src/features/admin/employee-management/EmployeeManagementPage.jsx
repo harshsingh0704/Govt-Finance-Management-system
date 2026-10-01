@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+﻿import { useMemo, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -26,6 +26,10 @@ const INITIAL_EMPLOYEES = [
     functionalRole: "Controlling Officer / HoD",
     systemAccessRole: "Employee",
     status: "Active",
+
+    state: "Karnataka",
+    city: "Bengaluru",
+    office: "Institute of Wood Science & Technology",
 
     dateOfBirth: "1990-04-12",
     gender: "Male",
@@ -67,6 +71,10 @@ const INITIAL_EMPLOYEES = [
     systemAccessRole: "Employee",
     status: "Active",
 
+    state: "Karnataka",
+    city: "Bengaluru",
+    office: "Institute of Wood Science & Technology",
+
     dateOfBirth: "1992-09-24",
     gender: "Female",
     nationality: "Indian",
@@ -106,6 +114,10 @@ const INITIAL_EMPLOYEES = [
     functionalRole: "Medical Officer",
     systemAccessRole: "Employee",
     status: "Active",
+
+    state: "Karnataka",
+    city: "Bengaluru",
+    office: "IWST Gottipura Field Research Station",
 
     dateOfBirth: "1991-11-08",
     gender: "Male",
@@ -148,6 +160,10 @@ const EMPTY_EMPLOYEE = {
   functionalRole: "",
   systemAccessRole: "Employee",
   status: "Active",
+
+  state: "",
+  city: "",
+  office: "",
 
   dateOfBirth: "",
   gender: "",
@@ -208,6 +224,16 @@ const SUPERVISOR_TYPES = [
   "IWST Gottipura Field Research Station Incharge 0",
 ];
 
+const OFFICE_LOCATIONS = {
+  Karnataka: {
+    Bengaluru: [
+      "Institute of Wood Science & Technology",
+      "IWST Gottipura Field Research Station",
+    ],
+  },
+};
+
+const OFFICE_STATES = Object.keys(OFFICE_LOCATIONS);
 const QUARTERS_TYPES = [
   "Type I",
   "Type II",
@@ -323,6 +349,25 @@ function EmployeeManagementPage() {
     [employees, selectedEmployeeId],
   );
 
+  const availableCities = useMemo(() => {
+    if (!selectedEmployee?.state) return [];
+
+    return Object.keys(
+      OFFICE_LOCATIONS[selectedEmployee.state] ?? {},
+    );
+  }, [selectedEmployee?.state]);
+
+  const availableOffices = useMemo(() => {
+    if (!selectedEmployee?.state || !selectedEmployee?.city) {
+      return [];
+    }
+
+    return (
+      OFFICE_LOCATIONS[selectedEmployee.state]?.[
+        selectedEmployee.city
+      ] ?? []
+    );
+  }, [selectedEmployee?.state, selectedEmployee?.city]);
   const filteredEmployees = useMemo(() => {
     const query = searchValue.trim().toLowerCase();
 
@@ -357,6 +402,42 @@ function EmployeeManagementPage() {
     setSavedMessage("");
   };
 
+  const handleStateChange = (value) => {
+    setEmployees((currentEmployees) =>
+      currentEmployees.map((employee) =>
+        employee.employeeId === selectedEmployeeId
+          ? {
+              ...employee,
+              state: value,
+              city: "",
+              office: "",
+            }
+          : employee,
+      ),
+    );
+
+    setSavedMessage("");
+  };
+
+  const handleCityChange = (value) => {
+    setEmployees((currentEmployees) =>
+      currentEmployees.map((employee) =>
+        employee.employeeId === selectedEmployeeId
+          ? {
+              ...employee,
+              city: value,
+              office: "",
+            }
+          : employee,
+      ),
+    );
+
+    setSavedMessage("");
+  };
+
+  const handleOfficeChange = (value) => {
+    updateEmployee("office", value);
+  };
   const updateAccommodation = (field, value) => {
     setEmployees((currentEmployees) =>
       currentEmployees.map((employee) =>
@@ -502,7 +583,7 @@ function EmployeeManagementPage() {
                       <small>{employee.departmentName}</small>
                     </div>
 
-                    <span className="employee-list-arrow">›</span>
+                    <span className="employee-list-arrow">â€º</span>
                   </button>
                 );
               })
@@ -771,6 +852,42 @@ function EmployeeManagementPage() {
                 />
 
                 <div className="employee-form-grid">
+
+                  <SelectField
+                    label="State"
+                    value={selectedEmployee.state}
+                    options={OFFICE_STATES}
+                    placeholder="Select State"
+                    disabled={!isEditing}
+                    onChange={handleStateChange}
+                  />
+
+                  <SelectField
+                    label="City"
+                    value={selectedEmployee.city}
+                    options={availableCities}
+                    placeholder={
+                      selectedEmployee.state
+                        ? "Select City"
+                        : "Select State First"
+                    }
+                    disabled={!isEditing || !selectedEmployee.state}
+                    onChange={handleCityChange}
+                  />
+
+                  <SelectField
+                    label="Office"
+                    value={selectedEmployee.office}
+                    options={availableOffices}
+                    placeholder={
+                      selectedEmployee.city
+                        ? "Select Office"
+                        : "Select City First"
+                    }
+                    disabled={!isEditing || !selectedEmployee.city}
+                    onChange={handleOfficeChange}
+                  />
+
                   <Field
                     label="Department Name"
                     value={selectedEmployee.departmentName}
@@ -945,3 +1062,4 @@ function EmployeeManagementPage() {
 }
 
 export default EmployeeManagementPage;
+

@@ -1691,9 +1691,5 @@ export default function AdminPage() {
     </div>
   );
 }
-<<<<<<< Updated upstream
 
 
-
-=======
->>>>>>> Stashed changes

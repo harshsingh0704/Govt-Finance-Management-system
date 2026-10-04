@@ -1,4 +1,4 @@
-﻿const User = require('../models/User');
+const User = require('../models/User');
 
 exports.register = async (req, res) => {
   try {
@@ -7,7 +7,6 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: "Name, email, and password are required." });
     }
 
-    // Role Normalization for Enum validation
     if (role) {
       const lower = role.toLowerCase().trim();
       if (lower === 'super admin' || lower === 'superadmin') role = 'Super Admin';
@@ -23,7 +22,19 @@ exports.register = async (req, res) => {
     }
 
     const user = await User.create({ name, email, password, role });
-    res.status(201).json({ success: true, message: "User registered successfully", user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.status(201).json({
+      success: true,
+      message: "User registered successfully",
+      token: "mock-jwt-token-" + user._id,
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role.toLowerCase(), // frontend match: 'admin' / 'employee' / 'super admin'
+        roleName: user.role
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -36,7 +47,18 @@ exports.login = async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: "Invalid email or password" });
     }
-    res.json({ success: true, user: { id: user._id, name: user.name, email: user.email, role: user.role } });
+    res.json({
+      success: true,
+      token: "mock-jwt-token-" + user._id,
+      user: {
+        id: user._id,
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role.toLowerCase(),
+        roleName: user.role
+      }
+    });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

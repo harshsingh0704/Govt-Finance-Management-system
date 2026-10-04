@@ -759,6 +759,26 @@ export default function AdminPage() {
   const [selectedClaimType, setSelectedClaimType] = useState(null);
   const [showCreateEmployee, setShowCreateEmployee] = useState(false);
   const [showGeneratePayslip, setShowGeneratePayslip] = useState(false);
+  const [dashboardData, setDashboardData] = useState({ counts: {}, recentClaims: [] });
+  const [loadingClaims, setLoadingClaims] = useState(true);
+
+  const fetchDashboardData = async () => {
+    try {
+      const res = await fetch('/api/claims/dashboard-summary');
+      const data = await res.json();
+      if (data.success) {
+        setDashboardData(data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch dashboard data:", err);
+    } finally {
+      setLoadingClaims(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [claimModalType, setClaimModalType] = useState("LTC");
   const [payslips, setPayslips] = useState([]);

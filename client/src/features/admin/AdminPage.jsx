@@ -1345,42 +1345,25 @@ export default function AdminPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {payslips.map((slip) => (
-                        <tr key={slip._id} style={{ borderBottom: "1px solid #f8fafc" }}>
-                          <td style={{ padding: "12px 14px", fontFamily: "monospace", color: "#475569" }}>
-                            {slip.employeeId?.userId?.name || slip.employee?.name || slip.employee?.slice?.(0, 8) || "Employee"}
-                          </td>
-                          <td style={{ padding: "12px 14px", fontWeight: "600", color: "#0f172a" }}>
-                            Month {slip.month} / {slip.year}
-                          </td>
-                          <td style={{ padding: "12px 14px", color: "#334155" }}>₹{slip.basicPay}</td>
-                          <td style={{ padding: "12px 14px", color: "#16a34a" }}>+₹{slip.allowances}</td>
-                          <td style={{ padding: "12px 14px", color: "#dc2626" }}>-₹{slip.deductions}</td>
-                          <td style={{ padding: "12px 14px", fontWeight: "700", color: "#0f172a" }}>₹{slip.netPay}</td>
-                          <td style={{ padding: "12px 14px", textAlign: "right" }}>
-                            <button
-                              type="button"
-                              onClick={() => handleDownloadPdf(slip._id, slip.month, slip.year)}
-                              style={{
-                                display: "inline-flex",
-                                alignItems: "center",
-                                gap: "6px",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                border: "1px solid #0284c7",
-                                color: "#0284c7",
-                                background: "#f0f9ff",
-                                fontWeight: "600",
-                                fontSize: "0.8rem",
-                                cursor: "pointer",
-                              }}
-                            >
-                              <Download size={14} /> Download PDF
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
+  {loadingClaims ? (
+    <tr><td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>Loading real-time claims...</td></tr>
+  ) : dashboardData.recentClaims?.length === 0 ? (
+    <tr><td colSpan="6" style={{ textAlign: "center", padding: "20px" }}>No claims found.</td></tr>
+  ) : (
+    dashboardData.recentClaims?.map((claim) => (
+      <tr key={claim._id}>
+        <td><strong>{claim.employeeId?.name || "N/A"}</strong><br/><small>{claim.employeeId?.employeeCode}</small></td>
+        <td><span className="ad-badge">{claim.claimType}</span></td>
+        <td>₹{claim.claimAmount || claim.totalClaimAmount || 0}</td>
+        <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
+        <td><span className={`ad-status-${claim.status?.toLowerCase()}`}>{claim.status}</span></td>
+        <td>
+          <button type="button" className="ad-action-btn" onClick={() => alert(`Reviewing claim ${claim._id}`)}>Review</button>
+        </td>
+      </tr>
+    ))
+  )}
+</tbody>
                   </table>
                 </div>
               )}

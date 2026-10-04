@@ -1,4 +1,4 @@
-const LTCClaim = require('../models/LTCClaim');
+﻿const LTCClaim = require('../models/LTCClaim');
 const { calculateLTCClaim } = require('../services/ltcCalculationService');
 
 exports.createClaim = async (req, res) => {
@@ -28,4 +28,14 @@ exports.updateClaimStatus = async (req, res) => {
   const claim = await LTCClaim.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
   if (!claim) return res.status(404).json({ error: 'Not found' });
   res.json(claim);
+};
+exports.getAllClaims = async (req, res) => {
+  try {
+    const claims = await LTCClaim.find()
+      .populate("employeeId", "name employeeCode designation cadre department")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, count: claims.length, claims });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 };

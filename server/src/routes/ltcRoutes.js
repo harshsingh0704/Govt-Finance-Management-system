@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const ltcController = require('../controllers/ltcController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -11,6 +11,7 @@ router.post('/claim', authMiddleware, validateClaimInput, ltcController.createCl
 router.get('/claim/:id', authMiddleware, ltcController.getClaimById);
 
 // GET /api/ltc/claims/:employeeId - Fetch LTC claims history for an employee
+router.get('/all', authMiddleware, ltcController.getAllClaims);
 router.get('/claims/:employeeId', authMiddleware, ltcController.getClaimsByEmployee);
 
 // PATCH /api/ltc/claim/:id/status - Approve / Reject LTC claim

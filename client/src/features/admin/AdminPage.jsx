@@ -5,11 +5,17 @@ function getStoredAuthToken() {
     if (raw) {
       const parsed = JSON.parse(raw);
       if (parsed.token) return parsed.token;
+      if (typeof parsed === "string") return parsed;
     }
-  } catch (e) {}
-  return localStorage.getItem("token") || "";
+    const directToken = localStorage.getItem("token");
+    if (directToken) return directToken;
+  } catch (e) {
+    console.error("Token extraction error:", e);
+  }
+  return "";
 }
 
+import CreateClaimModal from '../dashboard/CreateClaimModal';
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -350,6 +356,7 @@ function PaymentPanel() {
 /* -------------------------------------------------------------------------- */
 
 function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
+  const reduxToken = useSelector((state) => state.auth?.token);
   const [employees, setEmployees] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(false);
   const [employeeId, setEmployeeId] = useState("");
@@ -366,7 +373,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
     const fetchEmployees = async () => {
       try {
         setLoadingEmployees(true);
-        const token = getStoredAuthToken();
+        const token = reduxToken || getStoredAuthToken();
         const res = await axios.get("http://localhost:5000/api/employees", {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -400,7 +407,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
 
     try {
       setSubmitting(true);
-      const token = getStoredAuthToken();
+      const token = reduxToken || getStoredAuthToken();
 
       await axios.post(
         "http://localhost:5000/api/payslips/generate",
@@ -752,6 +759,8 @@ export default function AdminPage() {
   const [selectedClaimType, setSelectedClaimType] = useState(null);
   const [showCreateEmployee, setShowCreateEmployee] = useState(false);
   const [showGeneratePayslip, setShowGeneratePayslip] = useState(false);
+  const [showClaimModal, setShowClaimModal] = useState(false);
+  const [claimModalType, setClaimModalType] = useState("LTC");
   const [payslips, setPayslips] = useState([]);
   const [loadingPayslips, setLoadingPayslips] = useState(false);
   const [expandedService, setExpandedService] = useState(null);
@@ -760,7 +769,7 @@ export default function AdminPage() {
   const fetchPayslips = async () => {
     try {
       setLoadingPayslips(true);
-      const token = getStoredAuthToken();
+      const token = reduxToken || getStoredAuthToken();
       const res = await axios.get("http://localhost:5000/api/payslips", {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -778,7 +787,7 @@ export default function AdminPage() {
 
   const handleDownloadPdf = async (payslipId, month, year) => {
     try {
-      const token = getStoredAuthToken();
+      const token = reduxToken || getStoredAuthToken();
       const res = await axios.get(`http://localhost:5000/api/payslips/download/${payslipId}`, {
         headers: { Authorization: `Bearer ${token}` },
         responseType: "blob",
@@ -1663,6 +1672,14 @@ export default function AdminPage() {
         onClose={() => setShowCreateEmployee(false)}
       />
 
+            <CreateClaimModal initialType={claimModalType}
+        isOpen={showClaimModal}
+        onClose={() => setShowClaimModal(false)}
+        onSuccess={() => {
+          setShowClaimModal(false);
+          alert("Claim submitted successfully under 7th CPC guidelines!");
+        }}
+      />
       <GeneratePayslipModal
         isOpen={showGeneratePayslip}
         onClose={() => setShowGeneratePayslip(false)}
@@ -1671,6 +1688,9 @@ export default function AdminPage() {
     </div>
   );
 }
+<<<<<<< Updated upstream
 
 
 
+=======
+>>>>>>> Stashed changes

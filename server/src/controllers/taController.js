@@ -87,3 +87,14 @@ exports.updateClaimStatus = async (req, res) => {
   if (!claim) return res.status(404).json({ error: "Not found" });
   res.json(claim);
 };
+
+exports.getAllClaims = async (req, res) => {
+  try {
+    const claims = await TAClaim.find()
+      .populate("employeeId", "name employeeCode designation cadre department")
+      .sort({ createdAt: -1 });
+    res.json({ success: true, count: claims.length, claims });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};

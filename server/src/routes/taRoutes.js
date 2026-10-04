@@ -1,4 +1,4 @@
-const express = require('express');
+﻿const express = require('express');
 const router = express.Router();
 const taController = require('../controllers/taController');
 const authMiddleware = require('../middleware/authMiddleware');
@@ -14,6 +14,7 @@ router.post('/claim', authMiddleware, validateClaimInput, taController.createCla
 router.get('/claim/:id', authMiddleware, taController.getClaimById);
 
 // GET /api/ta/claims/:employeeId - Fetch claims history for an employee
+router.get('/all', authMiddleware, taController.getAllClaims);
 router.get('/claims/:employeeId', authMiddleware, taController.getClaimsByEmployee);
 
 // PATCH /api/ta/claim/:id/status - Approve / Reject claim

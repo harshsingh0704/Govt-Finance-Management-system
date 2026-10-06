@@ -1,35 +1,35 @@
 ﻿import { useMemo, useState } from "react";
 import {
-  Check,
   CheckCircle2,
   ChevronDown,
-  ClipboardCheck,
   FileCheck2,
+  FileText,
+  HeartPulse,
+  Plane,
   RotateCcw,
   Save,
   Search,
   ShieldCheck,
   UserRound,
   WalletCards,
-  X,
 } from "lucide-react";
 
 import "./MapEmployeePage.css";
 
 /* ============================================================
    DEMO EMPLOYEE DATA
-   Backend integration will replace this later.
+   Replace with backend data later.
    ============================================================ */
 
 const EMPLOYEES = [
-  {
-    employeeId: "EMP-001",
-    name: "Employee 001",
-    department: "Finance",
-    designation: "Accounts Officer",
-    systemAccessRole: "Admin",
-    status: "Active",
-  },
+ {
+  employeeId: "EMP-001",
+  name: "Employee 001",
+  department: "Administration",
+  designation: "Director",
+  systemAccessRole: "Admin",
+  status: "Active",
+},
   {
     employeeId: "EMP-002",
     name: "Employee 002",
@@ -57,127 +57,76 @@ const EMPLOYEES = [
 ];
 
 /* ============================================================
-   FINANCIAL WORK RESPONSIBILITY CATALOGUE
+   FORM ACCESS CATALOGUE
+   Each form has one ENABLE / DISABLE permission.
    ============================================================ */
 
-const WORK_AREAS = [
+const FORMS = [
   {
-    id: "budget-management",
-    title: "Budget Management",
+    id: "ta-claim",
+    title: "TA Claim",
     description:
-      "Planning, allocation, monitoring and control of departmental budgets.",
+      "Submit and manage Travel Allowance claims for official travel.",
+    category: "Travel",
+    icon: Plane,
+  },
+  {
+    id: "ta-advance",
+    title: "TA Advance",
+    description:
+      "Request an advance for approved official travel.",
+    category: "Travel",
     icon: WalletCards,
-    responsibilities: [
-      "Budget preparation",
-      "Budget allocation",
-      "Budget monitoring",
-      "Fund availability review",
-    ],
   },
   {
-    id: "expense-management",
-    title: "Expense Management",
+    id: "ltc-claim",
+    title: "LTC Claim",
     description:
-      "Processing and monitoring organizational expenditure and financial claims.",
-    icon: ClipboardCheck,
-    responsibilities: [
-      "Expense processing",
-      "Bill verification",
-      "Claim processing",
-      "Expenditure review",
-    ],
-  },
-  {
-    id: "procurement-payments",
-    title: "Procurement & Payments",
-    description:
-      "Financial processing related to procurement, invoices and vendor payments.",
+      "Submit and manage Leave Travel Concession claims.",
+    category: "LTC",
     icon: FileCheck2,
-    responsibilities: [
-      "Purchase processing",
-      "Invoice verification",
-      "Payment processing",
-      "Vendor payment review",
-    ],
   },
   {
-    id: "payroll-employee-finance",
-    title: "Payroll & Employee Finance",
+    id: "ltc-advance",
+    title: "LTC Advance",
     description:
-      "Financial operations associated with employee salary and related payments.",
-    icon: UserRound,
-    responsibilities: [
-      "Payroll processing",
-      "Salary verification",
-      "Employee claims",
-      "Employee financial adjustments",
-    ],
-  },
-  {
-    id: "revenue-receipts",
-    title: "Revenue & Receipts",
-    description:
-      "Management and monitoring of organizational receipts and revenue.",
+      "Request an advance under the Leave Travel Concession scheme.",
+    category: "LTC",
     icon: WalletCards,
-    responsibilities: [
-      "Receipt processing",
-      "Revenue recording",
-      "Collection monitoring",
-      "Receipt reconciliation",
-    ],
   },
   {
-    id: "financial-reporting",
-    title: "Financial Reporting",
+    id: "medical-claim",
+    title: "Medical Claim",
     description:
-      "Preparation, verification and review of financial statements and reports.",
-    icon: FileCheck2,
-    responsibilities: [
-      "Financial statement preparation",
-      "Financial report generation",
-      "Data verification",
-      "Report review",
-    ],
+      "Submit and manage eligible medical reimbursement claims.",
+    category: "Medical",
+    icon: HeartPulse,
   },
   {
-    id: "assets-financial-inventory",
-    title: "Assets & Financial Inventory",
+    id: "medical-advance",
+    title: "Medical Advance",
     description:
-      "Financial tracking and control of organizational assets and inventory.",
-    icon: ClipboardCheck,
-    responsibilities: [
-      "Asset recording",
-      "Asset verification",
-      "Inventory valuation",
-      "Asset reconciliation",
-    ],
+      "Request an advance for eligible medical expenses.",
+    category: "Medical",
+    icon: WalletCards,
   },
   {
-    id: "audit-compliance",
-    title: "Audit & Compliance",
+    id: "accommodation",
+    title: "Accommodation",
     description:
-      "Financial audit support, compliance verification and corrective actions.",
-    icon: ShieldCheck,
-    responsibilities: [
-      "Audit preparation",
-      "Compliance verification",
-      "Observation handling",
-      "Corrective action tracking",
-    ],
+      "Submit and manage official accommodation requests.",
+    category: "Accommodation",
+    icon: FileText,
   },
 ];
 
 /* ============================================================
-   INITIAL RESPONSIBILITY STATE
+   INITIAL FORM MAPPING
    ============================================================ */
 
 const createInitialMapping = () =>
-  WORK_AREAS.reduce((result, workArea) => {
-    result[workArea.id] = {
-      responsible: false,
-      authorized: false,
-    };
-
+  FORMS.reduce((result, form) => {
+    result[form.id] = false;
     return result;
   }, {});
 
@@ -216,106 +165,76 @@ function EmployeeSelect({ value, employees, onChange }) {
 }
 
 /* ============================================================
-   WORK RESPONSIBILITY CARD
+   FORM ACCESS CARD
    ============================================================ */
 
-function WorkResponsibilityCard({
-  workArea,
-  mapping,
-  onChange,
-}) {
-  const Icon = workArea.icon;
-
-  const responsible = mapping.responsible;
-  const authorized = mapping.authorized;
+function FormAccessCard({ form, enabled, onChange }) {
+  const Icon = form.icon;
 
   return (
     <article
-      className={`map-work-card ${
-        responsible || authorized
-          ? "map-work-card-active"
-          : ""
+      className={`map-form-card ${
+        enabled ? "map-form-card-enabled" : ""
       }`}
     >
-      <div className="map-work-card-header">
-        <div className="map-work-card-icon">
-          <Icon size={20} />
+      <div className="map-form-card-top">
+        <div className="map-form-card-icon">
+          <Icon size={21} />
         </div>
 
-        <div className="map-work-card-title">
-          <h3>{workArea.title}</h3>
-          <p>{workArea.description}</p>
+        <div className="map-form-card-content">
+          <div className="map-form-card-title-row">
+            <div>
+              <h3>{form.title}</h3>
+
+              <span className="map-form-category">
+                {form.category}
+              </span>
+            </div>
+
+            <span
+              className={`map-form-status ${
+                enabled
+                  ? "map-form-status-enabled"
+                  : "map-form-status-disabled"
+              }`}
+            >
+              {enabled ? "Enabled" : "Disabled"}
+            </span>
+          </div>
+
+          <p>{form.description}</p>
         </div>
       </div>
 
-      <div className="map-work-card-responsibilities">
-        <span>Work covered</span>
+      <div className="map-form-card-divider" />
 
-        <ul>
-          {workArea.responsibilities.map((item) => (
-            <li key={item}>{item}</li>
-          ))}
-        </ul>
-      </div>
+      <div className="map-form-card-footer">
+        <div>
+          <strong>Form Access</strong>
 
-      <div className="map-work-card-divider" />
+          <small>
+            {enabled
+              ? "Employee is authorized to access this form."
+              : "Employee cannot access this form."}
+          </small>
+        </div>
 
-      <div className="map-work-card-controls">
-        <label
-          className={`map-responsibility-option ${
-            responsible ? "map-responsibility-option-active" : ""
-          }`}
-        >
+        <label className="map-form-toggle">
           <input
             type="checkbox"
-            checked={responsible}
+            checked={enabled}
             onChange={(event) =>
-              onChange(
-                workArea.id,
-                "responsible",
-                event.target.checked
-              )
+              onChange(form.id, event.target.checked)
             }
           />
 
-          <span className="map-responsibility-check">
-            {responsible && <Check size={14} />}
+          <span className="map-form-toggle-track">
+            <span className="map-form-toggle-thumb" />
           </span>
 
-          <span>
-            <strong>Assigned Responsibility</strong>
-            <small>
-              Employee handles and processes the assigned financial work.
-            </small>
-          </span>
-        </label>
-
-        <label
-          className={`map-responsibility-option ${
-            authorized ? "map-responsibility-option-active" : ""
-          }`}
-        >
-          <input
-            type="checkbox"
-            checked={authorized}
-            onChange={(event) =>
-              onChange(
-                workArea.id,
-                "authorized",
-                event.target.checked
-              )
-            }
-          />
-
-          <span className="map-responsibility-check">
-            {authorized && <Check size={14} />}
-          </span>
-
-          <span>
-            <strong>Authorization</strong>
-            <small>
-              Employee can authorize or approve actions within this financial work area.
-            </small>
+          <span className="map-form-toggle-label">
+            {enabled ? "Enabled" : "Disabled"}
           </span>
         </label>
       </div>
@@ -386,20 +305,13 @@ function MapEmployeePage() {
   };
 
   /* ----------------------------------------------------------
-     Responsibility change
+     Form access change
      ---------------------------------------------------------- */
 
-  const handleResponsibilityChange = (
-    workAreaId,
-    responsibility,
-    value
-  ) => {
+  const handleFormAccessChange = (formId, enabled) => {
     setMapping((current) => ({
       ...current,
-      [workAreaId]: {
-        ...current[workAreaId],
-        [responsibility]: value,
-      },
+      [formId]: enabled,
     }));
 
     setSaved(false);
@@ -425,45 +337,51 @@ function MapEmployeePage() {
       return;
     }
 
-    /*
-      Frontend-only phase.
+    const payload = {
+      employeeId: selectedEmployee.employeeId,
+      employeeName: selectedEmployee.name,
+      formAccess: mapping,
+    };
 
-      Later this object will be sent to the backend:
+    /*
+      Backend integration will use this payload later.
+
+      Example:
 
       {
-        employeeId,
-        workResponsibilities: mapping
+        employeeId: "EMP-001",
+        formAccess: {
+          "ta-claim": true,
+          "ta-advance": false,
+          "ltc-claim": true,
+          "ltc-advance": false,
+          "medical-claim": true,
+          "medical-advance": false,
+          "accommodation": false
+        }
       }
     */
 
-    console.log("Employee responsibility mapping:", {
-      employeeId: selectedEmployee.employeeId,
-      employeeName: selectedEmployee.name,
-      workResponsibilities: mapping,
-    });
+    console.log("Employee form access mapping:", payload);
 
     setSaved(true);
   };
 
   /* ----------------------------------------------------------
-     Mapping summary
+     Summary
      ---------------------------------------------------------- */
 
   const summary = useMemo(() => {
-    const entries = Object.values(mapping);
+    const enabled = Object.values(mapping).filter(
+      Boolean
+    ).length;
+
+    const total = FORMS.length;
 
     return {
-      responsible: entries.filter(
-        (item) => item.responsible
-      ).length,
-
-      authorized: entries.filter(
-        (item) => item.authorized
-      ).length,
-
-      mapped: entries.filter(
-        (item) => item.responsible || item.authorized
-      ).length,
+      enabled,
+      disabled: total - enabled,
+      total,
     };
   }, [mapping]);
 
@@ -475,7 +393,6 @@ function MapEmployeePage() {
           ====================================================== */}
 
       <header className="map-employee-page-header">
-
         <div className="map-employee-page-header-content">
 
           <div className="map-employee-page-header-icon">
@@ -483,16 +400,15 @@ function MapEmployeePage() {
           </div>
 
           <div>
-            <h1>Employee Work Assignment</h1>
+            <h1>Employee Form Access</h1>
 
             <p>
-              Define the financial work responsibilities and
-              authorization authority assigned to an employee.
+              Configure which financial forms an employee
+              is authorized to access.
             </p>
           </div>
 
         </div>
-
       </header>
 
       <form onSubmit={handleSubmit}>
@@ -513,8 +429,8 @@ function MapEmployeePage() {
               <h2>Select Employee</h2>
 
               <p>
-                Choose the employee whose financial
-                responsibilities you want to configure.
+                Choose the employee whose form access
+                permissions you want to configure.
               </p>
             </div>
 
@@ -536,7 +452,6 @@ function MapEmployeePage() {
                 </span>
 
                 <div className="map-employee-search-wrap">
-
                   <Search size={17} />
 
                   <input
@@ -547,33 +462,21 @@ function MapEmployeePage() {
                     }
                     placeholder="Search by ID, name, department..."
                   />
-
-                  {search && (
-                    <button
-                      type="button"
-                      className="map-employee-search-clear"
-                      onClick={() => setSearch("")}
-                      aria-label="Clear employee search"
-                    >
-                      <X size={15} />
-                    </button>
-                  )}
-
                 </div>
               </label>
 
             </div>
 
-            {selectedEmployee && (
+            {selectedEmployee ? (
               <div className="map-selected-employee">
 
                 <div className="map-selected-employee-icon">
-                  <UserRound size={20} />
+                  <UserRound size={21} />
                 </div>
 
                 <div className="map-selected-employee-info">
 
-                  <span>Selected Employee</span>
+                  <span>SELECTED EMPLOYEE</span>
 
                   <strong>
                     {selectedEmployee.name}
@@ -586,12 +489,22 @@ function MapEmployeePage() {
 
                 </div>
 
-                <div className="map-selected-employee-status">
-                  <span>
-                    {selectedEmployee.status}
-                  </span>
-                </div>
+                <span className="map-selected-employee-status">
+                  {selectedEmployee.status}
+                </span>
 
+              </div>
+            ) : (
+              <div className="map-employee-empty-selection">
+                <UserRound size={21} />
+
+                <strong>
+                  Select an employee
+                </strong>
+
+                <span>
+                  Employee details will appear here.
+                </span>
               </div>
             )}
 
@@ -616,8 +529,8 @@ function MapEmployeePage() {
                 <h2>Employee Profile</h2>
 
                 <p>
-                  Review the employee context before assigning
-                  financial responsibilities.
+                  Review the employee context before
+                  assigning form access.
                 </p>
               </div>
 
@@ -626,28 +539,28 @@ function MapEmployeePage() {
             <div className="map-employee-profile-grid">
 
               <div>
-                <span>Employee ID</span>
+                <span>EMPLOYEE ID</span>
                 <strong>
                   {selectedEmployee.employeeId}
                 </strong>
               </div>
 
               <div>
-                <span>Department</span>
+                <span>DEPARTMENT</span>
                 <strong>
                   {selectedEmployee.department}
                 </strong>
               </div>
 
               <div>
-                <span>Designation</span>
+                <span>DESIGNATION</span>
                 <strong>
                   {selectedEmployee.designation}
                 </strong>
               </div>
 
               <div>
-                <span>System Access</span>
+                <span>SYSTEM ACCESS</span>
                 <strong>
                   {selectedEmployee.systemAccessRole}
                 </strong>
@@ -659,7 +572,7 @@ function MapEmployeePage() {
         )}
 
         {/* ====================================================
-            WORK RESPONSIBILITIES
+            FORM ACCESS
             ==================================================== */}
 
         <section className="map-employee-section">
@@ -671,12 +584,11 @@ function MapEmployeePage() {
             </div>
 
             <div>
-              <h2>Financial Work Responsibilities</h2>
+              <h2>Form Access & Permissions</h2>
 
               <p>
-                Define which financial work the employee can
-                handle and which work they are authorized to
-                approve or authorize.
+                Enable or disable individual financial
+                forms for this employee.
               </p>
             </div>
 
@@ -689,44 +601,40 @@ function MapEmployeePage() {
                 <UserRound size={22} />
               </div>
 
-              <h3>Select an employee first</h3>
+              <h3>
+                Select an employee first
+              </h3>
 
               <p>
-                Choose an employee above to configure their
-                financial work responsibilities.
+                Choose an employee above to configure
+                their form access permissions.
               </p>
 
             </div>
           ) : (
             <>
-              <div className="map-work-legend">
+              <div className="map-form-access-info">
 
                 <div>
-                  <span className="map-legend-dot map-legend-responsible" />
-                  <span>
-                    <strong>Assigned Responsibility</strong>
-                    — handles and processes the assigned financial work
-                  </span>
-                </div>
+                  <ShieldCheck size={18} />
 
-                <div>
-                  <span className="map-legend-dot map-legend-authorized" />
                   <span>
-                    <strong>Authorization</strong>
-                    — can authorize or approve actions within the work area
+                    <strong>Manual Form Access</strong>
+                    {" "}— Admin can individually enable or
+                    disable each form for this employee.
                   </span>
                 </div>
 
               </div>
 
-              <div className="map-work-grid">
+              <div className="map-form-grid">
 
-                {WORK_AREAS.map((workArea) => (
-                  <WorkResponsibilityCard
-                    key={workArea.id}
-                    workArea={workArea}
-                    mapping={mapping[workArea.id]}
-                    onChange={handleResponsibilityChange}
+                {FORMS.map((form) => (
+                  <FormAccessCard
+                    key={form.id}
+                    form={form}
+                    enabled={mapping[form.id]}
+                    onChange={handleFormAccessChange}
                   />
                 ))}
 
@@ -746,7 +654,7 @@ function MapEmployeePage() {
             <div className="map-employee-summary-header">
 
               <div>
-                <span>Mapping Summary</span>
+                <span>ACCESS SUMMARY</span>
 
                 <strong>
                   {selectedEmployee.name}
@@ -760,18 +668,18 @@ function MapEmployeePage() {
             <div className="map-employee-summary-stats">
 
               <div>
-                <strong>{summary.mapped}</strong>
-                <span>Financial Work Areas Mapped</span>
+                <strong>{summary.enabled}</strong>
+                <span>Forms Enabled</span>
               </div>
 
               <div>
-                <strong>{summary.responsible}</strong>
-                <span>Assigned Responsibility</span>
+                <strong>{summary.total}</strong>
+                <span>Total Forms</span>
               </div>
 
               <div>
-                <strong>{summary.authorized}</strong>
-                <span>Authorization</span>
+                <strong>{summary.disabled}</strong>
+                <span>Forms Disabled</span>
               </div>
 
             </div>
@@ -791,7 +699,7 @@ function MapEmployeePage() {
             onClick={handleReset}
           >
             <RotateCcw size={17} />
-            Reset Mapping
+            Reset Access
           </button>
 
           <button
@@ -800,7 +708,7 @@ function MapEmployeePage() {
             disabled={!selectedEmployee}
           >
             <Save size={17} />
-            Save Responsibility Mapping
+            Save Form Access
           </button>
 
         </div>
@@ -816,13 +724,12 @@ function MapEmployeePage() {
 
             <div>
               <strong>
-                Responsibility mapping saved
+                Form access mapping saved
               </strong>
 
               <p>
-                The frontend mapping has been prepared
-                successfully. Backend persistence will be
-                connected in the next implementation phase.
+                The selected form permissions have been
+                prepared successfully.
               </p>
             </div>
 
@@ -830,11 +737,8 @@ function MapEmployeePage() {
         )}
 
       </form>
-
     </div>
   );
 }
 
 export default MapEmployeePage;
-
-

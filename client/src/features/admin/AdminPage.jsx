@@ -1020,6 +1020,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   className="ad-nav-item"
+                  onClick={() => navigate("/admin/services/ltc/advance")}
                   style={{ paddingLeft: "42px" }}
                 >
                   <FileCheck2 size={17} />
@@ -1109,13 +1110,14 @@ export default function AdminPage() {
                 </button>
 
                 <button
-                  type="button"
-                  className="ad-nav-item"
-                  style={{ paddingLeft: "42px" }}
-                >
-                  <FileCheck2 size={17} />
-                  <span>TA Advance</span>
-                </button>
+  type="button"
+  className="ad-nav-item"
+  onClick={() => navigate("/admin/services/ta/advance")}
+  style={{ paddingLeft: "42px" }}
+>
+  <FileCheck2 size={17} />
+  <span>TA Advance</span>
+</button>
               </>
             )}
 
@@ -1691,5 +1693,7 @@ export default function AdminPage() {
     </div>
   );
 }
+
+
 
 

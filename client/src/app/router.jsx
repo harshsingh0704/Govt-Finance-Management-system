@@ -18,7 +18,9 @@ import EmployeeAuditLogDetailPage from "../features/admin/employee-management/Em
 import MapEmployeePage from "../features/admin/employee-management/MapEmployeePage";
 import AccommodationPage from "../features/accommodation/AccommodationPage";
 import TAClaimPage from "../features/ta/TAClaimPage";
+import TAAdvancePage from "../features/ta/TAAdvancePage";
 import LTCClaimPage from "../features/ltc/LTCClaimPage";
+import LTCAdvancePage from "../features/ltc/LTCAdvancePage";
 import MedicalClaimPage from "../features/medical/MedicalClaimPage";
 import MedicalAdvancePage from "../features/medical/MedicalAdvancePage";
 
@@ -82,9 +84,16 @@ export const router = createBrowserRouter([
             element: <LTCClaimPage />,
           },
           {
+            path: "/admin/services/ltc/advance",
+            element: <LTCAdvancePage />,
+          },
+          {
   path: "/admin/services/ta/claim",
   element: <TAClaimPage />,
-},
+},          {
+            path: "/admin/services/ta/advance",
+            element: <TAAdvancePage />,
+          },
         ],
       },
       {
@@ -107,6 +116,8 @@ export const router = createBrowserRouter([
     element: <RootRedirect />,
   },
 ]);
+
+
 
 
 

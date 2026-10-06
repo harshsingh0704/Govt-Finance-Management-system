@@ -1,742 +1,1163 @@
-﻿import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState , useRef} from "react";
 import {
-  CheckCircle2,
+  Check,
   ChevronDown,
-  FileCheck2,
-  FileText,
-  HeartPulse,
-  Plane,
-  RotateCcw,
+  Lock,
   Save,
-  Search,
   ShieldCheck,
-  UserRound,
-  WalletCards,
+  SlidersHorizontal,
+  Unlock,
+  Users,
+  X,
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 import "./MapEmployeePage.css";
 
-/* ============================================================
-   DEMO EMPLOYEE DATA
-   Replace with backend data later.
-   ============================================================ */
+/*
+|--------------------------------------------------------------------------
+| Functional Roles
+|--------------------------------------------------------------------------
+| These values come from the existing FMS employee-management flow.
+*/
+const FUNCTIONAL_ROLES = [
+  "Bill Clerk / Accounts Staff",
+  "Controlling Officer / HoD",
+  "Medical Officer",
+  "DDO / Competent Authority",
+];
 
+/*
+|--------------------------------------------------------------------------
+| FMS Form Types
+|--------------------------------------------------------------------------
+| These are the responsibilities that can be mapped to employees.
+*/
+const FORM_TYPES = [
+  {
+    id: "ta-claim",
+    label: "TA Claim",
+    group: "TA",
+  },
+  {
+    id: "ta-advance",
+    label: "TA Advance",
+    group: "TA",
+  },
+  {
+    id: "ltc-claim",
+    label: "LTC Claim",
+    group: "LTC",
+  },
+  {
+    id: "ltc-advance",
+    label: "LTC Advance",
+    group: "LTC",
+  },
+  {
+    id: "medical-claim",
+    label: "Medical Claim",
+    group: "Medical",
+  },
+  {
+    id: "medical-advance",
+    label: "Medical Advance",
+    group: "Medical",
+  },
+  {
+    id: "accommodation",
+    label: "Accommodation",
+    group: "Other",
+  },
+];
+
+/*
+|--------------------------------------------------------------------------
+| Temporary frontend employee data
+|--------------------------------------------------------------------------
+| This is intentionally frontend-only for now.
+| We will connect this to the real employee API later.
+*/
 const EMPLOYEES = [
- {
-  employeeId: "EMP-001",
-  name: "Employee 001",
-  department: "Administration",
-  designation: "Director",
-  systemAccessRole: "Admin",
-  status: "Active",
-},
+  {
+    employeeId: "EMP-001",
+    name: "Employee 001",
+    designation: "Administrative Officer",
+    departmentName: "Administration",
+    functionalRole: "Controlling Officer / HoD",
+  },
   {
     employeeId: "EMP-002",
     name: "Employee 002",
-    department: "Finance",
-    designation: "Accounts Assistant",
-    systemAccessRole: "Employee",
-    status: "Active",
+    designation: "Accounts Officer",
+    departmentName: "Finance & Accounts",
+    functionalRole: "Bill Clerk / Accounts Staff",
   },
   {
     employeeId: "EMP-003",
     name: "Employee 003",
-    department: "Administration",
-    designation: "Administrative Officer",
-    systemAccessRole: "Employee",
-    status: "Active",
-  },
-  {
-    employeeId: "EMP-004",
-    name: "Employee 004",
-    department: "Finance",
-    designation: "Budget Officer",
-    systemAccessRole: "Employee",
-    status: "Active",
+    designation: "Research Officer",
+    departmentName: "Research",
+    functionalRole: "Medical Officer",
   },
 ];
 
-/* ============================================================
-   FORM ACCESS CATALOGUE
-   Each form has one ENABLE / DISABLE permission.
-   ============================================================ */
-
-const FORMS = [
-  {
-    id: "ta-claim",
-    title: "TA Claim",
-    description:
-      "Submit and manage Travel Allowance claims for official travel.",
-    category: "Travel",
-    icon: Plane,
+/*
+|--------------------------------------------------------------------------
+| Initial mapping
+|--------------------------------------------------------------------------
+*/
+const INITIAL_MAPPINGS = {
+  "EMP-001": {
+    "ta-claim": true,
+    "ta-advance": false,
+    "ltc-claim": true,
+    "ltc-advance": false,
+    "medical-claim": false,
+    "medical-advance": false,
+    accommodation: true,
+    locked: false,
   },
-  {
-    id: "ta-advance",
-    title: "TA Advance",
-    description:
-      "Request an advance for approved official travel.",
-    category: "Travel",
-    icon: WalletCards,
+
+  "EMP-002": {
+    "ta-claim": false,
+    "ta-advance": true,
+    "ltc-claim": false,
+    "ltc-advance": true,
+    "medical-claim": false,
+    "medical-advance": false,
+    accommodation: true,
+    locked: false,
   },
-  {
-    id: "ltc-claim",
-    title: "LTC Claim",
-    description:
-      "Submit and manage Leave Travel Concession claims.",
-    category: "LTC",
-    icon: FileCheck2,
+
+  "EMP-003": {
+    "ta-claim": false,
+    "ta-advance": false,
+    "ltc-claim": false,
+    "ltc-advance": false,
+    "medical-claim": true,
+    "medical-advance": true,
+    accommodation: false,
+    locked: false,
   },
-  {
-    id: "ltc-advance",
-    title: "LTC Advance",
-    description:
-      "Request an advance under the Leave Travel Concession scheme.",
-    category: "LTC",
-    icon: WalletCards,
-  },
-  {
-    id: "medical-claim",
-    title: "Medical Claim",
-    description:
-      "Submit and manage eligible medical reimbursement claims.",
-    category: "Medical",
-    icon: HeartPulse,
-  },
-  {
-    id: "medical-advance",
-    title: "Medical Advance",
-    description:
-      "Request an advance for eligible medical expenses.",
-    category: "Medical",
-    icon: WalletCards,
-  },
-  {
-    id: "accommodation",
-    title: "Accommodation",
-    description:
-      "Submit and manage official accommodation requests.",
-    category: "Accommodation",
-    icon: FileText,
-  },
-];
+};
 
-/* ============================================================
-   INITIAL FORM MAPPING
-   ============================================================ */
+const STORAGE_KEY = "fms.employee-form-mappings";
 
-const createInitialMapping = () =>
-  FORMS.reduce((result, form) => {
-    result[form.id] = false;
-    return result;
-  }, {});
+/*
+|--------------------------------------------------------------------------
+| Load frontend mapping state
+|--------------------------------------------------------------------------
+*/
+function loadMappings() {
+  const stored = window.localStorage.getItem(STORAGE_KEY);
 
-/* ============================================================
-   EMPLOYEE SELECT
-   ============================================================ */
+  if (!stored) {
+    return INITIAL_MAPPINGS;
+  }
 
-function EmployeeSelect({ value, employees, onChange }) {
-  return (
-    <label className="map-employee-field">
-      <span className="map-employee-field-label">
-        Select Employee
-      </span>
+  try {
+    const parsed = JSON.parse(stored);
 
-      <div className="map-employee-select-wrap">
-        <select
-          value={value}
-          onChange={(event) => onChange(event.target.value)}
-        >
-          <option value="">Select employee</option>
-
-          {employees.map((employee) => (
-            <option
-              key={employee.employeeId}
-              value={employee.employeeId}
-            >
-              {employee.employeeId} — {employee.name}
-            </option>
-          ))}
-        </select>
-
-        <ChevronDown size={17} />
-      </div>
-    </label>
-  );
+    return {
+      ...INITIAL_MAPPINGS,
+      ...parsed,
+    };
+  } catch {
+    return INITIAL_MAPPINGS;
+  }
 }
 
-/* ============================================================
-   FORM ACCESS CARD
-   ============================================================ */
-
-function FormAccessCard({ form, enabled, onChange }) {
-  const Icon = form.icon;
-
+/*
+|--------------------------------------------------------------------------
+| ON / OFF Toggle
+|--------------------------------------------------------------------------
+*/
+function MappingToggle({
+  checked,
+  disabled,
+  label,
+  onChange,
+}) {
   return (
-    <article
-      className={`map-form-card ${
-        enabled ? "map-form-card-enabled" : ""
+    <button
+      type="button"
+      className={`mapping-toggle ${
+        checked ? "mapping-toggle-on" : "mapping-toggle-off"
       }`}
+      disabled={disabled}
+      onClick={onChange}
+      aria-label={`${label}: ${checked ? "On" : "Off"}`}
+      aria-pressed={checked}
     >
-      <div className="map-form-card-top">
-        <div className="map-form-card-icon">
-          <Icon size={21} />
-        </div>
+      <span className="mapping-toggle-indicator" />
 
-        <div className="map-form-card-content">
-          <div className="map-form-card-title-row">
-            <div>
-              <h3>{form.title}</h3>
-
-              <span className="map-form-category">
-                {form.category}
-              </span>
-            </div>
-
-            <span
-              className={`map-form-status ${
-                enabled
-                  ? "map-form-status-enabled"
-                  : "map-form-status-disabled"
-              }`}
-            >
-              {enabled ? "Enabled" : "Disabled"}
-            </span>
-          </div>
-
-          <p>{form.description}</p>
-        </div>
-      </div>
-
-      <div className="map-form-card-divider" />
-
-      <div className="map-form-card-footer">
-        <div>
-          <strong>Form Access</strong>
-
-          <small>
-            {enabled
-              ? "Employee is authorized to access this form."
-              : "Employee cannot access this form."}
-          </small>
-        </div>
-
-        <label className="map-form-toggle">
-          <input
-            type="checkbox"
-            checked={enabled}
-            onChange={(event) =>
-              onChange(form.id, event.target.checked)
-            }
-          />
-
-          <span className="map-form-toggle-track">
-            <span className="map-form-toggle-thumb" />
-          </span>
-
-          <span className="map-form-toggle-label">
-            {enabled ? "Enabled" : "Disabled"}
-          </span>
-        </label>
-      </div>
-    </article>
+      <span className="mapping-toggle-text">
+        {checked ? "On" : "Off"}
+      </span>
+    </button>
   );
 }
 
-/* ============================================================
-   MAIN PAGE
-   ============================================================ */
-
+/*
+|--------------------------------------------------------------------------
+| Main Page
+|--------------------------------------------------------------------------
+*/
 function MapEmployeePage() {
-  const [search, setSearch] = useState("");
-  const [selectedEmployeeId, setSelectedEmployeeId] =
-    useState("");
+  const navigate = useNavigate();
 
-  const [mapping, setMapping] = useState(
-    createInitialMapping()
+  const [functionalRole, setFunctionalRole] = useState(
+    FUNCTIONAL_ROLES[0]
   );
+
+  const [selectedEmployeeId, setSelectedEmployeeId] =
+    useState("EMP-002");
+
+  const [mappings, setMappings] = useState(loadMappings);
 
   const [saved, setSaved] = useState(false);
-
   /* ----------------------------------------------------------
-     Selected employee
+     Top-only horizontal table scrollbar
      ---------------------------------------------------------- */
 
-  const selectedEmployee = useMemo(
-    () =>
+  const mapEmployeeTableWrapperRef = useRef(null);
+  const mapEmployeeTopScrollRef = useRef(null);
+  const mapEmployeeTopScrollContentRef = useRef(null);
+  const mapEmployeeTableRef = useRef(null);
+
+  useEffect(() => {
+    const wrapper = mapEmployeeTableWrapperRef.current;
+    const topScroll = mapEmployeeTopScrollRef.current;
+    const topContent = mapEmployeeTopScrollContentRef.current;
+    const table = mapEmployeeTableRef.current;
+
+    if (!wrapper || !topScroll || !topContent || !table) {
+      return undefined;
+    }
+
+    const updateScrollWidth = () => {
+      topContent.style.width = `${table.scrollWidth}px`;
+    };
+
+    const handleTableScroll = () => {
+      if (
+        Math.abs(topScroll.scrollLeft - wrapper.scrollLeft) > 1
+      ) {
+        topScroll.scrollLeft = wrapper.scrollLeft;
+      }
+    };
+
+    const handleTopScroll = () => {
+      if (
+        Math.abs(wrapper.scrollLeft - topScroll.scrollLeft) > 1
+      ) {
+        wrapper.scrollLeft = topScroll.scrollLeft;
+      }
+    };
+
+    updateScrollWidth();
+
+    wrapper.addEventListener("scroll", handleTableScroll);
+    topScroll.addEventListener("scroll", handleTopScroll);
+
+    const resizeObserver = new ResizeObserver(
+      updateScrollWidth
+    );
+
+    resizeObserver.observe(table);
+
+    return () => {
+      wrapper.removeEventListener(
+        "scroll",
+        handleTableScroll
+      );
+
+      topScroll.removeEventListener(
+        "scroll",
+        handleTopScroll
+      );
+
+      resizeObserver.disconnect();
+    };
+  }, []);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Employees belonging to selected functional role
+  |--------------------------------------------------------------------------
+  */
+  const employeesForRole = useMemo(() => {
+    return EMPLOYEES.filter(
+      (employee) =>
+        employee.functionalRole === functionalRole
+    );
+  }, [functionalRole]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Selected employee
+  |--------------------------------------------------------------------------
+  */
+  const selectedEmployee = useMemo(() => {
+    return (
       EMPLOYEES.find(
         (employee) =>
           employee.employeeId === selectedEmployeeId
-      ),
-    [selectedEmployeeId]
-  );
-
-  /* ----------------------------------------------------------
-     Employee search
-     ---------------------------------------------------------- */
-
-  const filteredEmployees = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) {
-      return EMPLOYEES;
-    }
-
-    return EMPLOYEES.filter((employee) =>
-      [
-        employee.employeeId,
-        employee.name,
-        employee.department,
-        employee.designation,
-      ]
-        .join(" ")
-        .toLowerCase()
-        .includes(query)
+      ) || null
     );
-  }, [search]);
+  }, [selectedEmployeeId]);
 
-  /* ----------------------------------------------------------
-     Employee selection
-     ---------------------------------------------------------- */
+  /*
+  |--------------------------------------------------------------------------
+  | Mapping of selected employee
+  |--------------------------------------------------------------------------
+  */
+  const selectedMapping =
+    mappings[selectedEmployeeId] || {
+      locked: false,
+    };
 
-  const handleEmployeeChange = (employeeId) => {
-    setSelectedEmployeeId(employeeId);
-    setMapping(createInitialMapping());
-    setSaved(false);
+  /*
+  |--------------------------------------------------------------------------
+  | Keep selected employee valid when changing functional role
+  |--------------------------------------------------------------------------
+  */
+  useEffect(() => {
+    const exists = employeesForRole.some(
+      (employee) =>
+        employee.employeeId === selectedEmployeeId
+    );
+
+    if (!exists) {
+      setSelectedEmployeeId(
+        employeesForRole[0]?.employeeId || ""
+      );
+    }
+  }, [
+    employeesForRole,
+    selectedEmployeeId,
+  ]);
+
+  /*
+  |--------------------------------------------------------------------------
+  | Save mapping
+  |--------------------------------------------------------------------------
+  */
+  const persistMappings = (nextMappings = mappings) => {
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(nextMappings)
+    );
+
+    setSaved(true);
+
+    window.setTimeout(() => {
+      setSaved(false);
+    }, 2500);
   };
 
-  /* ----------------------------------------------------------
-     Form access change
-     ---------------------------------------------------------- */
+  /*
+  |--------------------------------------------------------------------------
+  | Update individual form mapping
+  |--------------------------------------------------------------------------
+  */
+  const updateMapping = (
+    employeeId,
+    formId,
+    value
+  ) => {
+    if (mappings[employeeId]?.locked) {
+      return;
+    }
 
-  const handleFormAccessChange = (formId, enabled) => {
-    setMapping((current) => ({
+    setMappings((current) => ({
       ...current,
-      [formId]: enabled,
+
+      [employeeId]: {
+        ...(current[employeeId] || {}),
+        [formId]: value,
+      },
     }));
 
     setSaved(false);
   };
 
-  /* ----------------------------------------------------------
-     Reset
-     ---------------------------------------------------------- */
-
-  const handleReset = () => {
-    setMapping(createInitialMapping());
-    setSaved(false);
-  };
-
-  /* ----------------------------------------------------------
-     Save
-     ---------------------------------------------------------- */
-
-  const handleSubmit = (event) => {
-    event.preventDefault();
-
-    if (!selectedEmployee) {
+  /*
+  |--------------------------------------------------------------------------
+  | Select All
+  |--------------------------------------------------------------------------
+  */
+  const handleSelectAll = () => {
+    if (
+      !selectedEmployeeId ||
+      selectedMapping.locked
+    ) {
       return;
     }
 
-    const payload = {
-      employeeId: selectedEmployee.employeeId,
-      employeeName: selectedEmployee.name,
-      formAccess: mapping,
+    const nextMapping = {
+      ...selectedMapping,
     };
 
-    /*
-      Backend integration will use this payload later.
+    FORM_TYPES.forEach((form) => {
+      nextMapping[form.id] = true;
+    });
 
-      Example:
+    setMappings((current) => ({
+      ...current,
+      [selectedEmployeeId]: nextMapping,
+    }));
 
-      {
-        employeeId: "EMP-001",
-        formAccess: {
-          "ta-claim": true,
-          "ta-advance": false,
-          "ltc-claim": true,
-          "ltc-advance": false,
-          "medical-claim": true,
-          "medical-advance": false,
-          "accommodation": false
-        }
-      }
-    */
-
-    console.log("Employee form access mapping:", payload);
-
-    setSaved(true);
+    setSaved(false);
   };
 
-  /* ----------------------------------------------------------
-     Summary
-     ---------------------------------------------------------- */
+  /*
+  |--------------------------------------------------------------------------
+  | Lock selected employee
+  |--------------------------------------------------------------------------
+  */
+  const handleLockAll = () => {
+    if (!selectedEmployeeId) {
+      return;
+    }
 
-  const summary = useMemo(() => {
-    const enabled = Object.values(mapping).filter(
-      Boolean
-    ).length;
+    const nextMappings = {
+      ...mappings,
 
-    const total = FORMS.length;
-
-    return {
-      enabled,
-      disabled: total - enabled,
-      total,
+      [selectedEmployeeId]: {
+        ...selectedMapping,
+        locked: true,
+      },
     };
-  }, [mapping]);
+
+    setMappings(nextMappings);
+
+    persistMappings(nextMappings);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Unlock selected employee
+  |--------------------------------------------------------------------------
+  */
+  const handleUnlockAll = () => {
+    if (!selectedEmployeeId) {
+      return;
+    }
+
+    const nextMappings = {
+      ...mappings,
+
+      [selectedEmployeeId]: {
+        ...selectedMapping,
+        locked: false,
+      },
+    };
+
+    setMappings(nextMappings);
+
+    persistMappings(nextMappings);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Save selected employee
+  |--------------------------------------------------------------------------
+  */
+  const handleSave = () => {
+    persistMappings(mappings);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Row lock / unlock
+  |--------------------------------------------------------------------------
+  */
+  const toggleRowLock = (employeeId) => {
+    const currentEmployeeMapping =
+      mappings[employeeId] || {};
+
+    const nextMappings = {
+      ...mappings,
+
+      [employeeId]: {
+        ...currentEmployeeMapping,
+        locked: !currentEmployeeMapping.locked,
+      },
+    };
+
+    setMappings(nextMappings);
+
+    persistMappings(nextMappings);
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Close modal
+  |--------------------------------------------------------------------------
+  */
+  const handleClose = () => {
+    navigate("/admin");
+  };
+
+  /*
+  |--------------------------------------------------------------------------
+  | Whether every form is selected
+  |--------------------------------------------------------------------------
+  */
+  const allSelected = FORM_TYPES.every(
+    (form) => selectedMapping[form.id]
+  );
 
   return (
-    <div className="map-employee-page">
+    <div
+      className="map-employee-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="map-employee-title"
+    >
+      <div className="map-employee-modal">
 
-      {/* ======================================================
-          HEADER
-          ====================================================== */}
+        {/* ================================================================
+            HEADER
+        ================================================================= */}
+        <header className="map-modal-header">
 
-      <header className="map-employee-page-header">
-        <div className="map-employee-page-header-content">
+          <div className="map-modal-heading">
 
-          <div className="map-employee-page-header-icon">
-            <ShieldCheck size={22} />
-          </div>
-
-          <div>
-            <h1>Employee Form Access</h1>
-
-            <p>
-              Configure which financial forms an employee
-              is authorized to access.
-            </p>
-          </div>
-
-        </div>
-      </header>
-
-      <form onSubmit={handleSubmit}>
-
-        {/* ====================================================
-            EMPLOYEE SELECTION
-            ==================================================== */}
-
-        <section className="map-employee-section">
-
-          <div className="map-employee-section-header">
-
-            <div className="map-employee-section-number">
-              01
+            <div className="map-modal-icon">
+              <Users size={23} />
             </div>
 
             <div>
-              <h2>Select Employee</h2>
+              <span className="map-modal-eyebrow">
+                EMPLOYEE MANAGEMENT
+              </span>
 
-              <p>
-                Choose the employee whose form access
-                permissions you want to configure.
-              </p>
+              <h1 id="map-employee-title">
+                Map Employee
+              </h1>
             </div>
 
           </div>
 
-          <div className="map-employee-selection-layout">
+          <button
+            type="button"
+            className="map-close-button"
+            onClick={handleClose}
+            aria-label="Close employee mapping"
+          >
+            <X size={25} />
+          </button>
 
-            <div className="map-employee-selection-form">
+        </header>
 
-              <EmployeeSelect
-                value={selectedEmployeeId}
-                employees={filteredEmployees}
-                onChange={handleEmployeeChange}
-              />
+        {/* ================================================================
+            BODY
+        ================================================================= */}
+        <div className="map-modal-body">
 
-              <label className="map-employee-field">
-                <span className="map-employee-field-label">
-                  Search Employee
+          {/* ============================================================
+              INTRO
+          ============================================================= */}
+          <section className="map-intro">
+
+            <div>
+
+              <span className="map-section-kicker">
+                FORM RESPONSIBILITY
+              </span>
+
+              <h2>
+                Employee Form Mapping
+              </h2>
+
+              <p>
+                Assign the financial forms that each employee
+                is responsible for handling.
+              </p>
+
+            </div>
+
+            <div className="map-security-note">
+              <ShieldCheck size={18} />
+
+              <span>
+                Admin controlled
+              </span>
+            </div>
+
+          </section>
+
+          {/* ============================================================
+              CONTROL PANEL
+          ============================================================= */}
+          <section className="map-control-panel">
+
+            {/* ----------------------------------------------------------
+                SELECTORS
+            ---------------------------------------------------------- */}
+            <div className="map-control-grid">
+
+              <label className="map-field">
+
+                <span className="map-field-label">
+                  User Type
                 </span>
 
-                <div className="map-employee-search-wrap">
-                  <Search size={17} />
+                <span className="map-select-container">
 
-                  <input
-                    type="text"
-                    value={search}
+                  <select
+                    value={functionalRole}
                     onChange={(event) =>
-                      setSearch(event.target.value)
+                      setFunctionalRole(
+                        event.target.value
+                      )
                     }
-                    placeholder="Search by ID, name, department..."
+                  >
+                    {FUNCTIONAL_ROLES.map(
+                      (role) => (
+                        <option
+                          key={role}
+                          value={role}
+                        >
+                          {role}
+                        </option>
+                      )
+                    )}
+                  </select>
+
+                  <ChevronDown
+                    size={17}
+                    className="map-select-icon"
                   />
-                </div>
+
+                </span>
+
+              </label>
+
+              <label className="map-field">
+
+                <span className="map-field-label">
+                  Name
+                </span>
+
+                <span className="map-select-container">
+
+                  <select
+                    value={selectedEmployeeId}
+                    disabled={
+                      employeesForRole.length === 0
+                    }
+                    onChange={(event) =>
+                      setSelectedEmployeeId(
+                        event.target.value
+                      )
+                    }
+                  >
+
+                    {employeesForRole.length === 0 ? (
+                      <option value="">
+                        No employees in this role
+                      </option>
+                    ) : (
+                      employeesForRole.map(
+                        (employee) => (
+                          <option
+                            key={
+                              employee.employeeId
+                            }
+                            value={
+                              employee.employeeId
+                            }
+                          >
+                            {employee.name} —{" "}
+                            {employee.designation}
+                          </option>
+                        )
+                      )
+                    )}
+
+                  </select>
+
+                  <ChevronDown
+                    size={17}
+                    className="map-select-icon"
+                  />
+
+                </span>
+
               </label>
 
             </div>
 
-            {selectedEmployee ? (
+            {/* ----------------------------------------------------------
+                FORM OPTIONS
+            ---------------------------------------------------------- */}
+            <div className="map-form-area">
+
+              <div className="map-form-options">
+
+                {FORM_TYPES.map((form) => {
+
+                  const checked =
+                    Boolean(
+                      selectedMapping[
+                        form.id
+                      ]
+                    );
+
+                  return (
+                    <label
+                      key={form.id}
+                      className={`map-form-option ${
+                        checked
+                          ? "is-selected"
+                          : ""
+                      } ${
+                        selectedMapping.locked
+                          ? "is-disabled"
+                          : ""
+                      }`}
+                    >
+
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        disabled={
+                          selectedMapping.locked ||
+                          !selectedEmployeeId
+                        }
+                        onChange={(event) =>
+                          updateMapping(
+                            selectedEmployeeId,
+                            form.id,
+                            event.target.checked
+                          )
+                        }
+                      />
+
+                      <span className="map-checkbox">
+
+                        {checked && (
+                          <Check size={13} />
+                        )}
+
+                      </span>
+
+                      <span>
+                        {form.label}
+                      </span>
+
+                    </label>
+                  );
+                })}
+
+              </div>
+
+              {/* --------------------------------------------------------
+                  BULK ACTIONS
+              -------------------------------------------------------- */}
+              <div className="map-bulk-actions">
+
+                <button
+                  type="button"
+                  className="map-action-button secondary"
+                  disabled={
+                    !selectedEmployeeId ||
+                    selectedMapping.locked ||
+                    allSelected
+                  }
+                  onClick={handleSelectAll}
+                >
+                  <SlidersHorizontal size={15} />
+                  Select All
+                </button>
+
+                <button
+                  type="button"
+                  className="map-action-button warning"
+                  disabled={
+                    !selectedEmployeeId ||
+                    selectedMapping.locked
+                  }
+                  onClick={handleLockAll}
+                >
+                  <Lock size={15} />
+                  Lock All
+                </button>
+
+                <button
+                  type="button"
+                  className="map-action-button secondary"
+                  disabled={
+                    !selectedEmployeeId ||
+                    !selectedMapping.locked
+                  }
+                  onClick={handleUnlockAll}
+                >
+                  <Unlock size={15} />
+                  Unlock All
+                </button>
+
+                <button
+                  type="button"
+                  className="map-action-button primary"
+                  disabled={!selectedEmployeeId}
+                  onClick={handleSave}
+                >
+                  <Save size={15} />
+                  Save
+                </button>
+
+              </div>
+
+            </div>
+
+            {/* ----------------------------------------------------------
+                SELECTED EMPLOYEE INFO
+            ---------------------------------------------------------- */}
+            {selectedEmployee && (
               <div className="map-selected-employee">
 
-                <div className="map-selected-employee-icon">
-                  <UserRound size={21} />
+                <div className="map-selected-avatar">
+                  {selectedEmployee.name
+                    .split(" ")
+                    .map(
+                      (part) =>
+                        part[0]
+                    )
+                    .slice(0, 2)
+                    .join("")}
                 </div>
 
-                <div className="map-selected-employee-info">
-
-                  <span>SELECTED EMPLOYEE</span>
+                <div className="map-selected-info">
 
                   <strong>
                     {selectedEmployee.name}
                   </strong>
 
-                  <small>
-                    {selectedEmployee.employeeId} ·{" "}
-                    {selectedEmployee.designation}
-                  </small>
+                  <span>
+                    {selectedEmployee.employeeId}
+                    {" · "}
+                    {selectedEmployee.departmentName}
+                    {" · "}
+                    {selectedEmployee.functionalRole}
+                  </span>
 
                 </div>
 
-                <span className="map-selected-employee-status">
-                  {selectedEmployee.status}
+                <span
+                  className={`map-lock-state ${
+                    selectedMapping.locked
+                      ? "locked"
+                      : "editable"
+                  }`}
+                >
+
+                  {selectedMapping.locked ? (
+                    <Lock size={13} />
+                  ) : (
+                    <Unlock size={13} />
+                  )}
+
+                  {selectedMapping.locked
+                    ? "Locked"
+                    : "Editable"}
+
                 </span>
 
               </div>
+            )}
+
+          </section>
+
+          {/* ============================================================
+              MAPPING TABLE
+          ============================================================= */}
+          <section className="map-table-section">
+
+            <div className="map-table-header">
+
+              <div>
+
+                <span className="map-section-kicker">
+                  CONFIGURATION
+                </span>
+
+                <h2>
+                  Forms Mapping View
+                </h2>
+
+              </div>
+
+              <span className="map-count">
+                {EMPLOYEES.length} employees
+                {" · "}
+                {FORM_TYPES.length} forms
+              </span>
+
+            </div>
+
+            <div
+              className="map-employee-top-scroll"
+              ref={mapEmployeeTopScrollRef}
+              aria-label="Horizontal table scroll"
+            >
+              <div
+                className="map-employee-top-scroll-content"
+                ref={mapEmployeeTopScrollContentRef}
+              />
+            </div>
+
+            <div
+              className="map-table-wrapper"
+              ref={mapEmployeeTableWrapperRef}
+            >
+
+              <table
+                className="map-table"
+                ref={mapEmployeeTableRef}
+              >
+
+                <thead>
+
+                  <tr>
+
+                    <th className="serial-column">
+                      SL NO
+                    </th>
+
+                    <th className="employee-column">
+                      EMPLOYEE
+                    </th>
+
+                    {FORM_TYPES.map(
+                      (form) => (
+                        <th
+                          key={form.id}
+                          className="form-column"
+                          title={form.label}
+                        >
+                          {form.label}
+                        </th>
+                      )
+                    )}
+
+                    <th className="actions-column">
+                      ACTIONS
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+                <tbody>
+
+                  {EMPLOYEES.map(
+                    (employee, index) => {
+
+                      const rowMapping =
+                        mappings[
+                          employee.employeeId
+                        ] || {};
+
+                      const isCurrent =
+                        employee.employeeId ===
+                        selectedEmployeeId;
+
+                      return (
+                        <tr
+                          key={
+                            employee.employeeId
+                          }
+                          className={
+                            isCurrent
+                              ? "current-row"
+                              : ""
+                          }
+                        >
+
+                          <td className="serial-column">
+                            {index + 1}
+                          </td>
+
+                          <td className="employee-column">
+
+                            <button
+                              type="button"
+                              className="table-employee-button"
+                              onClick={() => {
+                                setFunctionalRole(
+                                  employee.functionalRole
+                                );
+
+                                setSelectedEmployeeId(
+                                  employee.employeeId
+                                );
+                              }}
+                            >
+
+                              <span className="table-avatar">
+                                {employee.name
+                                  .split(" ")
+                                  .map(
+                                    (part) =>
+                                      part[0]
+                                  )
+                                  .slice(0, 2)
+                                  .join("")}
+                              </span>
+
+                              <span className="table-employee-details">
+
+                                <strong>
+                                  {employee.name}
+                                </strong>
+
+                                <small>
+                                  {
+                                    employee.functionalRole
+                                  }
+                                </small>
+
+                              </span>
+
+                            </button>
+
+                          </td>
+
+                          {FORM_TYPES.map(
+                            (form) => (
+                              <td
+                                key={form.id}
+                                className="form-column"
+                              >
+
+                                <MappingToggle
+                                  checked={Boolean(
+                                    rowMapping[
+                                      form.id
+                                    ]
+                                  )}
+                                  disabled={Boolean(
+                                    rowMapping.locked
+                                  )}
+                                  label={`${employee.name} ${form.label}`}
+                                  onChange={() =>
+                                    updateMapping(
+                                      employee.employeeId,
+                                      form.id,
+                                      !rowMapping[
+                                        form.id
+                                      ]
+                                    )
+                                  }
+                                />
+
+                              </td>
+                            )
+                          )}
+
+                          <td className="actions-column">
+
+                            <div className="row-actions">
+
+                              <button
+                                type="button"
+                                className="row-save-button"
+                                onClick={() =>
+                                  persistMappings(
+                                    mappings
+                                  )
+                                }
+                              >
+                                <Save size={14} />
+                                Save
+                              </button>
+
+                              <button
+                                type="button"
+                                className={`row-lock-button ${
+                                  rowMapping.locked
+                                    ? "unlock"
+                                    : ""
+                                }`}
+                                onClick={() =>
+                                  toggleRowLock(
+                                    employee.employeeId
+                                  )
+                                }
+                              >
+
+                                {rowMapping.locked ? (
+                                  <Unlock
+                                    size={14}
+                                  />
+                                ) : (
+                                  <Lock
+                                    size={14}
+                                  />
+                                )}
+
+                                {rowMapping.locked
+                                  ? "Unlock"
+                                  : "Lock"}
+
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+                      );
+                    }
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
+
+          </section>
+
+        </div>
+
+        {/* ================================================================
+            FOOTER
+        ================================================================= */}
+        <footer className="map-modal-footer">
+
+          <div className="map-footer-status">
+
+            {saved ? (
+              <>
+                <Check size={17} />
+                Mapping saved successfully
+              </>
             ) : (
-              <div className="map-employee-empty-selection">
-                <UserRound size={21} />
-
-                <strong>
-                  Select an employee
-                </strong>
-
-                <span>
-                  Employee details will appear here.
-                </span>
-              </div>
+              <>
+                <ShieldCheck size={17} />
+                Responsibility changes require an explicit save
+              </>
             )}
 
           </div>
 
-        </section>
-
-        {/* ====================================================
-            EMPLOYEE PROFILE
-            ==================================================== */}
-
-        {selectedEmployee && (
-          <section className="map-employee-section">
-
-            <div className="map-employee-section-header">
-
-              <div className="map-employee-section-number">
-                02
-              </div>
-
-              <div>
-                <h2>Employee Profile</h2>
-
-                <p>
-                  Review the employee context before
-                  assigning form access.
-                </p>
-              </div>
-
-            </div>
-
-            <div className="map-employee-profile-grid">
-
-              <div>
-                <span>EMPLOYEE ID</span>
-                <strong>
-                  {selectedEmployee.employeeId}
-                </strong>
-              </div>
-
-              <div>
-                <span>DEPARTMENT</span>
-                <strong>
-                  {selectedEmployee.department}
-                </strong>
-              </div>
-
-              <div>
-                <span>DESIGNATION</span>
-                <strong>
-                  {selectedEmployee.designation}
-                </strong>
-              </div>
-
-              <div>
-                <span>SYSTEM ACCESS</span>
-                <strong>
-                  {selectedEmployee.systemAccessRole}
-                </strong>
-              </div>
-
-            </div>
-
-          </section>
-        )}
-
-        {/* ====================================================
-            FORM ACCESS
-            ==================================================== */}
-
-        <section className="map-employee-section">
-
-          <div className="map-employee-section-header">
-
-            <div className="map-employee-section-number">
-              03
-            </div>
-
-            <div>
-              <h2>Form Access & Permissions</h2>
-
-              <p>
-                Enable or disable individual financial
-                forms for this employee.
-              </p>
-            </div>
-
-          </div>
-
-          {!selectedEmployee ? (
-            <div className="map-employee-empty-state">
-
-              <div className="map-employee-empty-icon">
-                <UserRound size={22} />
-              </div>
-
-              <h3>
-                Select an employee first
-              </h3>
-
-              <p>
-                Choose an employee above to configure
-                their form access permissions.
-              </p>
-
-            </div>
-          ) : (
-            <>
-              <div className="map-form-access-info">
-
-                <div>
-                  <ShieldCheck size={18} />
-
-                  <span>
-                    <strong>Manual Form Access</strong>
-                    {" "}— Admin can individually enable or
-                    disable each form for this employee.
-                  </span>
-                </div>
-
-              </div>
-
-              <div className="map-form-grid">
-
-                {FORMS.map((form) => (
-                  <FormAccessCard
-                    key={form.id}
-                    form={form}
-                    enabled={mapping[form.id]}
-                    onChange={handleFormAccessChange}
-                  />
-                ))}
-
-              </div>
-            </>
-          )}
-
-        </section>
-
-        {/* ====================================================
-            MAPPING SUMMARY
-            ==================================================== */}
-
-        {selectedEmployee && (
-          <section className="map-employee-summary">
-
-            <div className="map-employee-summary-header">
-
-              <div>
-                <span>ACCESS SUMMARY</span>
-
-                <strong>
-                  {selectedEmployee.name}
-                </strong>
-              </div>
-
-              <ShieldCheck size={21} />
-
-            </div>
-
-            <div className="map-employee-summary-stats">
-
-              <div>
-                <strong>{summary.enabled}</strong>
-                <span>Forms Enabled</span>
-              </div>
-
-              <div>
-                <strong>{summary.total}</strong>
-                <span>Total Forms</span>
-              </div>
-
-              <div>
-                <strong>{summary.disabled}</strong>
-                <span>Forms Disabled</span>
-              </div>
-
-            </div>
-
-          </section>
-        )}
-
-        {/* ====================================================
-            ACTIONS
-            ==================================================== */}
-
-        <div className="map-employee-actions">
-
           <button
             type="button"
-            className="map-employee-secondary-button"
-            onClick={handleReset}
+            className="map-footer-close"
+            onClick={handleClose}
           >
-            <RotateCcw size={17} />
-            Reset Access
+            Close
           </button>
 
-          <button
-            type="submit"
-            className="map-employee-primary-button"
-            disabled={!selectedEmployee}
-          >
-            <Save size={17} />
-            Save Form Access
-          </button>
+        </footer>
 
-        </div>
-
-        {/* ====================================================
-            SUCCESS
-            ==================================================== */}
-
-        {saved && (
-          <div className="map-employee-success">
-
-            <CheckCircle2 size={20} />
-
-            <div>
-              <strong>
-                Form access mapping saved
-              </strong>
-
-              <p>
-                The selected form permissions have been
-                prepared successfully.
-              </p>
-            </div>
-
-          </div>
-        )}
-
-      </form>
+      </div>
     </div>
   );
 }

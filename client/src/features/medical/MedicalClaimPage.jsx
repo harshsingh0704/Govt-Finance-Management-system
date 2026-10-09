@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import "./MedicalClaimPage.css";
 
 const INITIAL_FORM = {
@@ -40,9 +40,11 @@ const INITIAL_FORM = {
 };
 
 function MedicalClaimPage() {
+  const [showMedicalForm, setShowMedicalForm] = useState(false);
   const [form, setForm] = React.useState(INITIAL_FORM);
   const [errors, setErrors] = React.useState({});
   const [records, setRecords] = React.useState([]);
+  
 
   const [documents, setDocuments] = React.useState({
     medicalTest: null,
@@ -175,6 +177,15 @@ function MedicalClaimPage() {
           <p>
             Record and manage employee medical reimbursement claims.
           </p>
+          {!showMedicalForm && (
+  <button
+    type="button"
+    className="medical-primary-button"
+    onClick={() => setShowMedicalForm(true)}
+  >
+    + Medical Claim Form
+  </button>
+)}
         </div>
 
         <div className="medical-date-indicator">
@@ -183,7 +194,8 @@ function MedicalClaimPage() {
         </div>
       </div>
 
-      <form className="medical-form" onSubmit={handleSubmit}>
+      {showMedicalForm && (
+  <form className="medical-form" onSubmit={handleSubmit}>
         <SectionHeading
           title="Employee Details"
           description="Enter the employee information associated with the claim."
@@ -551,12 +563,126 @@ function MedicalClaimPage() {
           >
             Reset
           </button>
+          
+        <button
+          className="medical-secondary-button"
+          type="button"
+          onClick={() => setShowMedicalForm(false)}
+        >
+          Close Form
+        </button>
 
           <button type="submit" className="medical-primary-button">
             Save Medical Claim
           </button>
         </div>
-      </form>
+            </form>
+)}
+
+      <section
+        className="medical-status-overview"
+        aria-label="Medical claim status overview"
+      >
+        <div className="medical-status-overview-header">
+          <div>
+            <span>Claim Status</span>
+            <h2>Medical Claim Overview</h2>
+            <p>
+              Track the current status of your medical claim forms.
+            </p>
+          </div>
+        </div>
+
+        <div className="medical-status-grid">
+          <StatusCard
+            label="Total Forms"
+            value={records.length}
+            tone="blue"
+          />
+
+          <StatusCard
+            label="Submitted Forms"
+            value={
+              records.filter((record) =>
+                ["submitted", "recorded"].includes(
+                  String(record.status).toLowerCase()
+                )
+              ).length
+            }
+            tone="green"
+          />
+
+          <StatusCard
+            label="Approved Forms"
+            value={
+              records.filter(
+                (record) =>
+                  String(record.status).toLowerCase() === "approved"
+              ).length
+            }
+            tone="green"
+          />
+
+          <StatusCard
+            label="Saved Forms"
+            value={
+              records.filter(
+                (record) =>
+                  String(record.status).toLowerCase() === "saved"
+              ).length
+            }
+            tone="blue"
+          />
+          <StatusCard
+  label="Yet to Start"
+  value={
+    records.filter((record) =>
+      ["yet to start", "not started", "draft"].includes(
+        String(record.status).toLowerCase()
+      )
+    ).length
+  }
+  tone="blue"
+/>      
+
+          <StatusCard
+            label="Pending Approval"
+            value={
+              records.filter((record) =>
+                [
+                  "pending",
+                  "pending approval",
+                  "verification",
+                  "under review",
+                ].includes(String(record.status).toLowerCase())
+              ).length
+            }
+            tone="amber"
+          />
+
+          <StatusCard
+            label="Rejected Forms"
+            value={
+              records.filter(
+                (record) =>
+                  String(record.status).toLowerCase() === "rejected"
+              ).length
+            }
+            tone="red"
+          />
+
+          <StatusCard
+            label="Resubmitted Forms"
+            value={
+              records.filter(
+                (record) =>
+                  String(record.status).toLowerCase() === "resubmitted"
+              ).length
+            }
+            tone="orange"
+          />
+        </div>
+      </section>
 
       <section className="medical-records-section">
         <div className="medical-section-heading">
@@ -623,8 +749,19 @@ function MedicalClaimPage() {
     </div>
   );
 }
+function StatusCard({ label, value, tone = "blue" }) {
+  return (
+    <article
+      className={`medical-status-card medical-status-card-${tone}`}
+    >
+      <strong>{value}</strong>
+      <span>{label}</span>
+    </article>
+  );
+}
 
 function SectionHeading({ title, description }) {
+
   return (
     <div className="medical-section-heading">
       <div>
@@ -769,7 +906,6 @@ function DocumentUploadField({
               <span className="medical-document-file-name">
                 {file.name}
               </span>
-
               <button
                 type="button"
                 className="medical-document-remove"

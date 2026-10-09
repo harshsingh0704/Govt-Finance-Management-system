@@ -1,917 +1,2746 @@
-﻿/* ============================================================
+/* ================================================================
    MAP EMPLOYEE PAGE
-   Government Finance Management System
-   ============================================================ */
+================================================================ */
 
-.map-employee-page {
-  width: 100%;
-  min-height: 100%;
-  padding: 28px 32px 40px;
-  box-sizing: border-box;
-  background: #f8fafc;
-  color: #0f172a;
-}
-
-.map-employee-page *,
-.map-employee-page *::before,
-.map-employee-page *::after {
+* {
   box-sizing: border-box;
 }
 
-/* ============================================================
-   PAGE HEADER
-   ============================================================ */
+.map-employee-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
 
-.map-employee-page-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 20px;
-  margin-bottom: 28px;
-}
-
-.map-employee-page-header-content {
-  display: flex;
-  align-items: flex-start;
-  gap: 14px;
-}
-
-.map-employee-page-header-icon {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
-  border-radius: 12px;
-  background: #eef2ff;
-  color: #4338ca;
+
+  padding: 24px;
+
+  background: rgba(15, 23, 42, 0.48);
+
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
-.map-employee-page-header h1 {
-  margin: 0;
-  color: #111827;
-  font-size: 26px;
-  line-height: 1.25;
-  font-weight: 700;
-  letter-spacing: -0.02em;
-}
 
-.map-employee-page-header p {
-  max-width: 760px;
-  margin: 7px 0 0;
-  color: #64748b;
-  font-size: 14px;
-  line-height: 1.6;
-}
+/* ================================================================
+   MAIN MODAL
+================================================================ */
 
-/* ============================================================
-   SECTION
-   ============================================================ */
+.map-employee-modal {
+  width: min(1450px, 100%);
+  max-height: calc(100vh - 48px);
 
-.map-employee-section {
-  margin-top: 24px;
-  padding: 22px;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
   background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+
+  box-shadow:
+    0 25px 60px rgba(15, 23, 42, 0.18),
+    0 8px 24px rgba(15, 23, 42, 0.08);
 }
 
-.map-employee-section-header {
+
+/* ================================================================
+   HEADER
+================================================================ */
+
+.map-modal-header {
+  min-height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 18px 26px;
+
+  background: #ffffff;
+
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.map-modal-heading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.map-modal-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #2563eb;
+
+  background: #eff6ff;
+
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+}
+
+.map-modal-eyebrow {
+  display: block;
+
+  margin-bottom: 3px;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+}
+
+.map-modal-heading h1 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 23px;
+  line-height: 1.15;
+  font-weight: 700;
+}
+
+.map-close-button {
+  width: 38px;
+  height: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #64748b;
+
+  background: transparent;
+
+  border: 1px solid transparent;
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.map-close-button:hover {
+  color: #0f172a;
+
+  background: #f8fafc;
+
+  border-color: #e2e8f0;
+}
+
+
+/* ================================================================
+   BODY
+================================================================ */
+
+.map-modal-body {
+  flex: 1;
+
+  min-height: 0;
+
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  padding: 26px;
+}
+
+.map-modal-body::-webkit-scrollbar {
+  width: 7px;
+}
+
+.map-modal-body::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.map-modal-body::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+
+/* ================================================================
+   INTRO
+================================================================ */
+
+.map-intro {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 22px;
+}
+
+.map-section-kicker {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.map-intro h2 {
+  margin: 0 0 6px;
+
+  color: #0f172a;
+
+  font-size: 21px;
+  font-weight: 700;
+}
+
+.map-intro p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+.map-security-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  padding: 8px 12px;
+
+  color: #166534;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+
+/* ================================================================
+   MODE TABS
+================================================================ */
+
+.map-mode-tabs {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+
+  margin-bottom: 18px;
+
+  padding: 4px;
+
+  background: #f1f5f9;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+}
+
+.map-mode-tab {
+  flex: 1;
+
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  padding: 9px 16px;
+
+  color: #64748b;
+
+  background: transparent;
+
+  border: none;
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.map-mode-tab:hover {
+  color: #334155;
+}
+
+.map-mode-tab.active {
+  color: #1d4ed8;
+
+  background: #ffffff;
+
+  box-shadow:
+    0 1px 3px rgba(15, 23, 42, 0.08);
+}
+
+
+/* ================================================================
+   CONTROL PANEL
+================================================================ */
+
+.map-control-panel {
+  margin-bottom: 25px;
+
+  padding: 20px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+}
+
+
+/* ================================================================
+   CONTROL GRID
+================================================================ */
+
+.map-control-grid {
+  display: grid;
+
+  grid-template-columns:
+    minmax(240px, 1fr)
+    minmax(280px, 1.5fr);
+
+  gap: 18px;
+
   margin-bottom: 20px;
 }
 
-.map-employee-section-number {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 32px;
-  height: 32px;
-  flex: 0 0 32px;
-  border-radius: 9px;
-  background: #eef2ff;
-  color: #4f46e5;
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.map-employee-section-header h2 {
-  margin: 0;
-  color: #111827;
-  font-size: 17px;
-  line-height: 1.35;
-  font-weight: 700;
-}
-
-.map-employee-section-header p {
-  margin: 5px 0 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.55;
-}
-
-/* ============================================================
-   EMPLOYEE SELECTION
-   ============================================================ */
-
-.map-employee-selection-layout {
-  display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 24px;
-  align-items: start;
-}
-
-.map-employee-selection-form {
-  min-width: 0;
-}
-
-.map-employee-field {
+.map-field {
   display: flex;
   flex-direction: column;
+
   gap: 7px;
 }
 
-.map-employee-field + .map-employee-field {
-  margin-top: 16px;
+.map-field-label {
+  color: #475569;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.map-employee-field-label {
-  color: #334155;
-  font-size: 13px;
-  font-weight: 600;
-  user-select: none;
-}
-
-.map-employee-select-wrap {
+.map-select-container {
   position: relative;
+
+  display: block;
 }
 
-.map-employee-select-wrap select {
+.map-select-container select {
   width: 100%;
-  min-height: 42px;
-  padding: 0 38px 0 12px;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  outline: none;
+  height: 42px;
+
+  appearance: none;
+  -webkit-appearance: none;
+
+  padding: 0 40px 0 13px;
+
+  color: #1e293b;
+
   background: #ffffff;
-  color: #0f172a;
-  font-size: 14px;
-  appearance: auto;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+
+  outline: none;
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
+
+  cursor: pointer;
+
   transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
+    border-color 0.18s ease,
+    box-shadow 0.18s ease;
 }
 
-.map-employee-select-wrap select:hover {
+.map-select-container select:hover {
   border-color: #94a3b8;
 }
 
-.map-employee-select-wrap select:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+.map-select-container select:focus {
+  border-color: #3b82f6;
+
+  box-shadow:
+    0 0 0 3px rgba(59, 130, 246, 0.10);
 }
 
-.map-employee-search-wrap {
-  position: relative;
-}
-
-.map-employee-search-wrap > svg {
-  position: absolute;
-  top: 50%;
-  left: 12px;
-  transform: translateY(-50%);
+.map-select-container select:disabled {
   color: #94a3b8;
-  pointer-events: none;
-}
 
-.map-employee-search-wrap input {
-  width: 100%;
-  height: 42px;
-  padding: 0 40px 0 38px;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  outline: none;
-  background: #ffffff;
-  color: #0f172a;
-  font-size: 14px;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.map-employee-search-wrap input::placeholder {
-  color: #94a3b8;
-}
-
-.map-employee-search-wrap input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
-}
-
-.map-employee-search-clear {
-  position: absolute;
-  top: 50%;
-  right: 9px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 27px;
-  height: 27px;
-  padding: 0;
-  transform: translateY(-50%);
-  border: 0;
-  border-radius: 6px;
-  background: transparent;
-  color: #64748b;
-  cursor: pointer;
-}
-
-.map-employee-search-clear:hover {
   background: #f1f5f9;
-  color: #334155;
+
+  cursor: not-allowed;
 }
 
-/* ============================================================
-   SELECTED EMPLOYEE
-   ============================================================ */
+.map-select-icon {
+  position: absolute;
 
-.map-selected-employee {
+  top: 50%;
+  right: 12px;
+
+  color: #64748b;
+
+  pointer-events: none;
+
+  transform: translateY(-50%);
+}
+
+
+/* ================================================================
+   FORM AREA
+================================================================ */
+
+.map-form-area {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+
+  padding-top: 19px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+.map-form-options {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 10px;
+}
+
+.map-form-option {
+  min-height: 44px;
+
   display: flex;
   align-items: center;
-  gap: 14px;
-  min-width: 0;
-  padding: 18px;
-  border: 1px solid #dbeafe;
-  border-radius: 12px;
+  gap: 9px;
+
+  padding: 9px 12px;
+
+  color: #475569;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  font-size: 12px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.map-form-option:hover {
+  border-color: #bfdbfe;
   background: #f8fbff;
 }
 
-.map-selected-employee-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 46px;
-  height: 46px;
-  flex: 0 0 46px;
-  border-radius: 11px;
-  background: #e0e7ff;
-  color: #4338ca;
+.map-form-option.is-selected {
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border-color: #93c5fd;
 }
 
-.map-selected-employee-info {
-  min-width: 0;
-  flex: 1;
+.map-form-option.is-disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
 }
 
-.map-selected-employee-info span {
-  display: block;
-  margin-bottom: 4px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.map-selected-employee-info strong {
-  display: block;
-  overflow: hidden;
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.map-selected-employee-info small {
-  display: block;
-  margin-top: 4px;
-  color: #64748b;
-  font-size: 12px;
-}
-
-.map-selected-employee-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex: 0 0 auto;
-  padding: 5px 10px;
-  border-radius: 999px;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 11px;
-  font-weight: 700;
-}
-
-/* ============================================================
-   EMPLOYEE PROFILE
-   ============================================================ */
-
-.map-employee-profile-grid {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  overflow: hidden;
-  gap: 1px;
-  margin-top: 4px;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  background: #e2e8f0;
-}
-
-.map-employee-profile-grid > div {
-  min-width: 0;
-  padding: 16px;
-  background: #ffffff;
-}
-
-.map-employee-profile-grid span {
-  display: block;
-  margin-bottom: 6px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.map-employee-profile-grid strong {
-  display: block;
-  overflow: hidden;
-  color: #111827;
-  font-size: 14px;
-  font-weight: 700;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* ============================================================
-   EMPTY STATE
-   ============================================================ */
-
-.map-employee-empty-state {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 300px;
-  padding: 40px;
-  border: 1px dashed #cbd5e1;
-  border-radius: 12px;
-  background: #f8fafc;
-  text-align: center;
-}
-
-.map-employee-empty-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 50px;
-  height: 50px;
-  margin-bottom: 14px;
-  border-radius: 12px;
-  background: #eef2f7;
-  color: #64748b;
-}
-
-.map-employee-empty-state h3 {
-  margin: 0 0 7px;
-  color: #334155;
-  font-size: 16px;
-  font-weight: 700;
-}
-
-.map-employee-empty-state p {
-  max-width: 420px;
-  margin: 0;
-  color: #64748b;
-  font-size: 13px;
-  line-height: 1.6;
-}
-
-/* ============================================================
-   WORK LEGEND
-   ============================================================ */
-
-.map-work-legend {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 18px;
-  margin-bottom: 18px;
-  padding: 12px 14px;
-  border: 1px solid #e2e8f0;
-  border-radius: 9px;
-  background: #f8fafc;
-}
-
-.map-work-legend > div {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  color: #64748b;
-  font-size: 12px;
-}
-
-.map-work-legend strong {
-  color: #334155;
-  font-weight: 600;
-}
-
-.map-legend-dot {
-  width: 9px;
-  height: 9px;
-  flex: 0 0 9px;
-  border-radius: 50%;
-}
-
-.map-legend-responsible {
-  background: #4f46e5;
-}
-
-.map-legend-authorized {
-  background: #059669;
-}
-
-/* ============================================================
-   WORK GRID
-   ============================================================ */
-
-.map-work-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-/* ============================================================
-   WORK CARD
-   ============================================================ */
-
-.map-work-card {
-  min-width: 0;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 13px;
-  background: #ffffff;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.15s ease;
-}
-
-.map-work-card:hover {
-  border-color: #cbd5e1;
-  box-shadow: 0 7px 20px rgba(15, 23, 42, 0.07);
-  transform: translateY(-1px);
-}
-
-.map-work-card-active {
-  border-color: #c7d2fe;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.04);
-}
-
-.map-work-card-header {
-  display: flex;
-  align-items: flex-start;
-  gap: 13px;
-  padding: 18px 18px 15px;
-}
-
-.map-work-card-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  border-radius: 10px;
-  background: #f1f5f9;
-  color: #475569;
-}
-
-.map-work-card-active .map-work-card-icon {
-  background: #eef2ff;
-  color: #4f46e5;
-}
-
-.map-work-card-title {
-  min-width: 0;
-  flex: 1;
-}
-
-.map-work-card-title h3 {
-  margin: 0;
-  color: #111827;
-  font-size: 15px;
-  line-height: 1.35;
-  font-weight: 700;
-}
-
-.map-work-card-title p {
-  margin: 5px 0 0;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.55;
-}
-
-.map-work-card-responsibilities {
-  padding: 0 18px 16px;
-}
-
-.map-work-card-responsibilities > span {
-  display: block;
-  margin-bottom: 8px;
-  color: #475569;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-}
-
-.map-work-card-responsibilities ul {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 16px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.map-work-card-responsibilities li {
-  position: relative;
-  padding-left: 14px;
-  color: #64748b;
-  font-size: 12px;
-  line-height: 1.5;
-}
-
-.map-work-card-responsibilities li::before {
-  content: "";
+.map-form-option input {
   position: absolute;
-  top: 7px;
-  left: 0;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: #94a3b8;
-}
 
-.map-work-card-divider {
-  height: 1px;
-  background: #eef2f7;
-}
-
-/* ============================================================
-   RESPONSIBILITY CONTROLS
-   ============================================================ */
-
-.map-work-card-controls {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 15px 18px 18px;
-}
-
-.map-responsibility-option {
-  position: relative;
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  min-width: 0;
-  padding: 12px;
-  border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  background: #ffffff;
-  cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    box-shadow 0.15s ease;
-}
-
-.map-responsibility-option:hover {
-  border-color: #cbd5e1;
-  background: #f8fafc;
-}
-
-.map-responsibility-option-active {
-  border-color: #a5b4fc;
-  background: #eef2ff;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.05);
-}
-
-.map-responsibility-option input {
-  position: absolute;
   width: 1px;
   height: 1px;
+
   opacity: 0;
+
   pointer-events: none;
 }
 
-.map-responsibility-check {
+.map-checkbox {
+  width: 18px;
+  height: 18px;
+
+  flex: 0 0 18px;
+
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
-  border-radius: 7px;
-  background: #f1f5f9;
-  color: #94a3b8;
-}
 
-.map-responsibility-option-active .map-responsibility-check {
-  background: #4f46e5;
   color: #ffffff;
+
+  background: #ffffff;
+
+  border: 1.5px solid #cbd5e1;
+  border-radius: 5px;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
 }
 
-.map-responsibility-option > span:last-child {
+.map-form-option.is-selected .map-checkbox {
+  background: #2563eb;
+
+  border-color: #2563eb;
+}
+
+
+/* ================================================================
+   ACTION BUTTONS
+================================================================ */
+
+.map-bulk-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
+.map-action-button {
+  min-height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 7px 12px;
+
+  border-radius: 7px;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease,
+    transform 0.12s ease;
+}
+
+.map-action-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.map-action-button:disabled {
+  opacity: 0.45;
+
+  cursor: not-allowed;
+}
+
+.map-action-button.secondary {
+  color: #475569;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+}
+
+.map-action-button.secondary:hover:not(:disabled) {
+  color: #1e293b;
+
+  background: #f8fafc;
+
+  border-color: #94a3b8;
+}
+
+.map-action-button.warning {
+  color: #92400e;
+
+  background: #fffbeb;
+
+  border: 1px solid #fcd34d;
+}
+
+.map-action-button.warning:hover:not(:disabled) {
+  background: #fef3c7;
+}
+
+.map-action-button.primary {
+  color: #ffffff;
+
+  background: #2563eb;
+
+  border: 1px solid #2563eb;
+}
+
+.map-action-button.primary:hover:not(:disabled) {
+  background: #1d4ed8;
+
+  border-color: #1d4ed8;
+}
+
+
+/* ================================================================
+   SELECTED EMPLOYEE
+================================================================ */
+
+.map-selected-employee {
+  min-height: 64px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  margin-top: 17px;
+
+  padding: 11px 13px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
+}
+
+.map-selected-avatar {
+  width: 38px;
+  height: 38px;
+
+  flex: 0 0 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1d4ed8;
+
+  background: #dbeafe;
+
+  border-radius: 50%;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.map-selected-info {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
   min-width: 0;
 }
 
-.map-responsibility-option strong {
-  display: block;
-  color: #334155;
-  font-size: 12px;
-  line-height: 1.4;
+.map-selected-info strong {
+  color: #1e293b;
+
+  font-size: 13px;
+}
+
+.map-selected-info span {
+  color: #64748b;
+
+  font-size: 11px;
+}
+
+.map-lock-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 6px 9px;
+
+  border-radius: 7px;
+
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.map-lock-state.editable {
+  color: #166534;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+}
+
+.map-lock-state.locked {
+  color: #92400e;
+
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+}
+
+
+/* ================================================================
+   MASS ENTRY
+================================================================ */
+
+.mass-entry-panel {
+  padding: 21px;
+}
+
+.mass-entry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mass-entry-header h2 {
+  margin: 0 0 5px;
+
+  color: #0f172a;
+
+  font-size: 18px;
   font-weight: 700;
 }
 
-.map-responsibility-option small {
-  display: block;
-  margin-top: 3px;
+.mass-entry-header p {
+  margin: 0;
+
   color: #64748b;
+
+  font-size: 12px;
+}
+
+.mass-selected-count {
+  padding: 7px 11px;
+
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 7px;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  white-space: nowrap;
+}
+
+
+/* ================================================================
+   MASS ENTRY SECTIONS
+================================================================ */
+
+.mass-entry-section {
+  padding: 20px 0;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mass-entry-section:last-child {
+  border-bottom: none;
+
+  padding-bottom: 0;
+}
+
+.mass-section-title {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 11px;
+
+  margin-bottom: 15px;
+}
+
+.mass-section-title > span {
+  width: 27px;
+  height: 27px;
+
+  flex: 0 0 27px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 50%;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.mass-section-title strong {
+  display: block;
+
+  margin-bottom: 2px;
+
+  color: #1e293b;
+
+  font-size: 13px;
+}
+
+.mass-section-title small {
+  display: block;
+
+  color: #64748b;
+
   font-size: 11px;
   line-height: 1.45;
 }
 
-/* ============================================================
-   MAPPING SUMMARY
-   ============================================================ */
 
-.map-employee-summary {
-  margin-top: 24px;
-  overflow: hidden;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  background: #ffffff;
+/* ================================================================
+   MASS EMPLOYEE TOOLBAR
+================================================================ */
+
+.mass-employee-toolbar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 13px;
 }
 
-.map-employee-summary-header {
+.mass-employee-toolbar .map-field {
+  width: 310px;
+}
+
+.mass-employee-actions {
+  display: flex;
+  gap: 7px;
+}
+
+
+/* ================================================================
+   MASS EMPLOYEE LIST
+================================================================ */
+
+.mass-employee-list {
+  display: grid;
+
+  grid-template-columns:
+    repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+
+  max-height: 235px;
+
+  overflow-y: auto;
+
+  padding-right: 3px;
+}
+
+.mass-employee-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.mass-employee-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.mass-employee-item {
+  min-height: 60px;
+
+  position: relative;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  padding: 9px 12px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.mass-employee-item:hover {
+  border-color: #bfdbfe;
+
+  background: #f8fbff;
+}
+
+.mass-employee-item.selected {
+  background: #eff6ff;
+
+  border-color: #93c5fd;
+}
+
+.mass-employee-item.is-locked {
+  opacity: 0.65;
+
+  cursor: not-allowed;
+}
+
+.mass-employee-item input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  opacity: 0;
+
+  pointer-events: none;
+}
+
+.mass-employee-item.selected .map-checkbox {
+  background: #2563eb;
+
+  border-color: #2563eb;
+}
+
+.mass-employee-info {
+  flex: 1;
+
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.mass-employee-info strong {
+  overflow: hidden;
+
+  color: #1e293b;
+
+  font-size: 12px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mass-employee-info small {
+  overflow: hidden;
+
+  color: #64748b;
+
+  font-size: 10px;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mass-employee-lock {
+  color: #f59e0b;
+}
+
+.mass-empty-state {
+  grid-column: 1 / -1;
+
+  padding: 24px;
+
+  color: #64748b;
+
+  background: #ffffff;
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 8px;
+
+  text-align: center;
+
+  font-size: 12px;
+}
+
+
+/* ================================================================
+   MASS FORM TOOLBAR
+================================================================ */
+
+.mass-form-toolbar {
+  display: flex;
+  justify-content: flex-end;
+
+  gap: 7px;
+
+  margin-bottom: 11px;
+}
+
+
+/* ================================================================
+   MASS FORM GRID
+================================================================ */
+
+.mass-form-grid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(4, minmax(0, 1fr));
+
+  gap: 9px;
+}
+
+
+/* ================================================================
+   MASS APPLY
+================================================================ */
+
+.mass-apply-section {
+  padding-top: 20px;
+}
+
+.mass-entry-summary {
+  display: flex;
+
+  gap: 10px;
+
+  margin-bottom: 15px;
+}
+
+.mass-entry-summary > div {
+  min-width: 125px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  padding: 12px 14px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+}
+
+.mass-entry-summary strong {
+  color: #1d4ed8;
+
+  font-size: 20px;
+  line-height: 1;
+}
+
+.mass-entry-summary span {
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mass-entry-footer {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 16px;
-  padding: 18px 20px;
-  border-bottom: 1px solid #eef2f7;
+
+  gap: 15px;
+
+  padding: 13px;
+
+  background: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 9px;
 }
 
-.map-employee-summary-header > div {
-  min-width: 0;
-}
-
-.map-employee-summary-header span {
-  display: block;
-  margin-bottom: 4px;
-  color: #64748b;
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.map-employee-summary-header strong {
-  display: block;
-  color: #111827;
-  font-size: 15px;
-  font-weight: 700;
-}
-
-.map-employee-summary-header > svg {
-  flex: 0 0 auto;
-  color: #4f46e5;
-}
-
-.map-employee-summary-stats {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.map-employee-summary-stats > div {
-  min-width: 0;
-  padding: 18px 20px;
-}
-
-.map-employee-summary-stats > div + div {
-  border-left: 1px solid #eef2f7;
-}
-
-.map-employee-summary-stats strong {
-  display: block;
-  color: #111827;
-  font-size: 24px;
-  line-height: 1;
-  font-weight: 700;
-}
-
-.map-employee-summary-stats span {
-  display: block;
-  margin-top: 6px;
-  color: #64748b;
-  font-size: 12px;
-}
-
-/* ============================================================
-   ACTIONS
-   ============================================================ */
-
-.map-employee-actions {
+.mass-entry-result {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
-  gap: 10px;
-  margin-top: 20px;
-}
+  gap: 7px;
 
-.map-employee-primary-button,
-.map-employee-secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  min-height: 40px;
-  padding: 0 16px;
-  border-radius: 9px;
-  font-size: 13px;
+  color: #475569;
+
+  font-size: 11px;
   font-weight: 600;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.1s ease;
 }
 
-.map-employee-primary-button {
-  border: 1px solid #4f46e5;
-  background: #4f46e5;
-  color: #ffffff;
+.mass-entry-result svg {
+  flex: 0 0 auto;
+
+  color: #2563eb;
 }
 
-.map-employee-primary-button:hover {
-  border-color: #4338ca;
-  background: #4338ca;
-  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.18);
+.mass-entry-buttons {
+  display: flex;
+  gap: 8px;
 }
 
-.map-employee-secondary-button {
-  border: 1px solid #cbd5e1;
-  background: #ffffff;
-  color: #334155;
+
+/* ================================================================
+   TABLE SECTION
+================================================================ */
+
+.map-table-section {
+  margin-top: 4px;
 }
 
-.map-employee-secondary-button:hover {
-  border-color: #94a3b8;
+.map-table-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  margin-bottom: 12px;
+}
+
+.map-table-header h2 {
+  margin: 0;
+
+  color: #0f172a;
+
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.map-count {
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+
+/* ================================================================
+   TABLE TOP SCROLL
+================================================================ */
+
+.map-employee-top-scroll {
+  width: 100%;
+  height: 9px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  margin-bottom: 5px;
+}
+
+.map-employee-top-scroll::-webkit-scrollbar {
+  height: 7px;
+}
+
+.map-employee-top-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+
+  border-radius: 10px;
+}
+
+.map-employee-top-scroll-content {
+  height: 1px;
+}
+
+
+/* ================================================================
+   TABLE WRAPPER
+================================================================ */
+
+.map-table-wrapper {
+  width: 100%;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.map-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.map-table-wrapper::-webkit-scrollbar-track {
   background: #f8fafc;
 }
 
-.map-employee-primary-button:active,
-.map-employee-secondary-button:active {
-  transform: translateY(1px);
-}
+.map-table-wrapper::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
 
-.map-employee-primary-button:disabled,
-.map-employee-secondary-button:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-  box-shadow: none;
-}
-
-/* ============================================================
-   SUCCESS MESSAGE
-   ============================================================ */
-
-.map-employee-success {
-  display: flex;
-  align-items: flex-start;
-  gap: 10px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid #bbf7d0;
   border-radius: 10px;
-  background: #f0fdf4;
-  color: #166534;
 }
 
-.map-employee-success > svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
+
+/* ================================================================
+   TABLE
+================================================================ */
+
+.map-table {
+  width: 100%;
+
+  min-width: 1050px;
+
+  border-collapse: collapse;
+
+  background: #ffffff;
 }
 
-.map-employee-success strong {
-  display: block;
-  font-size: 13px;
+.map-table thead {
+  background: #f8fafc;
+}
+
+.map-table th {
+  height: 43px;
+
+  padding: 9px 10px;
+
+  color: #64748b;
+
+  border-bottom: 1px solid #e2e8f0;
+
+  font-size: 9px;
+  font-weight: 750;
+
+  letter-spacing: 0.045em;
+  text-transform: uppercase;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+.map-table td {
+  padding: 10px;
+
+  color: #334155;
+
+  border-bottom: 1px solid #f1f5f9;
+
+  font-size: 11px;
+
+  text-align: center;
+
+  white-space: nowrap;
+}
+
+.map-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.map-table tbody tr:hover {
+  background: #fafcff;
+}
+
+.map-table tbody tr.current-row {
+  background: #f8fbff;
+}
+
+.serial-column {
+  width: 55px;
+
+  text-align: center !important;
+}
+
+.employee-column {
+  width: 250px;
+
+  text-align: left !important;
+}
+
+.form-column {
+  min-width: 105px;
+
+  text-align: center !important;
+}
+
+.actions-column {
+  width: 150px;
+
+  text-align: center !important;
+}
+
+
+/* ================================================================
+   TABLE EMPLOYEE
+================================================================ */
+
+.table-employee-button {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  padding: 0;
+
+  color: inherit;
+
+  background: transparent;
+
+  border: none;
+
+  cursor: pointer;
+
+  text-align: left;
+}
+
+.table-avatar {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1d4ed8;
+
+  background: #dbeafe;
+
+  border-radius: 50%;
+
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.table-employee-details {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.table-employee-details strong {
+  color: #1e293b;
+
+  font-size: 11px;
   font-weight: 700;
 }
 
-.map-employee-success p {
-  margin: 4px 0 0;
-  color: #4d7c5f;
-  font-size: 12px;
-  line-height: 1.5;
+.table-employee-details small {
+  color: #64748b;
+
+  font-size: 9px;
 }
 
-/* ============================================================
-   RESPONSIVE
-   ============================================================ */
+
+/* ================================================================
+   MAPPING TOGGLE
+================================================================ */
+
+.mapping-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+
+  padding: 0;
+
+  background: transparent;
+
+  border: none;
+
+  cursor: pointer;
+}
+
+.mapping-toggle:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.5;
+}
+
+.mapping-toggle-track {
+  position: relative;
+
+  width: 32px;
+  height: 18px;
+
+  display: block;
+
+  background: #cbd5e1;
+
+  border-radius: 20px;
+
+  transition:
+    background 0.18s ease;
+}
+
+.mapping-toggle-thumb {
+  position: absolute;
+
+  top: 2px;
+  left: 2px;
+
+  width: 14px;
+  height: 14px;
+
+  background: #ffffff;
+
+  border-radius: 50%;
+
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.20);
+
+  transition:
+    transform 0.18s ease;
+}
+
+.mapping-toggle.is-on
+  .mapping-toggle-track {
+  background: #2563eb;
+}
+
+.mapping-toggle.is-on
+  .mapping-toggle-thumb {
+  transform: translateX(14px);
+}
+
+.mapping-toggle-text {
+  min-width: 20px;
+
+  color: #64748b;
+
+  font-size: 8px;
+  font-weight: 750;
+}
+
+.mapping-toggle.is-on
+  .mapping-toggle-text {
+  color: #2563eb;
+}
+
+
+/* ================================================================
+   TABLE ACTIONS
+================================================================ */
+
+.row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 5px;
+}
+
+.row-save-button,
+.row-lock-button {
+  min-height: 28px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+
+  padding: 5px 7px;
+
+  border-radius: 6px;
+
+  font-family: inherit;
+
+  font-size: 9px;
+  font-weight: 650;
+
+  cursor: pointer;
+}
+
+.row-save-button {
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+}
+
+.row-save-button:hover {
+  background: #dbeafe;
+}
+
+.row-lock-button {
+  color: #92400e;
+
+  background: #fffbeb;
+
+  border: 1px solid #fde68a;
+}
+
+.row-lock-button:hover {
+  background: #fef3c7;
+}
+
+.row-lock-button.unlock {
+  color: #166534;
+
+  background: #f0fdf4;
+
+  border-color: #bbf7d0;
+}
+
+
+/* ================================================================
+   FOOTER
+================================================================ */
+
+.map-modal-footer {
+  min-height: 62px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 15px;
+
+  padding: 12px 26px;
+
+  background: #ffffff;
+
+  border-top: 1px solid #e5e7eb;
+}
+
+.map-footer-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  color: #64748b;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.map-footer-status svg {
+  color: #2563eb;
+}
+
+.map-footer-close {
+  min-height: 35px;
+
+  padding: 7px 15px;
+
+  color: #475569;
+
+  background: #ffffff;
+
+  border: 1px solid #cbd5e1;
+  border-radius: 7px;
+
+  font-family: inherit;
+
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.map-footer-close:hover {
+  background: #f8fafc;
+
+  border-color: #94a3b8;
+}
+
+
+/* ================================================================
+   RESPONSIVE — TABLET
+================================================================ */
 
 @media (max-width: 1100px) {
-  .map-employee-selection-layout {
-    grid-template-columns: 280px minmax(0, 1fr);
+
+  .map-form-options {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
   }
 
-  .map-employee-profile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .mass-form-grid {
+    grid-template-columns:
+      repeat(3, minmax(0, 1fr));
   }
 
-  .map-work-grid {
-    grid-template-columns: 1fr;
+  .mass-employee-list {
+    grid-template-columns:
+      1fr;
   }
+
 }
 
-@media (max-width: 800px) {
-  .map-employee-page {
-    padding: 22px 18px 32px;
+
+/* ================================================================
+   RESPONSIVE — SMALL TABLET
+================================================================ */
+
+@media (max-width: 850px) {
+
+  .map-employee-overlay {
+    padding: 12px;
   }
 
-  .map-employee-section {
+  .map-employee-modal {
+    max-height: calc(100vh - 24px);
+
+    border-radius: 14px;
+  }
+
+  .map-modal-body {
     padding: 18px;
   }
 
-  .map-employee-selection-layout {
+  .map-modal-header {
+    padding: 15px 18px;
+  }
+
+  .map-modal-footer {
+    padding: 11px 18px;
+  }
+
+  .map-control-grid {
     grid-template-columns: 1fr;
   }
 
-  .map-employee-profile-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .map-form-options {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
   }
+
+  .mass-form-grid {
+    grid-template-columns:
+      repeat(2, minmax(0, 1fr));
+  }
+
+  .mass-employee-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mass-employee-toolbar .map-field {
+    width: 100%;
+  }
+
+  .mass-employee-actions {
+    justify-content: flex-start;
+  }
+
+  .mass-entry-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .mass-entry-buttons {
+    justify-content: flex-end;
+  }
+
 }
 
+
+/* ================================================================
+   RESPONSIVE — MOBILE
+================================================================ */
+
 @media (max-width: 600px) {
-  .map-employee-page {
-    padding: 18px 14px 28px;
+
+  .map-employee-overlay {
+    padding: 0;
   }
 
-  .map-employee-page-header {
-    margin-bottom: 22px;
+  .map-employee-modal {
+    width: 100%;
+    height: 100vh;
+    max-height: 100vh;
+
+    border: none;
+    border-radius: 0;
   }
 
-  .map-employee-page-header h1 {
-    font-size: 22px;
+  .map-modal-header {
+    min-height: 70px;
+
+    padding: 13px 15px;
   }
 
-  .map-employee-section-header {
-    align-items: flex-start;
+  .map-modal-heading {
+    gap: 9px;
   }
 
-  .map-employee-profile-grid {
+  .map-modal-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .map-modal-heading h1 {
+    font-size: 18px;
+  }
+
+  .map-modal-body {
+    padding: 15px;
+  }
+
+  .map-intro {
+    flex-direction: column;
+
+    margin-bottom: 16px;
+  }
+
+  .map-security-note {
+    align-self: flex-start;
+  }
+
+  .map-mode-tabs {
+    margin-bottom: 14px;
+  }
+
+  .map-mode-tab {
+    min-height: 39px;
+
+    padding: 7px 8px;
+
+    font-size: 11px;
+  }
+
+  .map-control-panel {
+    padding: 14px;
+  }
+
+  .map-form-options {
     grid-template-columns: 1fr;
+  }
+
+  .mass-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .map-bulk-actions {
+    justify-content: flex-start;
   }
 
   .map-selected-employee {
     align-items: flex-start;
+
     flex-wrap: wrap;
   }
 
-  .map-selected-employee-status {
-    margin-left: 60px;
+  .map-lock-state {
+    margin-left: 50px;
   }
 
-  .map-work-card-controls {
-    grid-template-columns: 1fr;
-  }
-
-  .map-work-card-responsibilities ul {
-    grid-template-columns: 1fr;
-  }
-
-  .map-employee-summary-stats {
-    grid-template-columns: 1fr;
-  }
-
-  .map-employee-summary-stats > div + div {
-    border-top: 1px solid #eef2f7;
-    border-left: 0;
-  }
-
-  .map-employee-actions {
-    flex-direction: column-reverse;
-    align-items: stretch;
-  }
-
-  .map-employee-primary-button,
-  .map-employee-secondary-button {
+  .mass-entry-summary {
     width: 100%;
   }
+
+  .mass-entry-summary > div {
+    flex: 1;
+
+    min-width: 0;
+  }
+
+  .mass-entry-buttons {
+    flex-direction: column;
+  }
+
+  .mass-entry-buttons
+    .map-action-button {
+    width: 100%;
+  }
+
+  .map-modal-footer {
+    min-height: 57px;
+  }
+
+  .map-footer-status {
+    font-size: 10px;
+  }
+
+  .map-footer-close {
+    padding: 6px 12px;
+  }
+
+}
+/* ================================================================
+   EXCEL MASS ENTRY
+   MASS ENTRY = ONLY EXCEL UPLOAD
+================================================================ */
+
+.mass-entry-container {
+  width: 100%;
+  margin-bottom: 25px;
+
+  padding: 22px;
+
+  background: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 13px;
+}
+
+
+/* ================================================================
+   EXCEL MASS HEADER
+================================================================ */
+
+.mass-entry-container .mass-entry-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 20px;
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.mass-entry-number {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #1d4ed8;
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+  border-radius: 50%;
+
+  font-size: 11px;
+  font-weight: 750;
+}
+
+.mass-entry-container .mass-entry-header h2 {
+  margin: 0 0 4px;
+
+  color: #0f172a;
+
+  font-size: 18px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.mass-entry-container .mass-entry-header p {
+  margin: 0;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* ================================================================
+   EXCEL UPLOAD AREA
+================================================================ */
+
+.mass-excel-upload {
+  min-height: 250px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 35px 25px;
+
+  text-align: center;
+
+  background: #ffffff;
+
+  border: 1px dashed #93c5fd;
+  border-radius: 12px;
+
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.mass-excel-upload:hover {
+  background: #f8fbff;
+
+  border-color: #3b82f6;
+
+  box-shadow:
+    0 4px 16px rgba(37, 99, 235, 0.06);
+}
+
+
+/* ================================================================
+   EXCEL ICON
+================================================================ */
+
+.mass-excel-icon {
+  width: 58px;
+  height: 58px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 14px;
+
+  color: #2563eb;
+
+  background: #eff6ff;
+
+  border: 1px solid #dbeafe;
+  border-radius: 14px;
+}
+
+.mass-excel-icon svg {
+  stroke-width: 1.8;
+}
+
+
+/* ================================================================
+   EXCEL TITLE
+================================================================ */
+
+.mass-excel-upload h3 {
+  margin: 0 0 6px;
+
+  color: #1e293b;
+
+  font-size: 16px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+
+.mass-excel-upload p {
+  margin: 0 0 18px;
+
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* ================================================================
+   CHOOSE EXCEL BUTTON
+================================================================ */
+
+.mass-upload-button {
+  min-height: 38px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  padding: 8px 15px;
+
+  color: #ffffff;
+
+  background: #2563eb;
+
+  border: 1px solid #2563eb;
+  border-radius: 7px;
+
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.18s ease;
+}
+
+.mass-upload-button:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+
+  box-shadow:
+    0 4px 10px rgba(37, 99, 235, 0.18);
+
+  transform: translateY(-1px);
+}
+
+.mass-upload-button:active {
+  transform: translateY(0);
+}
+
+.mass-upload-button svg {
+  stroke-width: 2;
+}
+
+
+/* ================================================================
+   UPLOAD HINT
+================================================================ */
+
+.mass-upload-hint {
+  display: block;
+
+  margin-top: 12px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+
+/* ================================================================
+   UPLOADED EXCEL FILE
+================================================================ */
+
+.mass-excel-file {
+  min-height: 78px;
+
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  padding: 13px 15px;
+
+  background: #ffffff;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+
+  box-shadow:
+    0 2px 6px rgba(15, 23, 42, 0.03);
+}
+
+.mass-file-icon {
+  width: 43px;
+  height: 43px;
+
+  flex: 0 0 43px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #166534;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+}
+
+.mass-file-info {
+  flex: 1;
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.mass-file-info strong {
+  overflow: hidden;
+
+  color: #1e293b;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mass-file-info span {
+  color: #64748b;
+
+  font-size: 10px;
+  font-weight: 500;
+}
+
+
+/* ================================================================
+   REMOVE EXCEL BUTTON
+================================================================ */
+
+.mass-remove-file {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #dc2626;
+
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+  border-radius: 7px;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.mass-remove-file:hover {
+  color: #b91c1c;
+
+  background: #fee2e2;
+
+  border-color: #fca5a5;
+}
+
+
+/* ================================================================
+   EXCEL STATUS MESSAGE
+================================================================ */
+
+.mass-excel-message {
+  min-height: 40px;
+
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 12px;
+
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.mass-excel-message.loading {
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border: 1px solid #bfdbfe;
+}
+
+.mass-excel-message.error {
+  color: #b91c1c;
+
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+}
+
+.mass-excel-message svg {
+  flex: 0 0 auto;
+}
+
+
+/* ================================================================
+   EXCEL SUCCESS
+================================================================ */
+
+.mass-upload-success {
+  min-height: 62px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  margin-top: 12px;
+
+  padding: 11px 13px;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 9px;
+}
+
+.mass-success-icon {
+  width: 34px;
+  height: 34px;
+
+  flex: 0 0 34px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #15803d;
+
+  background: #dcfce7;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 50%;
+}
+
+.mass-upload-success > div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.mass-upload-success strong {
+  color: #166534;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.mass-upload-success span {
+  color: #4d7c5b;
+
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+
+/* ================================================================
+   EXCEL MASS ENTRY — TABLET
+================================================================ */
+
+@media (max-width: 850px) {
+
+  .mass-entry-container {
+    padding: 17px;
+  }
+
+  .mass-entry-container .mass-entry-header {
+    gap: 11px;
+  }
+
+  .mass-entry-container .mass-entry-header h2 {
+    font-size: 16px;
+  }
+
+  .mass-excel-upload {
+    min-height: 230px;
+
+    padding: 28px 18px;
+  }
+
+}
+/* ================================================================
+   MASS ENTRY — EXCEL UPLOAD
+   CLEAN ADMIN PANEL DESIGN
+================================================================ */
+
+.mass-entry-container {
+  width: 100%;
+  box-sizing: border-box;
+
+  margin: 0 0 26px;
+  padding: 24px;
+
+  background: #ffffff;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+
+/* ================================================================
+   HEADER
+================================================================ */
+
+.mass-entry-container .mass-entry-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  gap: 20px;
+
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+
+  border-bottom: 1px solid #eef0f3;
+}
+
+.mass-entry-number {
+  display: none;
+}
+
+.mass-entry-container .mass-entry-header > div:first-child {
+  position: relative;
+  padding-left: 0;
+}
+
+.mass-entry-container .mass-entry-header > div:last-child {
+  flex: 1;
+}
+
+.mass-entry-container .mass-entry-header h2 {
+  margin: 0 0 5px;
+
+  color: #172033;
+
+  font-size: 19px;
+  line-height: 1.25;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.mass-entry-container .mass-entry-header p {
+  margin: 0;
+
+  color: #718096;
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+
+/* ================================================================
+   UPLOAD AREA
+================================================================ */
+
+.mass-excel-upload {
+  position: relative;
+
+  width: 100%;
+  min-height: 245px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 32px 25px;
+
+  text-align: center;
+
+  background:
+    linear-gradient(
+      180deg,
+      #fbfdff 0%,
+      #f8fafc 100%
+    );
+
+  border: 1px dashed #cbd5e1;
+  border-radius: 10px;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.mass-excel-upload::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 8px;
+
+  border: 1px solid rgba(226, 232, 240, 0.5);
+
+  border-radius: 7px;
+
+  pointer-events: none;
+}
+
+.mass-excel-upload:hover {
+  background: #f8fbff;
+
+  border-color: #93c5fd;
+
+  box-shadow:
+    0 5px 18px rgba(15, 23, 42, 0.04);
+}
+
+
+/* ================================================================
+   ICON
+================================================================ */
+
+.mass-excel-icon {
+  position: relative;
+  z-index: 1;
+
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-bottom: 13px;
+
+  color: #2563eb;
+
+  background: #eff6ff;
+
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+}
+
+.mass-excel-icon svg {
+  width: 27px;
+  height: 27px;
+
+  stroke-width: 1.8;
+}
+
+
+/* ================================================================
+   TITLE
+================================================================ */
+
+.mass-excel-upload h3 {
+  position: relative;
+  z-index: 1;
+
+  margin: 0 0 5px;
+
+  color: #1e293b;
+
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.mass-excel-upload p {
+  position: relative;
+  z-index: 1;
+
+  margin: 0 0 17px;
+
+  color: #64748b;
+
+  font-size: 11px;
+}
+
+
+/* ================================================================
+   CHOOSE FILE BUTTON
+================================================================ */
+
+.mass-upload-button {
+  position: relative;
+  z-index: 1;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  height: 36px;
+
+  padding: 0 15px;
+
+  color: #ffffff;
+
+  background: #2563eb;
+
+  border: 1px solid #2563eb;
+  border-radius: 6px;
+
+  font-size: 11px;
+  font-weight: 650;
+
+  cursor: pointer;
+
+  transition:
+    background 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.mass-upload-button:hover {
+  background: #1d4ed8;
+
+  box-shadow:
+    0 4px 10px rgba(37, 99, 235, 0.18);
+}
+
+.mass-upload-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+
+/* ================================================================
+   FILE REQUIREMENT
+================================================================ */
+
+.mass-upload-hint {
+  position: relative;
+  z-index: 1;
+
+  margin-top: 11px;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  letter-spacing: 0.1px;
+}
+
+
+/* ================================================================
+   UPLOADED FILE
+================================================================ */
+
+.mass-excel-file {
+  display: flex;
+  align-items: center;
+
+  width: 100%;
+  min-height: 68px;
+
+  box-sizing: border-box;
+
+  padding: 11px 13px;
+
+  background: #f8fafc;
+
+  border: 1px solid #dbe4ee;
+  border-radius: 8px;
+}
+
+.mass-file-icon {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 11px;
+
+  color: #15803d;
+
+  background: #f0fdf4;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+}
+
+.mass-file-icon svg {
+  width: 21px;
+  height: 21px;
+}
+
+.mass-file-info {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.mass-file-info strong {
+  overflow: hidden;
+
+  color: #1e293b;
+
+  font-size: 11px;
+  font-weight: 700;
+
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mass-file-info span {
+  color: #64748b;
+
+  font-size: 10px;
+}
+
+.mass-remove-file {
+  width: 30px;
+  height: 30px;
+
+  flex: 0 0 30px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #64748b;
+
+  background: transparent;
+
+  border: 1px solid transparent;
+  border-radius: 6px;
+
+  cursor: pointer;
+
+  transition: 0.18s ease;
+}
+
+.mass-remove-file:hover {
+  color: #dc2626;
+
+  background: #fef2f2;
+
+  border-color: #fecaca;
+}
+
+
+/* ================================================================
+   LOADING / ERROR
+================================================================ */
+
+.mass-excel-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  margin-top: 10px;
+
+  padding: 9px 11px;
+
+  border-radius: 7px;
+
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mass-excel-message.loading {
+  color: #1d4ed8;
+
+  background: #eff6ff;
+
+  border: 1px solid #dbeafe;
+}
+
+.mass-excel-message.error {
+  color: #b91c1c;
+
+  background: #fef2f2;
+
+  border: 1px solid #fecaca;
+}
+
+
+/* ================================================================
+   SUCCESS
+================================================================ */
+
+.mass-upload-success {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  margin-top: 10px;
+
+  padding: 10px 12px;
+
+  background: #f7fdf9;
+
+  border: 1px solid #d1fae5;
+  border-radius: 8px;
+}
+
+.mass-success-icon {
+  width: 32px;
+  height: 32px;
+
+  flex: 0 0 32px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  color: #15803d;
+
+  background: #ecfdf5;
+
+  border: 1px solid #bbf7d0;
+  border-radius: 50%;
+}
+
+.mass-upload-success > div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+.mass-upload-success strong {
+  color: #166534;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.mass-upload-success span {
+  color: #64748b;
+
+  font-size: 9px;
+}
+
+
+/* ================================================================
+   RESPONSIVE
+================================================================ */
+
+@media (max-width: 650px) {
+
+  .mass-entry-container {
+    padding: 17px;
+  }
+
+  .mass-entry-container .mass-entry-header h2 {
+    font-size: 16px;
+  }
+
+  .mass-excel-upload {
+    min-height: 220px;
+
+    padding: 25px 15px;
+  }
+
 }

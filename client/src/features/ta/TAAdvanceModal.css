@@ -1,0 +1,850 @@
+/* ============================================================
+   TA ADVANCE MODAL
+   Government Finance Management System
+   ============================================================ */
+
+.ta-advance-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.58);
+  backdrop-filter: blur(5px);
+  -webkit-backdrop-filter: blur(5px);
+  animation: taOverlayIn 0.18s ease-out;
+}
+
+.ta-advance-modal {
+  width: min(1180px, 100%);
+  max-height: calc(100vh - 48px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dbe4ef;
+  border-radius: 18px;
+  box-shadow:
+    0 24px 70px rgba(15, 23, 42, 0.24),
+    0 8px 24px rgba(15, 23, 42, 0.08);
+  animation: taModalIn 0.2s ease-out;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+
+.ta-advance-header {
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 28px;
+  border-bottom: 1px solid #e5ebf3;
+  background: #ffffff;
+}
+
+.ta-advance-header-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.ta-advance-header-icon {
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 12px;
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+.ta-advance-eyebrow {
+  margin-bottom: 3px;
+  color: #71839b;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ta-advance-header h2 {
+  margin: 0;
+  color: #132a46;
+  font-size: 23px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.ta-advance-close {
+  width: 38px;
+  height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 9px;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.ta-advance-close:hover {
+  color: #172b4d;
+  background: #f1f5f9;
+}
+
+/* ============================================================
+   STEPPER
+   ============================================================ */
+
+.ta-advance-stepper {
+  min-height: 70px;
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  border-bottom: 1px solid #e6edf5;
+  background: #f8fafc;
+}
+
+.ta-advance-step {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: #8998ad;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.ta-advance-step.active {
+  color: #174b82;
+}
+
+.ta-advance-step-number {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #cfdae8;
+  border-radius: 50%;
+  background: #ffffff;
+  color: #8090a5;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.ta-advance-step.active .ta-advance-step-number {
+  border-color: #1d4f82;
+  background: #1d4f82;
+  color: #ffffff;
+}
+
+.ta-advance-step-line {
+  flex: 1;
+  height: 1px;
+  min-width: 28px;
+  margin: 0 13px;
+  background: #d5deea;
+}
+
+/* ============================================================
+   FORM CONTENT
+   ============================================================ */
+
+.ta-advance-form {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ta-advance-form-content {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 28px 32px 34px;
+}
+
+.ta-advance-form-content::-webkit-scrollbar {
+  width: 8px;
+}
+
+.ta-advance-form-content::-webkit-scrollbar-track {
+  background: #f8fafc;
+}
+
+.ta-advance-form-content::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #cbd5e1;
+}
+
+.ta-advance-intro {
+  margin-bottom: 26px;
+}
+
+.ta-advance-step-caption {
+  margin-bottom: 6px;
+  color: #1d4f82;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+.ta-advance-intro h1 {
+  margin: 0;
+  color: #102a43;
+  font-size: 27px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+
+.ta-advance-intro p {
+  max-width: 760px;
+  margin: 8px 0 0;
+  color: #71839b;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   SECTION
+   ============================================================ */
+
+.ta-form-section {
+  margin-top: 20px;
+  padding: 24px;
+  border: 1px solid #dce5ef;
+  border-radius: 13px;
+  background: #ffffff;
+}
+
+.ta-form-section:first-of-type {
+  margin-top: 0;
+}
+
+.ta-form-section-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  margin-bottom: 22px;
+}
+
+.ta-form-section-number {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  background: #eef4ff;
+  color: #3156d3;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ta-form-section-heading h3 {
+  margin: 0;
+  color: #132a46;
+  font-size: 18px;
+  line-height: 1.3;
+}
+
+.ta-form-section-heading p {
+  margin: 4px 0 0;
+  color: #71839b;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* ============================================================
+   INFO BANNER
+   ============================================================ */
+
+.ta-info-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+  padding: 13px 15px;
+  border: 1px solid #d7e6f5;
+  border-radius: 10px;
+  background: #f5f9fd;
+}
+
+.ta-info-banner-icon {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 9px;
+  color: #23588c;
+  background: #e4f0fb;
+}
+
+.ta-info-banner strong {
+  display: block;
+  color: #28445f;
+  font-size: 13px;
+}
+
+.ta-info-banner span {
+  display: block;
+  margin-top: 2px;
+  color: #73869b;
+  font-size: 12px;
+}
+
+/* ============================================================
+   GRID
+   ============================================================ */
+
+.ta-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.ta-form-grid-two {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ta-field {
+  min-width: 0;
+}
+
+.ta-field-full {
+  grid-column: 1 / -1;
+}
+
+.ta-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #334e68;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ta-field label span {
+  color: #dc2626;
+}
+
+/* ============================================================
+   INPUTS
+   ============================================================ */
+
+.ta-field input,
+.ta-field select,
+.ta-field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cfdae6;
+  border-radius: 9px;
+  outline: none;
+  color: #1e293b;
+  background: #ffffff;
+  font-family: inherit;
+  font-size: 14px;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.ta-field input,
+.ta-field select {
+  height: 44px;
+  padding: 0 13px;
+}
+
+.ta-field textarea {
+  min-height: 86px;
+  padding: 12px 13px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.ta-field input::placeholder,
+.ta-field textarea::placeholder {
+  color: #9aabbd;
+}
+
+.ta-field input:focus,
+.ta-field select:focus,
+.ta-field textarea:focus {
+  border-color: #6b8fc1;
+  box-shadow: 0 0 0 3px rgba(59, 102, 160, 0.09);
+}
+
+.ta-field input[readonly] {
+  color: #64748b;
+  background: #f8fafc;
+  cursor: default;
+}
+
+/* ============================================================
+   ICON INPUT
+   ============================================================ */
+
+.ta-input-with-icon {
+  position: relative;
+}
+
+.ta-input-with-icon > svg {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  z-index: 1;
+  color: #8293a8;
+  pointer-events: none;
+  transform: translateY(-50%);
+}
+
+.ta-input-with-icon input,
+.ta-input-with-icon select {
+  padding-left: 40px;
+}
+
+/* ============================================================
+   FINANCIAL
+   ============================================================ */
+
+.ta-financial-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px 20px;
+}
+
+.ta-money-input {
+  position: relative;
+}
+
+.ta-money-input > span {
+  position: absolute;
+  left: 13px;
+  top: 50%;
+  color: #53677d;
+  font-size: 14px;
+  font-weight: 600;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.ta-money-input input {
+  padding-left: 31px;
+}
+
+.ta-total-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-top: 22px;
+  padding: 18px 20px;
+  border: 1px solid #dbe4ef;
+  border-radius: 10px;
+  background: #f8fafc;
+}
+
+.ta-total-label {
+  display: block;
+  color: #334e68;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ta-total-description {
+  display: block;
+  margin-top: 3px;
+  color: #8293a8;
+  font-size: 12px;
+}
+
+.ta-total-card strong {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  color: #132a46;
+  font-size: 24px;
+  font-weight: 750;
+}
+
+/* ============================================================
+   DOCUMENT UPLOAD
+   ============================================================ */
+
+.ta-upload-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 17px;
+  border: 1px dashed #c9d6e5;
+  border-radius: 11px;
+  background: #fbfcfe;
+}
+
+.ta-upload-icon {
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border-radius: 10px;
+  color: #3156d3;
+  background: #eef3ff;
+}
+
+.ta-upload-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.ta-upload-content strong {
+  display: block;
+  color: #334e68;
+  font-size: 13px;
+}
+
+.ta-upload-content span {
+  display: block;
+  margin-top: 3px;
+  color: #8192a7;
+  font-size: 12px;
+}
+
+.ta-upload-content small {
+  display: block;
+  margin-top: 5px;
+  overflow: hidden;
+  color: #3156d3;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ta-upload-button {
+  min-height: 38px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0 14px;
+  border: 1px solid #cbd7e5;
+  border-radius: 8px;
+  color: #334e68;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ta-upload-button:hover {
+  border-color: #9db0c6;
+  background: #f8fafc;
+}
+
+/* ============================================================
+   DECLARATION
+   ============================================================ */
+
+.ta-declaration-section {
+  background: #fbfcfe;
+}
+
+.ta-declaration {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 15px;
+  border: 1px solid #dce5ef;
+  border-radius: 10px;
+  background: #ffffff;
+  cursor: pointer;
+}
+
+.ta-declaration input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.ta-custom-checkbox {
+  width: 19px;
+  height: 19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+  border: 1px solid #b9c7d7;
+  border-radius: 5px;
+  color: #ffffff;
+  background: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.ta-declaration input:checked + .ta-custom-checkbox {
+  border-color: #3156d3;
+  background: #3156d3;
+}
+
+.ta-declaration-text {
+  color: #526b84;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.ta-advance-footer {
+  min-height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 28px;
+  border-top: 1px solid #e5ebf3;
+  background: #ffffff;
+}
+
+.ta-footer-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.ta-secondary-button,
+.ta-cancel-button,
+.ta-primary-button {
+  min-height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border-radius: 8px;
+  padding: 0 16px;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+
+.ta-secondary-button {
+  border: 1px solid #d0dbe7;
+  color: #425a72;
+  background: #ffffff;
+}
+
+.ta-secondary-button:hover {
+  border-color: #b6c5d5;
+  background: #f8fafc;
+}
+
+.ta-cancel-button {
+  border: 1px solid #d0dbe7;
+  color: #425a72;
+  background: #ffffff;
+}
+
+.ta-cancel-button:hover {
+  border-color: #b6c5d5;
+  background: #f8fafc;
+}
+
+.ta-primary-button {
+  border: 1px solid #20558b;
+  color: #ffffff;
+  background: #20558b;
+  box-shadow: 0 3px 8px rgba(32, 85, 139, 0.16);
+}
+
+.ta-primary-button:hover {
+  border-color: #174873;
+  background: #174873;
+  box-shadow: 0 5px 12px rgba(32, 85, 139, 0.22);
+}
+
+.ta-secondary-button:active,
+.ta-cancel-button:active,
+.ta-primary-button:active {
+  transform: translateY(1px);
+}
+
+/* ============================================================
+   ANIMATION
+   ============================================================ */
+
+@keyframes taOverlayIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes taModalIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.99);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .ta-advance-overlay {
+    padding: 14px;
+  }
+
+  .ta-advance-modal {
+    max-height: calc(100vh - 28px);
+  }
+
+  .ta-advance-stepper {
+    overflow-x: auto;
+  }
+
+  .ta-advance-step {
+    flex-shrink: 0;
+  }
+
+  .ta-advance-form-content {
+    padding: 24px 22px 28px;
+  }
+}
+
+@media (max-width: 700px) {
+  .ta-advance-header {
+    min-height: 76px;
+    padding: 15px 18px;
+  }
+
+  .ta-advance-header h2 {
+    font-size: 19px;
+  }
+
+  .ta-advance-step-label {
+    display: none;
+  }
+
+  .ta-advance-step-line {
+    min-width: 22px;
+    margin: 0 8px;
+  }
+
+  .ta-form-grid,
+  .ta-form-grid-two,
+  .ta-financial-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ta-field-full {
+    grid-column: auto;
+  }
+
+  .ta-form-section {
+    padding: 18px;
+  }
+
+  .ta-upload-area {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .ta-upload-content {
+    min-width: calc(100% - 60px);
+  }
+
+  .ta-upload-button {
+    margin-left: 56px;
+  }
+
+  .ta-total-card {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .ta-advance-footer {
+    align-items: stretch;
+    flex-direction: column;
+    padding: 14px 18px;
+  }
+
+  .ta-footer-right {
+    width: 100%;
+  }
+
+  .ta-footer-right > button {
+    flex: 1;
+  }
+
+  .ta-secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .ta-advance-overlay {
+    padding: 0;
+  }
+
+  .ta-advance-modal {
+    width: 100%;
+    max-height: 100vh;
+    min-height: 100vh;
+    border: 0;
+    border-radius: 0;
+  }
+
+  .ta-advance-form-content {
+    padding: 20px 16px 24px;
+  }
+
+  .ta-advance-intro h1 {
+    font-size: 23px;
+  }
+
+  .ta-form-section {
+    padding: 16px;
+  }
+
+  .ta-advance-footer {
+    padding: 12px 16px;
+  }
+}

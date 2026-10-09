@@ -559,3 +559,122 @@
     margin-left: 0;
   }
 }
+
+
+/* -------------------------------------------------------------------------- */
+/* Medical Claim Status Overview                                              */
+/* -------------------------------------------------------------------------- */
+
+.medical-status-overview {
+  margin-top: 24px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.medical-status-overview-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.medical-status-overview-header span {
+  display: block;
+  color: #64748b;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 5px;
+}
+
+.medical-status-overview-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.medical-status-overview-header p {
+  margin: 5px 0 0;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.medical-status-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  padding: 18px 24px 22px;
+}
+
+.medical-status-card {
+  min-height: 88px;
+  padding: 14px 12px;
+  border: 1px solid #e2e8f0;
+  border-radius: 11px;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 7px;
+}
+
+.medical-status-card strong {
+  color: #0f172a;
+  font-size: 24px;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+.medical-status-card span {
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.25;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.medical-status-card-blue {
+  background: #eff6ff;
+  border-color: #dbeafe;
+}
+
+.medical-status-card-green {
+  background: #f0fdf4;
+  border-color: #dcfce7;
+}
+
+.medical-status-card-amber {
+  background: #fffbeb;
+  border-color: #fef3c7;
+}
+
+.medical-status-card-red {
+  background: #fef2f2;
+  border-color: #fee2e2;
+}
+
+.medical-status-card-orange {
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+@media (max-width: 1050px) {
+  .medical-status-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 720px) {
+  .medical-status-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    padding: 16px 18px 18px;
+  }
+
+  .medical-status-overview-header {
+    padding: 17px 18px 14px;
+  }
+}

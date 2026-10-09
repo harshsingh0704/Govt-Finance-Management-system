@@ -14,6 +14,7 @@ import {
   X,
 } from "lucide-react";
 
+import axios from "axios";
 import "./MapEmployeePage.css";
 
 /* ================================================================
@@ -199,6 +200,33 @@ function MappingToggle({
 ================================================================ */
 
 function MapEmployeePage({ onClose }) {
+  const handleBulkSave = async () => {
+    if (!excelEmployees || excelEmployees.length === 0) {
+      alert("No employees found from Excel upload!");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5000/api/admin/employee-mappings/bulk-save", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ mappings: excelEmployees })
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        alert("✅ All 5 Excel Employees saved successfully to MongoDB Atlas!");
+      } else {
+        alert("❌ Save failed: " + (data.message || "Server Error"));
+      }
+    } catch (error) {
+      console.error("Bulk save error:", error);
+      alert("❌ Network Error: " + error.message);
+    }
+  };
   /* ================================================================
      BASIC STATE
   ================================================================ */
@@ -1430,6 +1458,22 @@ const allSelected = FORM_TYPES.every(
                     </span>
 
                   </div>
+                  <button
+  type="button"
+  onClick={handleBulkSave}
+  style={{
+    marginLeft: "auto",
+    padding: "8px 16px",
+    backgroundColor: "#16a34a",
+    color: "#ffffff",
+    border: "none",
+    borderRadius: "6px",
+    fontWeight: "600",
+    cursor: "pointer"
+  }}
+>
+  Save Mappings to DB
+</button>
 
                 </div>
 
@@ -1756,5 +1800,19 @@ const allSelected = FORM_TYPES.every(
     </div>
   );
 }
+
+
+  const handleBulkSave = async () => {
+    if (!parsedEmployees || parsedEmployees.length === 0) return alert("No employees found!");
+    try {
+      const res = await axios.post("/api/admin/employee-mappings/bulk-save", { mappings: parsedEmployees });
+      if (res.status === 200 || res.status === 201) {
+        alert("? Mass mappings saved successfully to MongoDB!");
+        if (typeof fetchMappings === "function") fetchMappings();
+      }
+    } catch (err) {
+      alert("? Save failed: " + (err.response?.data?.message || err.message));
+    }
+  };
 
 export default MapEmployeePage;

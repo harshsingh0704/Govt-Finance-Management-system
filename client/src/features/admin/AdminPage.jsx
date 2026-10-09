@@ -748,6 +748,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
 }
 
 export default function AdminPage() {
+  const [activeTab, setActiveTab] = useState('dashboard');
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -920,24 +921,24 @@ export default function AdminPage() {
             </button>
             <span className="ad-nav-label">Claims</span>
 
-            <button type="button" className="ad-nav-item">
+            <button type="button" onClick={() => { console.log('Tab switched: claims'); setActiveTab('claims'); }} className="ad-nav-item">
               <ClipboardCheck size={18} />
               <span>All Claims</span>
             </button>
 
-            <button type="button" className="ad-nav-item">
+            <button type="button" onClick={() => { console.log('Tab switched: review'); setActiveTab('review'); }} className="ad-nav-item">
               <FileCheck2 size={18} />
               <span>Review Queue</span>
               <small>42</small>
             </button>
 
-            <button type="button" className="ad-nav-item">
+            <button type="button" onClick={() => { console.log('Tab switched: verification'); setActiveTab('verification'); }} className="ad-nav-item">
               <FileSearch size={18} />
               <span>Verification</span>
               <small>18</small>
             </button>
 
-            <button type="button" className="ad-nav-item">
+            <button type="button" onClick={() => { console.log('Tab switched: queries'); setActiveTab('queries'); }} className="ad-nav-item">
               <AlertTriangle size={18} />
               <span>Queries / Returns</span>
               <small>7</small>

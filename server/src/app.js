@@ -5,6 +5,7 @@ const ltcRoutes = require('./routes/ltcRoutes');
 const taRoutes = require('./routes/taRoutes');
 const claimStatusRoutes = require('./routes/claimStatusRoutes');
 const authRoutes = require('./routes/authRoutes');
+const adminRoutes = require('./routes/adminRoutes'); // <--- 1. Import adminRoutes here
 
 const app = express();
 
@@ -15,6 +16,7 @@ app.use('/api/ltc', ltcRoutes);
 app.use('/api/ta', taRoutes);
 app.use('/api/claims', claimStatusRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/admin', adminRoutes); // <--- 2. Mount adminRoutes here!
 
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date() });

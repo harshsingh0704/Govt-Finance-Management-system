@@ -633,6 +633,31 @@ const allSelected = FORM_TYPES.every(
       setExcelFile(file);
       setExcelEmployees(parsedEmployees);
 
+
+
+      const initialMappings = {};
+parsedEmployees.forEach((emp) => {
+  initialMappings[emp.employeeId] = {
+    taClaim: emp.formMappings.taClaim,
+    ta: emp.formMappings.taClaim,
+    taclaim: emp.formMappings.taClaim,
+
+    medicalClaim: emp.formMappings.medicalClaim,
+    medical: emp.formMappings.medicalClaim,
+    medicalclaim: emp.formMappings.medicalClaim,
+
+    accommodation: emp.formMappings.accommodation,
+    
+    locked: false
+  };
+});
+setMappings(initialMappings);
+
+
+
+
+
+
     } catch (error) {
       console.error("Excel upload error:", error);
 
@@ -1651,25 +1676,24 @@ const allSelected = FORM_TYPES.every(
                               >
 
                                 <MappingToggle
-                                  checked={Boolean(
-                                    rowMapping[
-                                      form.id
-                                    ]
-                                  )}
-                                  disabled={Boolean(
-                                    rowMapping.locked
-                                  )}
-                                  label={`${employee.name} ${form.label}`}
-                                  onChange={() =>
-                                    updateMapping(
-                                      employee.employeeId,
-                                      form.id,
-                                      !rowMapping[
-                                        form.id
-                                      ]
-                                    )
-                                  }
-                                />
+  checked={Boolean(
+    rowMapping[form.id] ||
+    (form.id.toLowerCase().includes('ta') && (rowMapping.taClaim || rowMapping.ta)) ||
+    (form.id.toLowerCase().includes('medical') && (rowMapping.medicalClaim || rowMapping.medical)) ||
+    (form.id.toLowerCase().includes('accommodation') && rowMapping.accommodation)
+  )}
+  disabled={Boolean(
+    rowMapping.locked
+  )}
+  label={`${employee.name} ${form.label}`}
+  onChange={() =>
+    updateMapping(
+      employee.employeeId,
+      form.id,
+      !rowMapping[form.id]
+    )
+  }
+/>
 
                               </td>
 

@@ -527,10 +527,11 @@ const allSelected = FORM_TYPES.every(
        npm install xlsx
   ================================================================ */
 
+ /* ================================================================
+     EXCEL UPLOAD
+     ================================================================ */
   const handleExcelUpload = async (event) => {
-    const file =
-      event.target.files?.[0];
-
+    const file = event.target.files?.[0];
     if (!file) {
       return;
     }
@@ -539,18 +540,11 @@ const allSelected = FORM_TYPES.every(
     setExcelEmployees([]);
     setExcelFile(null);
 
-    const fileName =
-      file.name.toLowerCase();
-
-    const isExcelFile =
-      fileName.endsWith(".xlsx") ||
-      fileName.endsWith(".xls");
+    const fileName = file.name.toLowerCase();
+    const isExcelFile = fileName.endsWith(".xlsx") || fileName.endsWith(".xls");
 
     if (!isExcelFile) {
-      setExcelError(
-        "Please upload a valid Excel file (.xlsx or .xls)."
-      );
-
+      setExcelError("Please upload a valid Excel file (.xlsx or .xls).");
       event.target.value = "";
       return;
     }
@@ -558,49 +552,24 @@ const allSelected = FORM_TYPES.every(
     setExcelLoading(true);
 
     try {
-      const XLSX =
-        await import("xlsx");
+      const XLSX = await import("xlsx");
+      const arrayBuffer = await file.arrayBuffer();
+      const workbook = XLSX.read(arrayBuffer, { type: "array" });
 
-      const arrayBuffer =
-        await file.arrayBuffer();
-
-      const workbook =
-        XLSX.read(arrayBuffer, {
-          type: "array",
-        });
-
-      if (
-        !workbook.SheetNames ||
-        workbook.SheetNames.length === 0
-      ) {
-        throw new Error(
-          "The Excel file does not contain any worksheet."
-        );
+      if (!workbook.SheetNames || workbook.SheetNames.length === 0) {
+        throw new Error("The Excel file does not contain any worksheet.");
       }
 
-      const firstSheet =
-        workbook.Sheets[
-          workbook.SheetNames[0]
-        ];
-
-      const rows =
-        XLSX.utils.sheet_to_json(
-          firstSheet,
-          {
-            defval: "",
-          }
-        );
+      const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
 
       if (!rows.length) {
-        throw new Error(
-          "The uploaded Excel file is empty."
-        );
+        throw new Error("The uploaded Excel file is empty.");
       }
 
       /* ------------------------------------------------------------
          Normalize Excel column names
       ------------------------------------------------------------ */
-
       const normalizeKey = (key) =>
         String(key)
           .trim()
@@ -608,15 +577,11 @@ const allSelected = FORM_TYPES.every(
           .replace(/[\s_-]+/g, "");
 
       const firstRow = rows[0];
-
       const columnMap = {};
 
-      Object.keys(firstRow).forEach(
-        (key) => {
-          columnMap[normalizeKey(key)] =
-            key;
-        }
-      );
+      Object.keys(firstRow).forEach((key) => {
+        columnMap[normalizeKey(key)] = key;
+      });
 
       const employeeIdColumn =
         columnMap.employeeid ||
@@ -628,69 +593,61 @@ const allSelected = FORM_TYPES.every(
         columnMap.name;
 
       if (!employeeIdColumn) {
-        throw new Error(
-          "Required column missing: Employee ID."
-        );
+        throw new Error("Required column missing: Employee ID.");
       }
 
       if (!employeeNameColumn) {
-        throw new Error(
-          "Required column missing: Employee Name."
-        );
+        throw new Error("Required column missing: Employee Name.");
       }
 
       /* ------------------------------------------------------------
-         Convert rows
+         Convert rows & map form boolean fields
       ------------------------------------------------------------ */
+      const parseBool = (val) => String(val).trim().toUpperCase() === "TRUE" || val === true;
 
-      const parsedEmployees =
-        rows
-          .map((row) => ({
-            employeeId: String(
-              row[employeeIdColumn] ?? ""
-            ).trim(),
+      const parsedEmployees = rows
+        .map((row, index) => {
+          const empId = String(row[employeeIdColumn] ?? "").trim();
+          const empName = String(row[employeeNameColumn] ?? "").trim();
 
-            name: String(
-              row[employeeNameColumn] ?? ""
-            ).trim(),
-          }))
-          .filter(
-            (employee) =>
-              employee.employeeId &&
-              employee.name
-          );
+          if (!empId || !empName) return null;
 
-      if (
-        parsedEmployees.length === 0
-      ) {
-        throw new Error(
-          "No valid employee records were found in the Excel file."
-        );
+          return {
+            id: empId || `EMP-${101 + index}`,
+            employeeId: empId,
+            employeeName: empName,
+            name: empName, 
+            formMappings: {
+              taClaim: parseBool(row["TA Claim"] || row[columnMap.taclaim]),
+              medicalClaim: parseBool(row["Medical Claim"] || row[columnMap.medicalclaim]),
+              accommodation: parseBool(row["Accommodation"] || row[columnMap.accommodation])
+            }
+          };
+        })
+        .filter(Boolean);
+
+      if (parsedEmployees.length === 0) {
+        throw new Error("No valid employee records were found in the Excel file.");
       }
 
       setExcelFile(file);
-      setExcelEmployees(
-        parsedEmployees
-      );
+      setExcelEmployees(parsedEmployees);
+
     } catch (error) {
-      console.error(
-        "Excel upload error:",
-        error
-      );
+      console.error("Excel upload error:", error);
 
       setExcelError(
-        error?.message ||
-          "Unable to read the Excel file."
+        error?.message || "Unable to read the Excel file."
       );
 
       setExcelFile(null);
       setExcelEmployees([]);
     } finally {
       setExcelLoading(false);
-
       event.target.value = "";
     }
   };
+
 
   /* ================================================================
      REMOVE EXCEL
@@ -1192,6 +1149,32 @@ const allSelected = FORM_TYPES.every(
 
               </div>
 
+
+              {/* ================================================================
+    EXCEL FILE UPLOAD INPUT SECTION
+   ================================================================ */}
+<div className="excel-upload-container mb-4">
+  <input
+    type="file"
+    id="excelFileInput"
+    accept=".xlsx, .xls"
+    style={{ display: 'none' }}
+    onChange={handleExcelUpload}
+  />
+  
+  <label
+    htmlFor="excelFileInput"
+    className="cursor-pointer inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm"
+  >
+    📁 Upload Excel File (.xlsx)
+  </label>
+
+  {/* Agar koi error ho toh display karein */}
+  {excelError && (
+    <p className="text-red-500 text-sm mt-2">{excelError}</p>
+  )}
+</div>
+
               {/* ====================================================
                   SELECTED EMPLOYEE
               ===================================================== */}
@@ -1572,8 +1555,9 @@ const allSelected = FORM_TYPES.every(
 
                 <tbody>
 
-                  {EMPLOYEES.map(
-                    (employee, index) => {
+                      {(excelEmployees.length > 0 ? excelEmployees : EMPLOYEES).map(
+                      (employee, index) => {
+      
 
                       const rowMapping =
                         mappings[
@@ -1802,16 +1786,25 @@ const allSelected = FORM_TYPES.every(
 }
 
 
-  const handleBulkSave = async () => {
-    if (!parsedEmployees || parsedEmployees.length === 0) return alert("No employees found!");
+ const handleBulkSave = async () => {
+    if (!excelEmployees || excelEmployees.length === 0) {
+      return alert("No employees found! Please upload an Excel file first.");
+    }
+
     try {
-      const res = await axios.post("/api/admin/employee-mappings/bulk-save", { mappings: parsedEmployees });
+      const res = await axios.post("/api/admin/employee-mappings/bulk-save", {
+        mappings: excelEmployees,
+      });
+
       if (res.status === 200 || res.status === 201) {
-        alert("? Mass mappings saved successfully to MongoDB!");
-        if (typeof fetchMappings === "function") fetchMappings();
+        alert("Mass mappings saved successfully to MongoDB!");
+        if (typeof fetchMappings === "function") {
+          fetchMappings();
+        }
       }
     } catch (err) {
-      alert("? Save failed: " + (err.response?.data?.message || err.message));
+      console.error("Bulk save error:", err);
+      alert("Save failed: " + (err.response?.data?.message || err.message));
     }
   };
 

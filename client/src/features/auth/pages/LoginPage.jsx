@@ -1,9 +1,10 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
 import { Eye, EyeOff, ShieldCheck, LockKeyhole, UserPlus, LogIn } from "lucide-react";
 import { loginStart, loginSuccess, loginFailure } from "../authSlice";
 import { loginUser, registerUser } from "../../../services/api/auth.api";
+import { getDashboardDestination } from "../../../components/auth/dashboardRouting";
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -30,11 +31,7 @@ export default function LoginPage() {
     if (error) setError("");
   };
 
-  const getDestination = (role) => {
-    if (role === "super_admin") return "/super-admin";
-    if (role === "admin") return "/admin";
-    return "/dashboard";
-  };
+  const getDestination = (user) => getDashboardDestination(user);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
@@ -54,7 +51,7 @@ export default function LoginPage() {
       });
 
       dispatch(loginSuccess(result));
-      navigate(getDestination(result.user.role), { replace: true });
+      navigate(getDestination(result.user), { replace: true });
     } catch (err) {
       dispatch(loginFailure());
       setError(err.message || "Invalid credentials or unauthorized role.");
@@ -84,7 +81,7 @@ export default function LoginPage() {
 
       if (result.token && result.user) {
         dispatch(loginSuccess(result));
-        navigate(getDestination(result.user.role), { replace: true });
+        navigate(getDestination(result.user), { replace: true });
       } else {
         setError("Account created, please sign in.");
         setMode("login");
@@ -131,7 +128,7 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-footer">
-            FMS Portal <span>•</span> Government Finance System
+            FMS Portal <span>â€¢</span> Government Finance System
           </div>
         </section>
 
@@ -226,44 +223,37 @@ export default function LoginPage() {
               onSubmit={mode === "login" ? handleLoginSubmit : handleRegisterSubmit}
               className="auth-form"
             >
-              {/* Common Role Selection Grid */}
+              {/* Login has two choices; registration retains its existing choices. */}
               <div className="auth-field">
                 <label>
-                  {mode === "login" ? "Account Type" : "Registering As"}
+                  {mode === "login" ? "Choose Login Type" : "Registering As"}
                 </label>
                 <div className="auth-role-grid">
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "super_admin" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("super_admin")}
-                  >
-                    <strong>Super Admin</strong>
-                    <span>Management</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "admin" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("admin")}
-                  >
-                    <strong>Admin</strong>
-                    <span>Finance Operations</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "employee" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("employee")}
-                  >
-                    <strong>Employee</strong>
-                    <span>Staff Access</span>
-                  </button>
+                  {(mode === "login"
+                    ? [
+                        { value: "super_admin", title: "Super Admin Login", description: "Administrative access" },
+                        { value: "employee", title: "Employee Login", description: "Open your assigned dashboard" },
+                      ]
+                    : [
+                        { value: "super_admin", title: "Super Admin", description: "Management" },
+                        { value: "admin", title: "Admin", description: "Finance Operations" },
+                        { value: "employee", title: "Employee", description: "Staff Access" },
+                      ]
+                  ).map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      className={`auth-role-card ${selectedRole === option.value ? "active" : ""}`}
+                      onClick={() => {
+                        setSelectedRole(option.value);
+                        setError("");
+                      }}
+                      aria-pressed={selectedRole === option.value}
+                    >
+                      <strong>{option.title}</strong>
+                      <span>{option.description}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 

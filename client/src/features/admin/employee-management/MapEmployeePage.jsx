@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   Check,
@@ -57,11 +57,11 @@ const FORM_TYPES = [
 ================================================================ */
 
 const FUNCTIONAL_ROLES = [
-  "All",
-  "Bill Clerk / Accounts Staff",
-  "Administrative Officer",
-  "Director",
-  "Budget Officer",
+  "Head of Office",
+  "Head of Department (HOD)",
+  "Finance Officer",
+  "Finance Clerk",
+  "IT Cell In-charge",
 ];
 
 /* ================================================================
@@ -218,13 +218,13 @@ function MapEmployeePage({ onClose }) {
       const data = await response.json();
 
       if (response.ok) {
-        alert("✅ All 5 Excel Employees saved successfully to MongoDB Atlas!");
+        alert("âœ… All 5 Excel Employees saved successfully to MongoDB Atlas!");
       } else {
-        alert("❌ Save failed: " + (data.message || "Server Error"));
+        alert("âŒ Save failed: " + (data.message || "Server Error"));
       }
     } catch (error) {
       console.error("Bulk save error:", error);
-      alert("❌ Network Error: " + error.message);
+      alert("âŒ Network Error: " + error.message);
     }
   };
   /* ================================================================
@@ -235,7 +235,7 @@ function MapEmployeePage({ onClose }) {
     useState("individual");
 
   const [functionalRole, setFunctionalRole] =
-    useState("All");
+    useState("");
 
   const [selectedEmployeeId, setSelectedEmployeeId] =
     useState("EMP-001");
@@ -246,7 +246,7 @@ function MapEmployeePage({ onClose }) {
   const [saved, setSaved] = useState(false);
 
   /* ================================================================
-     MASS ENTRY — EXCEL STATE
+     MASS ENTRY â€” EXCEL STATE
   ================================================================ */
 
   const [excelFile, setExcelFile] =
@@ -280,16 +280,36 @@ function MapEmployeePage({ onClose }) {
      FILTER EMPLOYEES
   ================================================================ */
 
-  const employeesForRole = useMemo(() => {
-    if (functionalRole === "All") {
-      return EMPLOYEES;
-    }
+  const normalizeFunctionalRole = (value) =>
+  typeof value === "string"
+    ? value.trim().toLowerCase().replace(/[\s_-]+/g, " ")
+    : "";
 
-    return EMPLOYEES.filter(
-      (employee) =>
-        employee.functionalRole === functionalRole
-    );
-  }, [functionalRole]);
+const ROLE_ALIASES = {
+  "head of office": ["head of office"],
+  "head of department (hod)": [
+    "head of department (hod)",
+    "head of department",
+    "hod",
+    "controlling officer / hod",
+  ],
+  "finance officer": ["finance officer"],
+  "finance clerk": ["finance clerk"],
+  "it cell in-charge": ["it cell in-charge", "it cell in charge"],
+};
+
+const employeesForRole = useMemo(() => {
+  if (!functionalRole) return [];
+
+  const selectedRole = normalizeFunctionalRole(functionalRole);
+  const acceptedRoles = (
+    ROLE_ALIASES[selectedRole] || [functionalRole]
+  ).map(normalizeFunctionalRole);
+
+  return EMPLOYEES.filter((employee) =>
+    acceptedRoles.includes(normalizeFunctionalRole(employee.functionalRole))
+  );
+}, [functionalRole]);
 
   /* ================================================================
      KEEP SELECTED EMPLOYEE VALID
@@ -941,6 +961,7 @@ setMappings(initialMappings);
                       }
                     >
 
+                      <option value="">Select department</option>
                       {FUNCTIONAL_ROLES.map(
                         (role) => (
                           <option
@@ -1002,7 +1023,7 @@ setMappings(initialMappings);
                                 employee.employeeId
                               }
                             >
-                              {employee.name} —{" "}
+                              {employee.name} â€”{" "}
                               {
                                 employee.designation
                               }
@@ -1191,7 +1212,7 @@ setMappings(initialMappings);
     htmlFor="excelFileInput"
     className="cursor-pointer inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition shadow-sm"
   >
-    📁 Upload Excel File (.xlsx)
+    ðŸ“ Upload Excel File (.xlsx)
   </label>
 
   {/* Agar koi error ho toh display karein */}
@@ -1230,11 +1251,11 @@ setMappings(initialMappings);
                       {
                         selectedEmployee.employeeId
                       }
-                      {" · "}
+                      {" Â· "}
                       {
                         selectedEmployee.departmentName
                       }
-                      {" · "}
+                      {" Â· "}
                       {
                         selectedEmployee.functionalRole
                       }
@@ -1269,7 +1290,7 @@ setMappings(initialMappings);
           )}
 
           {/* ========================================================
-              MASS ENTRY MODE — EXCEL ONLY
+              MASS ENTRY MODE â€” EXCEL ONLY
           ========================================================= */}
 
           {mappingMode === "mass" && (
@@ -1512,8 +1533,8 @@ setMappings(initialMappings);
               </div>
 
               <span className="map-count">
-                {EMPLOYEES.length} employees
-                {" · "}
+                {(excelEmployees.length > 0 ? excelEmployees.length : employeesForRole.length)} employees
+                {" Â· "}
                 {FORM_TYPES.length} forms
               </span>
 
@@ -1580,7 +1601,7 @@ setMappings(initialMappings);
 
                 <tbody>
 
-                      {(excelEmployees.length > 0 ? excelEmployees : EMPLOYEES).map(
+                      {(excelEmployees.length > 0 ? excelEmployees : employeesForRole).map(
                       (employee, index) => {
       
 
@@ -1621,9 +1642,7 @@ setMappings(initialMappings);
                                   "individual"
                                 );
 
-                                setFunctionalRole(
-                                  employee.functionalRole
-                                );
+                                // Keep the currently selected department when selecting a table row.
 
                                 setSelectedEmployeeId(
                                   employee.employeeId

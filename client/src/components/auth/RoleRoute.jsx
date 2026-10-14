@@ -1,18 +1,26 @@
-import { Navigate, Outlet } from "react-router-dom";
+﻿import { Navigate, Outlet, useLocation } from "react-router-dom";
 import { useSelector } from "react-redux";
+import { hasFunctionalDashboardAccess } from "./dashboardRouting";
 
 export default function RoleRoute({ allowedRoles }) {
-  const { user, isAuthenticated } = useSelector(
-    (state) => state.auth,
-  );
+  const { user, isAuthenticated } = useSelector((state) => state.auth);
+  const location = useLocation();
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
   }
 
-  if (!user || !allowedRoles.includes(user.role)) {
+  if (!user) {
     return <Navigate to="/unauthorized" replace />;
   }
 
-  return <Outlet />;
+  if (allowedRoles.includes(user.role)) {
+    return <Outlet />;
+  }
+
+  if (hasFunctionalDashboardAccess(user, location.pathname)) {
+    return <Outlet />;
+  }
+
+  return <Navigate to="/unauthorized" replace />;
 }

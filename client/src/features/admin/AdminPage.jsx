@@ -1,4 +1,4 @@
-﻿// Helper to extract JWT token from localStorage (fms_auth or plain token)
+// Helper to extract JWT token from localStorage (fms_auth or plain token)
 function getStoredAuthToken() {
   try {
     const raw = localStorage.getItem("fms_auth");
@@ -69,14 +69,14 @@ const ADMIN_STATS = [
   },
   {
     label: "Approved / Sanctioned",
-    value: "₹18.6L",
+    value: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹18.6L",
     highlight: "32",
     detail: "claims this month",
     icon: CheckCircle2,
   },
   {
     label: "Payment Processing",
-    value: "₹12.6L",
+    value: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹12.6L",
     highlight: "24",
     detail: "claims ready",
     icon: CreditCard,
@@ -88,28 +88,28 @@ const CLAIMS = [
     id: "TA-2026-1042",
     employee: "Rahul Kumar",
     type: "TA",
-    amount: "₹24,500",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹24,500",
     status: "Review",
   },
   {
     id: "LTC-2026-0871",
     employee: "Priya Sharma",
     type: "LTC",
-    amount: "₹38,200",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹38,200",
     status: "Review",
   },
   {
     id: "MED-2026-2194",
     employee: "Amit Verma",
     type: "Medical",
-    amount: "₹12,800",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹12,800",
     status: "Query",
   },
   {
     id: "TA-2026-1038",
     employee: "Neha Singh",
     type: "TA",
-    amount: "₹18,600",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹18,600",
     status: "Review",
   },
 ];
@@ -119,38 +119,38 @@ const DEPARTMENTS = [
     name: "Engineering",
     pending: 12,
     processing: 8,
-    amount: "₹4.2L",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹4.2L",
   },
   {
     name: "Finance",
     pending: 9,
     processing: 5,
-    amount: "₹3.1L",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹3.1L",
   },
   {
     name: "Operations",
     pending: 8,
     processing: 6,
-    amount: "₹2.8L",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹2.8L",
   },
   {
     name: "Administration",
     pending: 7,
     processing: 4,
-    amount: "₹1.9L",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹1.9L",
   },
   {
     name: "Human Resources",
     pending: 6,
     processing: 3,
-    amount: "₹1.4L",
+    amount: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹1.4L",
   },
 ];
 
 const OPERATIONS = [
   {
     title: "Claim TA-2026-1042 approved",
-    description: "₹24,500",
+    description: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹24,500",
     time: "8 min ago",
     type: "success",
   },
@@ -168,7 +168,7 @@ const OPERATIONS = [
   },
   {
     title: "Payment batch PB-2026-091 processed",
-    description: "₹4.2L",
+    description: "ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹4.2L",
     time: "2 hours ago",
     type: "payment",
   },
@@ -267,7 +267,7 @@ function VerificationPanel() {
             <span>Employee action required</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
         </button>
 
         <button type="button" className="ad-verification-item warning">
@@ -280,7 +280,7 @@ function VerificationPanel() {
             <span>Ready for document review</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
         </button>
 
         <button type="button" className="ad-verification-item success">
@@ -293,7 +293,7 @@ function VerificationPanel() {
             <span>Completed today</span>
           </div>
 
-          <span className="ad-arrow">→</span>
+          <span className="ad-arrow">ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
         </button>
       </div>
 
@@ -314,7 +314,7 @@ function PaymentPanel() {
         </div>
 
         <button type="button" className="ad-text-button">
-          View all →
+          View all ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
         </button>
       </div>
 
@@ -326,20 +326,20 @@ function PaymentPanel() {
 
           <div>
             <span>Ready for payment</span>
-            <strong>₹12.6L</strong>
+            <strong>ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹12.6L</strong>
             <small>24 claims</small>
           </div>
         </div>
 
         <div className="ad-payment-line">
           <span>Processing</span>
-          <strong>₹7.8L</strong>
+          <strong>ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹7.8L</strong>
           <small>15 claims</small>
         </div>
 
         <div className="ad-payment-line">
           <span>Completed today</span>
-          <strong>₹4.2L</strong>
+          <strong>ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹4.2L</strong>
           <small>9 claims</small>
         </div>
       </div>
@@ -629,7 +629,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Basic (₹)
+                Basic (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)
               </label>
               <input
                 type="number"
@@ -656,7 +656,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Allowances (₹)
+                Allowances (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)
               </label>
               <input
                 type="number"
@@ -683,7 +683,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
                   marginBottom: "4px",
                 }}
               >
-                Deductions (₹)
+                Deductions (ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹)
               </label>
               <input
                 type="number"
@@ -714,7 +714,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
             }}
           >
             <span style={{ fontSize: "0.875rem", color: "#475569" }}>Calculated Net Pay:</span>
-            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>₹{netPay.toLocaleString()}</strong>
+            <strong style={{ fontSize: "1.1rem", color: "#0f172a" }}>ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹{netPay.toLocaleString()}</strong>
           </div>
 
           <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px" }}>
@@ -901,6 +901,7 @@ export default function AdminPage() {
               <Users size={18} />
               <span>Map Employee</span>
             </button>
+
 
             <button
               type="button"
@@ -1189,7 +1190,7 @@ export default function AdminPage() {
                 aria-label="Search"
               />
 
-              <kbd>⌘</kbd>
+              <kbd>ÃƒÂ¢Ã…â€™Ã‹Å“</kbd>
             </div>
           </div>
 
@@ -1357,7 +1358,7 @@ export default function AdminPage() {
       <tr key={claim._id}>
         <td><strong>{claim.employeeId?.name || "N/A"}</strong><br/><small>{claim.employeeId?.employeeCode}</small></td>
         <td><span className="ad-badge">{claim.claimType}</span></td>
-        <td>₹{claim.claimAmount || claim.totalClaimAmount || 0}</td>
+        <td>ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¹{claim.claimAmount || claim.totalClaimAmount || 0}</td>
         <td>{new Date(claim.createdAt).toLocaleDateString()}</td>
         <td><span className={`ad-status-${claim.status?.toLowerCase()}`}>{claim.status}</span></td>
         <td>
@@ -1411,7 +1412,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View all →
+                  View all ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
                 </button>
               </div>
 
@@ -1422,7 +1423,7 @@ export default function AdminPage() {
                     type="button"
                     onClick={() => setSelectedClaimType(null)}
                   >
-                    ×
+                    ÃƒÆ’Ã¢â‚¬â€
                   </button>
                 </div>
               )}
@@ -1498,7 +1499,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View report →
+                  View report ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
                 </button>
               </div>
 
@@ -1532,7 +1533,7 @@ export default function AdminPage() {
                 </div>
 
                 <button type="button" className="ad-text-button">
-                  View activity →
+                  View activity ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢
                 </button>
               </div>
 
@@ -1580,7 +1581,7 @@ export default function AdminPage() {
                     <span>Awaiting correction or additional information.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
                 </button>
 
                 <button type="button">
@@ -1593,7 +1594,7 @@ export default function AdminPage() {
                     <span>Supporting documents need attention.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
                 </button>
 
                 <button type="button">
@@ -1606,7 +1607,7 @@ export default function AdminPage() {
                     <span>Immediate administrative action recommended.</span>
                   </div>
 
-                  <span>→</span>
+                  <span>ÃƒÂ¢Ã¢â‚¬Â Ã¢â‚¬â„¢</span>
                 </button>
               </div>
             </article>

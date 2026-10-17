@@ -1,5 +1,7 @@
-﻿import { useState, useEffect } from "react";
+﻿
+import { useState, useEffect } from "react";
 import CreateClaimModal from "./CreateClaimModal";
+import MedicalClaimPage from "../medical/MedicalClaimPage";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -419,12 +421,17 @@ function App() {
           </div>
 
           {activeNav === "Dashboard" ? (
-            <Dashboard onNavigate={handleNavigation} onOpenClaim={() => setShowClaimModal(true)} />
-          ) : activeNav === "Pay Slips" ? (
-            <PayslipsView />
-          ) : (
-            <PlaceholderPage section={activeNav} />
-          )}
+  <Dashboard
+    onNavigate={handleNavigation}
+    onOpenClaim={() => setShowClaimModal(true)}
+  />
+) : activeNav === "Pay Slips" ? (
+  <PayslipsView />
+) : activeNav === "Medical" ? (
+  <MedicalClaimPage />
+) : (
+  <PlaceholderPage section={activeNav} />
+)}
         
       <CreateClaimModal isOpen={showClaimModal} onClose={() => setShowClaimModal(false)} employeeId={currentUser?.employeeId || currentUser?._id} onSuccess={() => alert('Claim submitted successfully! It is now in the Approval Queue.')} /></div>
       </main>

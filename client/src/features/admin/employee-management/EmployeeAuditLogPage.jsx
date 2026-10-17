@@ -1,4 +1,5 @@
 ﻿import { useMemo, useState } from "react";
+import PageHeader from "../../../components/auth/common/PageHeader";
 import { useNavigate } from "react-router-dom";
 import {
   Activity,
@@ -285,19 +286,11 @@ function EmployeeAuditLogPage() {
 
   return (
     <div className="employee-audit-page">
-      <header className="employee-audit-header">
-        <div className="employee-audit-header-icon">
-          <ClipboardList size={25} />
-        </div>
-
-        <div className="employee-audit-header-content">
-          <h1>Employee Audit Log</h1>
-          <p>
-            Track employee-related changes, mappings and administrative
-            actions across the system.
-          </p>
-        </div>
-      </header>
+     <PageHeader
+  icon={<ClipboardList size={25} />}
+  title="Employee Audit Log"
+  description="Track employee-related changes, mappings and administrative actions across the system."
+/>
 
       <section className="employee-audit-filter-card">
         <div className="employee-audit-filter-heading">

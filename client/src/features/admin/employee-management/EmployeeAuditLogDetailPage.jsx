@@ -1,4 +1,6 @@
-﻿import { useMemo } from "react";
+﻿import PageHeader from "../../../components/auth/common/PageHeader";
+import { useMemo } from "react";
+
 import { useNavigate, useParams } from "react-router-dom";
 import {
   ArrowLeft,
@@ -53,6 +55,7 @@ function EmployeeAuditLogDetailPage() {
 
   return (
     <div className="employee-audit-detail-page">
+        <h1 style={{ color: "red" }}>TEST - DETAIL PAGE UPDATED</h1>
       <div className="employee-audit-detail-topbar">
         <button
           type="button"
@@ -70,19 +73,15 @@ function EmployeeAuditLogDetailPage() {
           Read only
         </div>
       </div>
-
-      <header className="employee-audit-detail-header">
-        <div className="employee-audit-detail-header-icon">
-          <ClipboardList size={25} />
-        </div>
-
-        <div>
-          <span>Audit Event Details</span>
-          <h1>{event.action}</h1>
-          <p>Audit ID: {event.id}</p>
-        </div>
-      </header>
-
+     <p style={{ color: "red", fontSize: 20 }}>
+  PAGE HEADER TEST
+</p>
+   <PageHeader
+  icon={<ClipboardList size={25} />}
+  title={event.action}
+  description={`Audit Event Details • Audit ID: ${event.id}`}
+  showBack={true}
+/>
       <section className="employee-audit-detail-card">
         <div className="employee-audit-detail-card-header">
           <div>

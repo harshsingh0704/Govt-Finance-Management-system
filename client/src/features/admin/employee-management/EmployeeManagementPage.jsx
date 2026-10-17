@@ -1,4 +1,5 @@
-﻿import { useMemo, useState } from "react";
+﻿import PageHeader from "../../../components/auth/common/PageHeader";
+import { useMemo, useState } from "react";
 import {
   Building2,
   CalendarDays,
@@ -487,27 +488,21 @@ function EmployeeManagementPage() {
     }
   };
 
+ 
   return (
     <div className="employee-management-page">
       <div className="employee-management-header">
-        <div>
-          <div className="employee-breadcrumb">
-            Admin Dashboard <span>/</span> Employee Management
-          </div>
-
-          <h1>Manage Employee</h1>
-
-          <p>
-            Maintain employee information, organizational details, reporting
-            structure and accommodation records.
-          </p>
-        </div>
+        <PageHeader
+          title="Manage Employee"
+          description="Maintain employee information, organizational details, reporting structure and accommodation records."
+        />
 
         <div className="employee-header-status">
           <CheckCircle2 size={17} />
           <span>{employees.length} employees</span>
         </div>
       </div>
+
 
       {savedMessage && (
         <div className="employee-save-message">

@@ -1,3 +1,4 @@
+﻿
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
@@ -13,101 +14,66 @@ import {
   Users,
   X,
 } from "lucide-react";
-
 import axios from "axios";
 import "./MapEmployeePage.css";
 
-/* ================================================================
-   FORM TYPES
-================================================================ */
-
 const FORM_TYPES = [
-  {
-    id: "ta-claim",
-    label: "TA Claim",
-  },
-  {
-    id: "ta-advance",
-    label: "TA Advance",
-  },
-  {
-    id: "ltc-claim",
-    label: "LTC Claim",
-  },
-  {
-    id: "ltc-advance",
-    label: "LTC Advance",
-  },
-  {
-    id: "medical-claim",
-    label: "Medical Claim",
-  },
-  {
-    id: "medical-advance",
-    label: "Medical Advance",
-  },
-  {
-    id: "accommodation",
-    label: "Accommodation",
-  },
+  { id: "ta-claim", label: "TA Claim" },
+  { id: "ta-advance", label: "TA Advance" },
+  { id: "ltc-claim", label: "LTC Claim" },
+  { id: "ltc-advance", label: "LTC Advance" },
+  { id: "medical-claim", label: "Medical Claim" },
+  { id: "medical-advance", label: "Medical Advance" },
+  { id: "accommodation", label: "Accommodation" },
 ];
-
-/* ================================================================
-   FUNCTIONAL ROLES
-================================================================ */
 
 const FUNCTIONAL_ROLES = [
-  "All",
-  "Bill Clerk / Accounts Staff",
-  "Administrative Officer",
-  "Director",
-  "Budget Officer",
+  "Head of Office",
+  "Head of Department (HOD)",
+  "Finance Officer",
+  "Finance Clerk",
+  "IT Cell In-charge",
 ];
 
-/* ================================================================
-   EMPLOYEES
-================================================================ */
-
-const EMPLOYEES = [
+const DEMO_EMPLOYEES = [
   {
     employeeId: "EMP-001",
     name: "Director",
     designation: "Director",
     departmentName: "Finance",
-    functionalRole: "Director",
+    functionalRole: "Head of Office",
   },
   {
     employeeId: "EMP-002",
     name: "Employee 002",
     designation: "Accounts Officer",
     departmentName: "Finance",
-    functionalRole: "Bill Clerk / Accounts Staff",
+    functionalRole: "Finance Officer",
   },
   {
     employeeId: "EMP-003",
     name: "Employee 003",
     designation: "Administrative Officer",
     departmentName: "Administration",
-    functionalRole: "Administrative Officer",
+    functionalRole: "Head of Department (HOD)",
   },
   {
     employeeId: "EMP-004",
     name: "Employee 004",
     designation: "Budget Officer",
     departmentName: "Finance",
-    functionalRole: "Budget Officer",
+    functionalRole: "Finance Clerk",
+  },
+  {
+    employeeId: "EMP-005",
+    name: "IT Cell In-charge",
+    designation: "IT Cell In-charge",
+    departmentName: "IT Cell",
+    functionalRole: "IT Cell In-charge",
   },
 ];
 
-/* ================================================================
-   STORAGE
-================================================================ */
-
 const STORAGE_KEY = "fms.employee-form-mappings";
-
-/* ================================================================
-   EMPTY MAPPING
-================================================================ */
 
 const createEmptyMapping = () => ({
   "ta-claim": false,
@@ -120,65 +86,19 @@ const createEmptyMapping = () => ({
   locked: false,
 });
 
-/* ================================================================
-   LOAD MAPPINGS
-================================================================ */
-
 const loadMappings = () => {
   try {
-    const saved = window.localStorage.getItem(STORAGE_KEY);
-
-    if (!saved) {
-      return {};
-    }
-
-    const parsed = JSON.parse(saved);
-
-    if (!parsed || typeof parsed !== "object") {
-      return {};
-    }
-
-    return parsed;
-  } catch (error) {
-    console.error("Failed to load mappings:", error);
+    return JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+  } catch {
     return {};
   }
 };
 
-/* ================================================================
-   SAVE MAPPINGS
-================================================================ */
-
-const saveMappingsToStorage = (mappings) => {
-  try {
-    window.localStorage.setItem(
-      STORAGE_KEY,
-      JSON.stringify(mappings)
-    );
-
-    return true;
-  } catch (error) {
-    console.error("Failed to save mappings:", error);
-    return false;
-  }
-};
-
-/* ================================================================
-   TOGGLE COMPONENT
-================================================================ */
-
-function MappingToggle({
-  checked,
-  disabled,
-  label,
-  onChange,
-}) {
+function MappingToggle({ checked, disabled, label, onChange }) {
   return (
     <button
       type="button"
-      className={`mapping-toggle ${
-        checked ? "is-on" : ""
-      }`}
+      className={`mapping-toggle ${checked ? "is-on" : ""}`}
       disabled={disabled}
       onClick={onChange}
       aria-label={label}
@@ -187,370 +107,188 @@ function MappingToggle({
       <span className="mapping-toggle-track">
         <span className="mapping-toggle-thumb" />
       </span>
-
-      <span className="mapping-toggle-text">
-        {checked ? "ON" : "OFF"}
-      </span>
+      <span className="mapping-toggle-text">{checked ? "ON" : "OFF"}</span>
     </button>
   );
 }
 
-/* ================================================================
-   MAIN COMPONENT
-================================================================ */
-
 function MapEmployeePage({ onClose }) {
-  const handleBulkSave = async () => {
-    if (!excelEmployees || excelEmployees.length === 0) {
-      alert("No employees found from Excel upload!");
-      return;
-    }
-
-    try {
-      const response = await fetch("http://localhost:5000/api/admin/employee-mappings/bulk-save", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ mappings: excelEmployees })
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        alert("✅ All 5 Excel Employees saved successfully to MongoDB Atlas!");
-      } else {
-        alert("❌ Save failed: " + (data.message || "Server Error"));
-      }
-    } catch (error) {
-      console.error("Bulk save error:", error);
-      alert("❌ Network Error: " + error.message);
-    }
-  };
-  /* ================================================================
-     BASIC STATE
-  ================================================================ */
-
-  const [mappingMode, setMappingMode] =
-    useState("individual");
-
-  const [functionalRole, setFunctionalRole] =
-    useState("All");
-
-  const [selectedEmployeeId, setSelectedEmployeeId] =
-    useState("EMP-001");
-
-  const [mappings, setMappings] =
-    useState(loadMappings);
-
+  const [mappingMode, setMappingMode] = useState("individual");
+  const [functionalRole, setFunctionalRole] = useState("");
+  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
+  const [mappings, setMappings] = useState(loadMappings);
   const [saved, setSaved] = useState(false);
 
-  /* ================================================================
-     MASS ENTRY — EXCEL STATE
-  ================================================================ */
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelEmployees, setExcelEmployees] = useState([]);
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [excelError, setExcelError] = useState("");
+  const [importResult, setImportResult] = useState(null);
+  const [importing, setImporting] = useState(false);
 
-  const [excelFile, setExcelFile] =
-    useState(null);
+  const topScrollRef = useRef(null);
+  const topScrollContentRef = useRef(null);
+  const tableWrapperRef = useRef(null);
+  const tableRef = useRef(null);
 
-  const [excelEmployees, setExcelEmployees] =
-    useState([]);
-
-  const [excelLoading, setExcelLoading] =
-    useState(false);
-
-  const [excelError, setExcelError] =
-    useState("");
-
-  /* ================================================================
-     REFS
-  ================================================================ */
-
-  const mapEmployeeTopScrollRef = useRef(null);
-
-  const mapEmployeeTopScrollContentRef =
-    useRef(null);
-
-  const mapEmployeeTableWrapperRef =
-    useRef(null);
-
-  const mapEmployeeTableRef =
-    useRef(null);
-
-  /* ================================================================
-     FILTER EMPLOYEES
-  ================================================================ */
+  const normalizeRole = (value) =>
+    String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[\s_-]+/g, " ");
 
   const employeesForRole = useMemo(() => {
-    if (functionalRole === "All") {
-      return EMPLOYEES;
-    }
+    if (!functionalRole) return DEMO_EMPLOYEES;
 
-    return EMPLOYEES.filter(
+    return DEMO_EMPLOYEES.filter(
       (employee) =>
-        employee.functionalRole === functionalRole
+        normalizeRole(employee.functionalRole) ===
+        normalizeRole(functionalRole)
     );
   }, [functionalRole]);
 
-  /* ================================================================
-     KEEP SELECTED EMPLOYEE VALID
-  ================================================================ */
-
-  useEffect(() => {
-    const exists = employeesForRole.some(
-      (employee) =>
-        employee.employeeId === selectedEmployeeId
-    );
-
-    if (!exists) {
-      setSelectedEmployeeId(
-        employeesForRole[0]?.employeeId || ""
-      );
-    }
-  }, [
-    employeesForRole,
-    selectedEmployeeId,
-  ]);
-
-  /* ================================================================
-     SELECTED EMPLOYEE
-  ================================================================ */
-
-  const selectedEmployee = useMemo(() => {
-    return EMPLOYEES.find(
-      (employee) =>
-        employee.employeeId ===
-        selectedEmployeeId
-    );
-  }, [selectedEmployeeId]);
-
-  /* ================================================================
-     SELECTED MAPPING
-  ================================================================ */
+  const selectedEmployee = useMemo(
+    () =>
+      [...DEMO_EMPLOYEES, ...excelEmployees].find(
+        (employee) => employee.employeeId === selectedEmployeeId
+      ),
+    [selectedEmployeeId, excelEmployees]
+  );
 
   const selectedMapping =
-    mappings[selectedEmployeeId] ||
-    createEmptyMapping();
-    /* ================================================================
-   INDIVIDUAL SELECT ALL STATUS
-================================================================ */
+    mappings[selectedEmployeeId] || createEmptyMapping();
 
-const allSelected = FORM_TYPES.every(
-  (form) =>
+  const allSelected = FORM_TYPES.every((form) =>
     Boolean(selectedMapping[form.id])
-);
+  );
 
-  /* ================================================================
-     UPDATE INDIVIDUAL FORM
-  ================================================================ */
+  useEffect(() => {
+    if (
+      !employeesForRole.some(
+        (employee) => employee.employeeId === selectedEmployeeId
+      )
+    ) {
+      setSelectedEmployeeId(employeesForRole[0]?.employeeId || "");
+    }
+  }, [employeesForRole, selectedEmployeeId]);
 
-  const updateMapping = (
-    employeeId,
-    formId,
-    value
-  ) => {
+  useEffect(() => {
+    const top = topScrollRef.current;
+    const wrapper = tableWrapperRef.current;
+    const table = tableRef.current;
+    const content = topScrollContentRef.current;
+
+    if (!top || !wrapper || !table || !content) return;
+
+    const updateWidth = () => {
+      content.style.width = `${table.scrollWidth}px`;
+    };
+
+    const onTopScroll = () => {
+      wrapper.scrollLeft = top.scrollLeft;
+    };
+
+    const onTableScroll = () => {
+      top.scrollLeft = wrapper.scrollLeft;
+    };
+
+    updateWidth();
+    top.addEventListener("scroll", onTopScroll);
+    wrapper.addEventListener("scroll", onTableScroll);
+    window.addEventListener("resize", updateWidth);
+
+    return () => {
+      top.removeEventListener("scroll", onTopScroll);
+      wrapper.removeEventListener("scroll", onTableScroll);
+      window.removeEventListener("resize", updateWidth);
+    };
+  }, [excelEmployees, mappingMode]);
+
+  const persistMappings = (next = mappings) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      setMappings(next);
+      setSaved(true);
+      window.setTimeout(() => setSaved(false), 2500);
+    } catch (error) {
+      console.error("Failed to save mappings:", error);
+      setExcelError("Could not save mappings to browser storage.");
+    }
+  };
+
+  const updateMapping = (employeeId, formId, value) => {
     setSaved(false);
-
     setMappings((current) => {
-      const currentMapping =
-        current[employeeId] ||
-        createEmptyMapping();
-
-      if (currentMapping.locked) {
-        return current;
-      }
+      const mapping = current[employeeId] || createEmptyMapping();
+      if (mapping.locked) return current;
 
       return {
         ...current,
-
-        [employeeId]: {
-          ...currentMapping,
-          [formId]: value,
-        },
+        [employeeId]: { ...mapping, [formId]: value },
       };
     });
   };
-
-  /* ================================================================
-     SELECT ALL INDIVIDUAL FORMS
-  ================================================================ */
 
   const handleSelectAll = () => {
-    if (!selectedEmployeeId) {
-      return;
-    }
+    if (!selectedEmployeeId || selectedMapping.locked) return;
 
-    if (selectedMapping.locked) {
-      return;
-    }
-
+    const updated = {
+      ...mappings,
+      [selectedEmployeeId]: {
+        ...selectedMapping,
+        ...Object.fromEntries(FORM_TYPES.map((form) => [form.id, true])),
+      },
+    };
+    setMappings(updated);
     setSaved(false);
-
-    setMappings((current) => {
-      const currentMapping =
-        current[selectedEmployeeId] ||
-        createEmptyMapping();
-
-      const updated = {
-        ...currentMapping,
-      };
-
-      FORM_TYPES.forEach((form) => {
-        updated[form.id] = true;
-      });
-
-      return {
-        ...current,
-        [selectedEmployeeId]: updated,
-      };
-    });
   };
-
-  /* ================================================================
-     LOCK INDIVIDUAL
-  ================================================================ */
 
   const handleLockAll = () => {
-    if (!selectedEmployeeId) {
-      return;
-    }
-
+    if (!selectedEmployeeId) return;
+    setMappings((current) => ({
+      ...current,
+      [selectedEmployeeId]: {
+        ...(current[selectedEmployeeId] || createEmptyMapping()),
+        locked: true,
+      },
+    }));
     setSaved(false);
-
-    setMappings((current) => {
-      const currentMapping =
-        current[selectedEmployeeId] ||
-        createEmptyMapping();
-
-      return {
-        ...current,
-
-        [selectedEmployeeId]: {
-          ...currentMapping,
-          locked: true,
-        },
-      };
-    });
   };
-
-  /* ================================================================
-     UNLOCK INDIVIDUAL
-  ================================================================ */
 
   const handleUnlockAll = () => {
-    if (!selectedEmployeeId) {
-      return;
-    }
-
+    if (!selectedEmployeeId) return;
+    setMappings((current) => ({
+      ...current,
+      [selectedEmployeeId]: {
+        ...(current[selectedEmployeeId] || createEmptyMapping()),
+        locked: false,
+      },
+    }));
     setSaved(false);
-
-    setMappings((current) => {
-      const currentMapping =
-        current[selectedEmployeeId] ||
-        createEmptyMapping();
-
-      return {
-        ...current,
-
-        [selectedEmployeeId]: {
-          ...currentMapping,
-          locked: false,
-        },
-      };
-    });
   };
-
-  /* ================================================================
-     ROW LOCK
-  ================================================================ */
 
   const toggleRowLock = (employeeId) => {
-    setSaved(false);
-
     setMappings((current) => {
-      const currentMapping =
-        current[employeeId] ||
-        createEmptyMapping();
-
+      const mapping = current[employeeId] || createEmptyMapping();
       return {
         ...current,
-
-        [employeeId]: {
-          ...currentMapping,
-          locked: !currentMapping.locked,
-        },
+        [employeeId]: { ...mapping, locked: !mapping.locked },
       };
     });
+    setSaved(false);
   };
-
-  /* ================================================================
-     SAVE ALL CURRENT FRONTEND MAPPINGS
-  ================================================================ */
-
-  const persistMappings = (
-    nextMappings = mappings
-  ) => {
-    const success =
-      saveMappingsToStorage(nextMappings);
-
-    if (!success) {
-      return;
-    }
-
-    setMappings(nextMappings);
-    setSaved(true);
-
-    window.setTimeout(() => {
-      setSaved(false);
-    }, 2500);
-  };
-
-  /* ================================================================
-     SAVE CURRENT EMPLOYEE
-  ================================================================ */
-
-  const handleSave = () => {
-    if (!selectedEmployeeId) {
-      return;
-    }
-
-    persistMappings(mappings);
-  };
-
-  /* ================================================================
-     EXCEL UPLOAD
-     
-     NOTE:
-     This dynamically imports xlsx so the component does not
-     require XLSX processing until an Excel file is uploaded.
-
-     Install once if not already installed:
-       npm install xlsx
-  ================================================================ */
 
   const handleExcelUpload = async (event) => {
-    const file =
-      event.target.files?.[0];
-
-    if (!file) {
-      return;
-    }
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     setExcelError("");
+    setImportResult(null);
     setExcelEmployees([]);
     setExcelFile(null);
 
-    const fileName =
-      file.name.toLowerCase();
-
-    const isExcelFile =
-      fileName.endsWith(".xlsx") ||
-      fileName.endsWith(".xls");
-
-    if (!isExcelFile) {
-      setExcelError(
-        "Please upload a valid Excel file (.xlsx or .xls)."
-      );
-
+    if (!/\.(xlsx|xls)$/i.test(file.name)) {
+      setExcelError("Please upload a valid Excel file (.xlsx or .xls).");
       event.target.value = "";
       return;
     }
@@ -558,245 +296,162 @@ const allSelected = FORM_TYPES.every(
     setExcelLoading(true);
 
     try {
-      const XLSX =
-        await import("xlsx");
+      const XLSX = await import("xlsx");
+      const buffer = await file.arrayBuffer();
+      const workbook = XLSX.read(buffer, { type: "array" });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
 
-      const arrayBuffer =
-        await file.arrayBuffer();
+      if (!sheet) throw new Error("The workbook has no worksheet.");
 
-      const workbook =
-        XLSX.read(arrayBuffer, {
-          type: "array",
-        });
-
-      if (
-        !workbook.SheetNames ||
-        workbook.SheetNames.length === 0
-      ) {
-        throw new Error(
-          "The Excel file does not contain any worksheet."
-        );
-      }
-
-      const firstSheet =
-        workbook.Sheets[
-          workbook.SheetNames[0]
-        ];
-
-      const rows =
-        XLSX.utils.sheet_to_json(
-          firstSheet,
-          {
-            defval: "",
-          }
-        );
-
-      if (!rows.length) {
-        throw new Error(
-          "The uploaded Excel file is empty."
-        );
-      }
-
-      /* ------------------------------------------------------------
-         Normalize Excel column names
-      ------------------------------------------------------------ */
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
+      if (!rows.length) throw new Error("The Excel file is empty.");
 
       const normalizeKey = (key) =>
-        String(key)
-          .trim()
-          .toLowerCase()
-          .replace(/[\s_-]+/g, "");
+        String(key).trim().toLowerCase().replace(/[\s_-]+/g, "");
 
-      const firstRow = rows[0];
-
-      const columnMap = {};
-
-      Object.keys(firstRow).forEach(
-        (key) => {
-          columnMap[normalizeKey(key)] =
-            key;
-        }
-      );
-
-      const employeeIdColumn =
-        columnMap.employeeid ||
-        columnMap.empid ||
-        columnMap.employeeidno;
-
-      const employeeNameColumn =
-        columnMap.employeename ||
-        columnMap.name;
-
-      if (!employeeIdColumn) {
-        throw new Error(
-          "Required column missing: Employee ID."
+      const parsed = rows.map((row, index) => {
+        const normalized = Object.fromEntries(
+          Object.entries(row).map(([key, value]) => [
+            normalizeKey(key),
+            String(value ?? "").trim(),
+          ])
         );
-      }
 
-      if (!employeeNameColumn) {
-        throw new Error(
-          "Required column missing: Employee Name."
-        );
-      }
+        const employeeId =
+          normalized.employeeid ||
+          normalized.employeecode ||
+          normalized.empid;
 
-      /* ------------------------------------------------------------
-         Convert rows
-      ------------------------------------------------------------ */
+        const name =
+          normalized.fullname ||
+          normalized.employeename ||
+          normalized.name;
 
-      const parsedEmployees =
-        rows
-          .map((row) => ({
-            employeeId: String(
-              row[employeeIdColumn] ?? ""
-            ).trim(),
-
-            name: String(
-              row[employeeNameColumn] ?? ""
-            ).trim(),
-          }))
-          .filter(
-            (employee) =>
-              employee.employeeId &&
-              employee.name
+        if (!employeeId || !name) {
+          throw new Error(
+            `Row ${index + 2}: Employee ID and Full Name are required.`
           );
+        }
 
-      if (
-        parsedEmployees.length === 0
-      ) {
-        throw new Error(
-          "No valid employee records were found in the Excel file."
-        );
+        return {
+          employeeId,
+          name,
+          email: normalized.email || "",
+          departmentName: normalized.department || "",
+          designation: normalized.designation || "Officer",
+          functionalRole:
+            normalized.functionalassignment || "Employee",
+          basicPay: normalized.basicpay || "45000",
+          formMappings: {
+            "ta-claim": false,
+            "ta-advance": false,
+            "ltc-claim": false,
+            "ltc-advance": false,
+            "medical-claim": false,
+            "medical-advance": false,
+            accommodation: false,
+          },
+        };
+      });
+
+      const seen = new Set();
+      for (const employee of parsed) {
+        const key = employee.employeeId.toUpperCase();
+        if (seen.has(key)) {
+          throw new Error(`Duplicate Employee ID in Excel: ${employee.employeeId}`);
+        }
+        seen.add(key);
       }
 
       setExcelFile(file);
-      setExcelEmployees(
-        parsedEmployees
-      );
+      setExcelEmployees(parsed);
+
+      setMappings((current) => {
+        const updated = { ...current };
+        parsed.forEach((employee) => {
+          updated[employee.employeeId] =
+            updated[employee.employeeId] || createEmptyMapping();
+        });
+        return updated;
+      });
+
+      setSelectedEmployeeId(parsed[0]?.employeeId || "");
     } catch (error) {
-      console.error(
-        "Excel upload error:",
-        error
-      );
-
-      setExcelError(
-        error?.message ||
-          "Unable to read the Excel file."
-      );
-
+      console.error("Excel upload error:", error);
+      setExcelError(error.message || "Unable to read the Excel file.");
       setExcelFile(null);
       setExcelEmployees([]);
     } finally {
       setExcelLoading(false);
-
       event.target.value = "";
     }
   };
-
-  /* ================================================================
-     REMOVE EXCEL
-  ================================================================ */
 
   const removeExcel = () => {
     setExcelFile(null);
     setExcelEmployees([]);
     setExcelError("");
-    setExcelLoading(false);
+    setImportResult(null);
   };
 
-  /* ================================================================
-     TABLE SCROLL SYNC
-  ================================================================ */
-
-  useEffect(() => {
-    const topScroll =
-      mapEmployeeTopScrollRef.current;
-
-    const tableWrapper =
-      mapEmployeeTableWrapperRef.current;
-
-    const table =
-      mapEmployeeTableRef.current;
-
-    const topContent =
-      mapEmployeeTopScrollContentRef.current;
-
-    if (
-      !topScroll ||
-      !tableWrapper ||
-      !table ||
-      !topContent
-    ) {
+  const handleBulkSave = async () => {
+    if (!excelFile || excelEmployees.length === 0) {
+      setExcelError("Please upload a valid employee Excel file first.");
       return;
     }
 
-    const updateWidth = () => {
-      topContent.style.width =
-        `${table.scrollWidth}px`;
-    };
+    setImporting(true);
+    setExcelError("");
+    setImportResult(null);
 
-    const handleTopScroll = () => {
-      tableWrapper.scrollLeft =
-        topScroll.scrollLeft;
-    };
+    try {
+      const token = localStorage.getItem("token");
 
-    const handleTableScroll = () => {
-      topScroll.scrollLeft =
-        tableWrapper.scrollLeft;
-    };
+      if (!token) {
+        throw new Error(
+          "Authentication token not found. Please sign in again."
+        );
+      }
 
-    updateWidth();
+      const formData = new FormData();
+      formData.append("file", excelFile);
 
-    topScroll.addEventListener(
-      "scroll",
-      handleTopScroll
-    );
-
-    tableWrapper.addEventListener(
-      "scroll",
-      handleTableScroll
-    );
-
-    window.addEventListener(
-      "resize",
-      updateWidth
-    );
-
-    return () => {
-      topScroll.removeEventListener(
-        "scroll",
-        handleTopScroll
+      const response = await axios.post(
+        "http://localhost:5000/api/employees/bulk-import",
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
       );
 
-      tableWrapper.removeEventListener(
-        "scroll",
-        handleTableScroll
+      setImportResult(response.data);
+    } catch (error) {
+      console.error("Employee bulk import error:", error);
+      setExcelError(
+        error.response?.data?.message ||
+          error.response?.data?.error ||
+          error.message ||
+          "Employee import failed."
       );
-
-      window.removeEventListener(
-        "resize",
-        updateWidth
-      );
-
-      topContent.style.width = "";
-    };
-  }, []);
-
-  /* ================================================================
-     CLOSE
-  ================================================================ */
+    } finally {
+      setImporting(false);
+    }
+  };
 
   const handleClose = () => {
     if (typeof onClose === "function") {
       onClose();
-      return;
+    } else {
+      window.history.back();
     }
-
-    window.history.back();
   };
 
-  /* ================================================================
-     RENDER
-  ================================================================ */
+  const employeesToDisplay =
+    excelEmployees.length > 0
+      ? excelEmployees
+      : employeesForRole;
 
   return (
     <div
@@ -806,29 +461,15 @@ const allSelected = FORM_TYPES.every(
       aria-labelledby="map-employee-title"
     >
       <div className="map-employee-modal">
-
-        {/* ==========================================================
-            HEADER
-        =========================================================== */}
-
         <header className="map-modal-header">
-
           <div className="map-modal-heading">
-
             <div className="map-modal-icon">
               <Users size={23} />
             </div>
-
             <div>
-              <span className="map-modal-eyebrow">
-                EMPLOYEE MANAGEMENT
-              </span>
-
-              <h1 id="map-employee-title">
-                Map Employee
-              </h1>
+              <span className="map-modal-eyebrow">EMPLOYEE MANAGEMENT</span>
+              <h1 id="map-employee-title">Map Employee</h1>
             </div>
-
           </div>
 
           <button
@@ -839,953 +480,476 @@ const allSelected = FORM_TYPES.every(
           >
             <X size={25} />
           </button>
-
         </header>
 
-        {/* ==========================================================
-            BODY
-        =========================================================== */}
-
         <div className="map-modal-body">
-
-          {/* ========================================================
-              INTRO
-          ========================================================= */}
-
           <section className="map-intro">
-
             <div>
-
-              <span className="map-section-kicker">
-                FORM RESPONSIBILITY
-              </span>
-
-              <h2>
-                Employee Form Mapping
-              </h2>
-
+              <span className="map-section-kicker">FORM RESPONSIBILITY</span>
+              <h2>Employee Form Mapping</h2>
               <p>
-                Assign the financial forms that
-                each employee is responsible for
-                handling.
+                Assign financial forms to employees and upload employee
+                records in bulk.
               </p>
-
             </div>
-
             <div className="map-security-note">
               <ShieldCheck size={18} />
-
-              <span>
-                Admin controlled
-              </span>
+              <span>Admin controlled</span>
             </div>
-
           </section>
 
-          {/* ========================================================
-              MODE TABS
-          ========================================================= */}
-
           <div className="map-mode-tabs">
-
             <button
               type="button"
-              className={`map-mode-tab ${
-                mappingMode ===
-                "individual"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setMappingMode(
-                  "individual"
-                )
-              }
+              className={`map-mode-tab ${mappingMode === "individual" ? "active" : ""}`}
+              onClick={() => setMappingMode("individual")}
             >
               <Users size={16} />
-
               Individual Employee
             </button>
 
             <button
               type="button"
-              className={`map-mode-tab ${
-                mappingMode === "mass"
-                  ? "active"
-                  : ""
-              }`}
-              onClick={() =>
-                setMappingMode("mass")
-              }
+              className={`map-mode-tab ${mappingMode === "mass" ? "active" : ""}`}
+              onClick={() => setMappingMode("mass")}
             >
-              <FileSpreadsheet
-                size={16}
-              />
-
+              <FileSpreadsheet size={16} />
               Mass Entry
             </button>
-
           </div>
 
-          {/* ========================================================
-              INDIVIDUAL MODE
-          ========================================================= */}
-
-          {mappingMode ===
-            "individual" && (
-
+          {mappingMode === "individual" && (
             <section className="map-control-panel">
-
-              {/* ====================================================
-                  SELECTORS
-              ===================================================== */}
-
               <div className="map-control-grid">
-
                 <label className="map-field">
-
-                  <span className="map-field-label">
-                    User Type
-                  </span>
-
+                  <span className="map-field-label">Functional Role</span>
                   <span className="map-select-container">
-
                     <select
                       value={functionalRole}
-                      onChange={(event) =>
-                        setFunctionalRole(
-                          event.target.value
-                        )
-                      }
+                      onChange={(event) => setFunctionalRole(event.target.value)}
                     >
-
-                      {FUNCTIONAL_ROLES.map(
-                        (role) => (
-                          <option
-                            key={role}
-                            value={role}
-                          >
-                            {role}
-                          </option>
-                        )
-                      )}
-
+                      <option value="">All demo roles</option>
+                      {FUNCTIONAL_ROLES.map((role) => (
+                        <option key={role} value={role}>
+                          {role}
+                        </option>
+                      ))}
                     </select>
-
-                    <ChevronDown
-                      size={17}
-                      className="map-select-icon"
-                    />
-
+                    <ChevronDown size={17} className="map-select-icon" />
                   </span>
-
                 </label>
 
                 <label className="map-field">
-
-                  <span className="map-field-label">
-                    Name
-                  </span>
-
+                  <span className="map-field-label">Employee</span>
                   <span className="map-select-container">
-
                     <select
-                      value={
-                        selectedEmployeeId
-                      }
-                      disabled={
-                        employeesForRole.length ===
-                        0
-                      }
+                      value={selectedEmployeeId}
                       onChange={(event) =>
-                        setSelectedEmployeeId(
-                          event.target.value
-                        )
+                        setSelectedEmployeeId(event.target.value)
                       }
                     >
-
-                      {employeesForRole.length ===
-                      0 ? (
-                        <option value="">
-                          No employees in this role
-                        </option>
+                      {employeesForRole.length === 0 ? (
+                        <option value="">No employees in this role</option>
                       ) : (
-                        employeesForRole.map(
-                          (employee) => (
-                            <option
-                              key={
-                                employee.employeeId
-                              }
-                              value={
-                                employee.employeeId
-                              }
-                            >
-                              {employee.name} —{" "}
-                              {
-                                employee.designation
-                              }
-                            </option>
-                          )
-                        )
+                        employeesForRole.map((employee) => (
+                          <option
+                            key={employee.employeeId}
+                            value={employee.employeeId}
+                          >
+                            {employee.name} — {employee.designation}
+                          </option>
+                        ))
                       )}
-
                     </select>
-
-                    <ChevronDown
-                      size={17}
-                      className="map-select-icon"
-                    />
-
+                    <ChevronDown size={17} className="map-select-icon" />
                   </span>
-
                 </label>
-
               </div>
 
-              {/* ====================================================
-                  FORM OPTIONS
-              ===================================================== */}
-
               <div className="map-form-area">
-
                 <div className="map-form-options">
+                  {FORM_TYPES.map((form) => {
+                    const checked = Boolean(selectedMapping[form.id]);
 
-                  {FORM_TYPES.map(
-                    (form) => {
-
-                      const checked =
-                        Boolean(
-                          selectedMapping[
-                            form.id
-                          ]
-                        );
-
-                      return (
-                        <label
-                          key={form.id}
-                          className={`map-form-option ${
-                            checked
-                              ? "is-selected"
-                              : ""
-                          } ${
-                            selectedMapping.locked
-                              ? "is-disabled"
-                              : ""
-                          }`}
-                        >
-
-                          <input
-                            type="checkbox"
-                            checked={
-                              checked
-                            }
-                            disabled={
-                              selectedMapping.locked ||
-                              !selectedEmployeeId
-                            }
-                            onChange={(
-                              event
-                            ) =>
-                              updateMapping(
-                                selectedEmployeeId,
-                                form.id,
-                                event.target
-                                  .checked
-                              )
-                            }
-                          />
-
-                          <span className="map-checkbox">
-
-                            {checked && (
-                              <Check
-                                size={13}
-                              />
-                            )}
-
-                          </span>
-
-                          <span>
-                            {form.label}
-                          </span>
-
-                        </label>
-                      );
-                    }
-                  )}
-
+                    return (
+                      <label
+                        key={form.id}
+                        className={`map-form-option ${checked ? "is-selected" : ""} ${selectedMapping.locked ? "is-disabled" : ""}`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          disabled={selectedMapping.locked || !selectedEmployeeId}
+                          onChange={(event) =>
+                            updateMapping(
+                              selectedEmployeeId,
+                              form.id,
+                              event.target.checked
+                            )
+                          }
+                        />
+                        <span className="map-checkbox">
+                          {checked && <Check size={13} />}
+                        </span>
+                        <span>{form.label}</span>
+                      </label>
+                    );
+                  })}
                 </div>
 
-                {/* ==================================================
-                    INDIVIDUAL ACTIONS
-                =================================================== */}
-
                 <div className="map-bulk-actions">
-
                   <button
                     type="button"
                     className="map-action-button secondary"
-                    disabled={
-                      !selectedEmployeeId ||
-                      selectedMapping.locked ||
-                      allSelected
-                    }
-                    onClick={
-                      handleSelectAll
-                    }
+                    disabled={!selectedEmployeeId || selectedMapping.locked || allSelected}
+                    onClick={handleSelectAll}
                   >
-                    <SlidersHorizontal
-                      size={15}
-                    />
-
+                    <SlidersHorizontal size={15} />
                     Select All
                   </button>
 
                   <button
                     type="button"
                     className="map-action-button warning"
-                    disabled={
-                      !selectedEmployeeId ||
-                      selectedMapping.locked
-                    }
-                    onClick={
-                      handleLockAll
-                    }
+                    disabled={!selectedEmployeeId || selectedMapping.locked}
+                    onClick={handleLockAll}
                   >
                     <Lock size={15} />
-
                     Lock All
                   </button>
 
                   <button
                     type="button"
                     className="map-action-button secondary"
-                    disabled={
-                      !selectedEmployeeId ||
-                      !selectedMapping.locked
-                    }
-                    onClick={
-                      handleUnlockAll
-                    }
+                    disabled={!selectedEmployeeId || !selectedMapping.locked}
+                    onClick={handleUnlockAll}
                   >
                     <Unlock size={15} />
-
                     Unlock All
                   </button>
 
                   <button
                     type="button"
                     className="map-action-button primary"
-                    disabled={
-                      !selectedEmployeeId
-                    }
-                    onClick={handleSave}
+                    disabled={!selectedEmployeeId}
+                    onClick={() => persistMappings(mappings)}
                   >
                     <Save size={15} />
-
-                    {saved
-                      ? "Saved"
-                      : "Save"}
+                    {saved ? "Saved" : "Save"}
                   </button>
-
                 </div>
-
               </div>
-
-              {/* ====================================================
-                  SELECTED EMPLOYEE
-              ===================================================== */}
 
               {selectedEmployee && (
                 <div className="map-selected-employee">
-
                   <div className="map-selected-avatar">
                     {selectedEmployee.name
                       .split(" ")
-                      .map(
-                        (part) =>
-                          part[0]
-                      )
+                      .map((part) => part[0])
                       .slice(0, 2)
                       .join("")}
                   </div>
-
                   <div className="map-selected-info">
-
-                    <strong>
-                      {
-                        selectedEmployee.name
-                      }
-                    </strong>
-
+                    <strong>{selectedEmployee.name}</strong>
                     <span>
-                      {
-                        selectedEmployee.employeeId
-                      }
-                      {" · "}
-                      {
-                        selectedEmployee.departmentName
-                      }
-                      {" · "}
-                      {
-                        selectedEmployee.functionalRole
-                      }
+                      {selectedEmployee.employeeId} ·{" "}
+                      {selectedEmployee.departmentName} ·{" "}
+                      {selectedEmployee.functionalRole}
                     </span>
-
                   </div>
-
                   <span
-                    className={`map-lock-state ${
-                      selectedMapping.locked
-                        ? "locked"
-                        : "editable"
-                    }`}
+                    className={`map-lock-state ${selectedMapping.locked ? "locked" : "editable"}`}
                   >
-
-                    {selectedMapping.locked ? (
-                      <Lock size={13} />
-                    ) : (
-                      <Unlock size={13} />
-                    )}
-
-                    {selectedMapping.locked
-                      ? "Locked"
-                      : "Editable"}
-
+                    {selectedMapping.locked ? <Lock size={13} /> : <Unlock size={13} />}
+                    {selectedMapping.locked ? "Locked" : "Editable"}
                   </span>
-
                 </div>
               )}
-
             </section>
           )}
 
-          {/* ========================================================
-              MASS ENTRY MODE — EXCEL ONLY
-          ========================================================= */}
-
           {mappingMode === "mass" && (
-
             <section className="mass-entry-container">
-
-              {/* ==================================================
-                  HEADER
-              ================================================== */}
-
               <div className="mass-entry-header">
-
-                <div className="mass-entry-number">
-                  01
-                </div>
-
+                <div className="mass-entry-number">01</div>
                 <div>
-
-                  <span className="map-section-kicker">
-                    BULK ASSIGNMENT
-                  </span>
-
-                  <h2>
-                    Upload Employee Excel
-                  </h2>
-
+                  <span className="map-section-kicker">EMPLOYEE BULK ENTRY</span>
+                  <h2>Upload Employee Excel</h2>
                   <p>
-                    Upload an Excel file containing
-                    the employees for mass entry
-                    processing.
+                    Upload an Excel workbook to create employee master records
+                    in the database.
                   </p>
-
                 </div>
-
               </div>
 
-              {/* ==================================================
-                  UPLOAD AREA
-              ================================================== */}
-
               {!excelFile ? (
-
                 <div className="mass-excel-upload">
-
                   <div className="mass-excel-icon">
-
-                    <FileSpreadsheet
-                      size={32}
-                    />
-
+                    <FileSpreadsheet size={32} />
                   </div>
-
-                  <h3>
-                    Upload Employee Excel
-                  </h3>
-
-                  <p>
-                    Upload an Excel file containing
-                    employee details.
-                  </p>
-
+                  <h3>Upload Employee Excel</h3>
+                  <p>Select your employee master workbook.</p>
                   <label className="mass-upload-button">
-
-                    <FileSpreadsheet
-                      size={16}
-                    />
-
+                    <FileSpreadsheet size={16} />
                     Choose Excel File
-
                     <input
                       type="file"
                       accept=".xlsx,.xls"
-                      onChange={
-                        handleExcelUpload
-                      }
+                      onChange={handleExcelUpload}
                       hidden
                     />
-
                   </label>
-
                   <span className="mass-upload-hint">
-                    Required columns: Employee ID,
-                    Employee Name
+                    Required columns: Employee_ID, Full_Name, Department
                   </span>
-
                 </div>
-
               ) : (
-
                 <div className="mass-excel-file">
-
                   <div className="mass-file-icon">
-
-                    <FileSpreadsheet
-                      size={25}
-                    />
-
+                    <FileSpreadsheet size={25} />
                   </div>
-
                   <div className="mass-file-info">
-
-                    <strong>
-                      {excelFile.name}
-                    </strong>
-
-                    <span>
-                      {excelEmployees.length}
-                      {" "}
-                      employees found
-                    </span>
-
+                    <strong>{excelFile.name}</strong>
+                    <span>{excelEmployees.length} employees found</span>
                   </div>
-
                   <button
                     type="button"
                     className="mass-remove-file"
-                    onClick={
-                      removeExcel
-                    }
+                    onClick={removeExcel}
                     aria-label="Remove Excel file"
                   >
                     <X size={17} />
                   </button>
-
                 </div>
-
               )}
-
-              {/* ==================================================
-                  LOADING
-              ================================================== */}
 
               {excelLoading && (
-
                 <div className="mass-excel-message loading">
-
-                  <FileSpreadsheet
-                    size={16}
-                  />
-
+                  <FileSpreadsheet size={16} />
                   Reading Excel file...
-
                 </div>
-
               )}
-
-              {/* ==================================================
-                  ERROR
-              ================================================== */}
 
               {excelError && (
-
-                <div className="mass-excel-message error">
-
-                  <AlertCircle
-                    size={16}
-                  />
-
-                  <span>
-                    {excelError}
-                  </span>
-
+                <div className="mass-excel-message error" role="alert">
+                  <AlertCircle size={16} />
+                  <span>{excelError}</span>
                 </div>
-
               )}
-
-              {/* ==================================================
-                  SUCCESS
-              ================================================== */}
 
               {excelEmployees.length > 0 && (
-
-                <div className="mass-upload-success">
-
-                  <div className="mass-success-icon">
-
-                    <CheckCircle2
-                      size={18}
-                    />
-
+                <>
+                  <div className="mass-upload-success">
+                    <div className="mass-success-icon">
+                      <CheckCircle2 size={18} />
+                    </div>
+                    <div>
+                      <strong>Excel preview ready</strong>
+                      <span>
+                        {excelEmployees.length} employees are ready to import.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="mass-upload-button"
+                      onClick={handleBulkSave}
+                      disabled={importing || excelLoading}
+                    >
+                      {importing ? "Importing..." : "Import Employees to Database"}
+                    </button>
                   </div>
 
-                  <div>
-
-                    <strong>
-                      Excel uploaded successfully
-                    </strong>
-
-                    <span>
-                      {excelEmployees.length}
-                      {" "}
-                      employees are ready for
-                      mass entry processing.
-                    </span>
-
+                  <div className="mass-table-preview">
+                    <h3>Preview first 10 employees</h3>
+                    <div className="map-table-wrapper">
+                      <table className="map-table">
+                        <thead>
+                          <tr>
+                            <th>Employee ID</th>
+                            <th>Full Name</th>
+                            <th>Email</th>
+                            <th>Department</th>
+                            <th>Designation</th>
+                            <th>Functional Assignment</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {excelEmployees.slice(0, 10).map((employee) => (
+                            <tr key={employee.employeeId}>
+                              <td>{employee.employeeId}</td>
+                              <td>{employee.name}</td>
+                              <td>{employee.email || "—"}</td>
+                              <td>{employee.departmentName || "—"}</td>
+                              <td>{employee.designation}</td>
+                              <td>{employee.functionalRole}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
                   </div>
-                  <button
-  type="button"
-  onClick={handleBulkSave}
-  style={{
-    marginLeft: "auto",
-    padding: "8px 16px",
-    backgroundColor: "#16a34a",
-    color: "#ffffff",
-    border: "none",
-    borderRadius: "6px",
-    fontWeight: "600",
-    cursor: "pointer"
-  }}
->
-  Save Mappings to DB
-</button>
-
-                </div>
-
+                </>
               )}
 
-            </section>
+              {importResult && (
+                <div className="mass-upload-success">
+                  <CheckCircle2 size={20} />
+                  <div>
+                    <strong>{importResult.message || "Import completed"}</strong>
+                    <p>Total rows: {importResult.totalRows ?? excelEmployees.length}</p>
+                    <p>Created: {importResult.created ?? 0}</p>
+                    <p>Failed or skipped: {importResult.failed ?? 0}</p>
 
+                    {importResult.errors?.length > 0 && (
+                      <ul>
+                        {importResult.errors.map((item, index) => (
+                          <li key={`${item.row}-${index}`}>
+                            Row {item.row} — {item.employeeCode || "Unknown ID"}:{" "}
+                            {item.message}
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                </div>
+              )}
+            </section>
           )}
 
-          {/* ========================================================
-              MAPPING TABLE
-          ========================================================= */}
-
           <section className="map-table-section">
-
             <div className="map-table-header">
-
               <div>
-
-                <span className="map-section-kicker">
-                  CONFIGURATION
-                </span>
-
-                <h2>
-                  Forms Mapping View
-                </h2>
-
+                <span className="map-section-kicker">CONFIGURATION</span>
+                <h2>Forms Mapping View</h2>
               </div>
-
               <span className="map-count">
-                {EMPLOYEES.length} employees
-                {" · "}
-                {FORM_TYPES.length} forms
+                {employeesToDisplay.length} employees · {FORM_TYPES.length} forms
               </span>
-
             </div>
 
-            <div
-              className="map-employee-top-scroll"
-              ref={
-                mapEmployeeTopScrollRef
-              }
-            >
+            <div className="map-employee-top-scroll" ref={topScrollRef}>
               <div
                 className="map-employee-top-scroll-content"
-                ref={
-                  mapEmployeeTopScrollContentRef
-                }
+                ref={topScrollContentRef}
               />
             </div>
 
-            <div
-              className="map-table-wrapper"
-              ref={
-                mapEmployeeTableWrapperRef
-              }
-            >
-
-              <table
-                className="map-table"
-                ref={
-                  mapEmployeeTableRef
-                }
-              >
-
+            <div className="map-table-wrapper" ref={tableWrapperRef}>
+              <table className="map-table" ref={tableRef}>
                 <thead>
-
                   <tr>
-
-                    <th className="serial-column">
-                      SL NO
-                    </th>
-
-                    <th className="employee-column">
-                      EMPLOYEE
-                    </th>
-
-                    {FORM_TYPES.map(
-                      (form) => (
-                        <th
-                          key={form.id}
-                          className="form-column"
-                        >
-                          {form.label}
-                        </th>
-                      )
-                    )}
-
-                    <th className="actions-column">
-                      ACTIONS
-                    </th>
-
+                    <th className="serial-column">SL NO</th>
+                    <th className="employee-column">EMPLOYEE</th>
+                    {FORM_TYPES.map((form) => (
+                      <th key={form.id} className="form-column">
+                        {form.label}
+                      </th>
+                    ))}
+                    <th className="actions-column">ACTIONS</th>
                   </tr>
-
                 </thead>
-
                 <tbody>
+                  {employeesToDisplay.map((employee, index) => {
+                    const rowMapping =
+                      mappings[employee.employeeId] || createEmptyMapping();
 
-                  {EMPLOYEES.map(
-                    (employee, index) => {
+                    return (
+                      <tr
+                        key={employee.employeeId}
+                        className={
+                          employee.employeeId === selectedEmployeeId
+                            ? "current-row"
+                            : ""
+                        }
+                      >
+                        <td className="serial-column">{index + 1}</td>
+                        <td className="employee-column">
+                          <button
+                            type="button"
+                            className="table-employee-button"
+                            onClick={() => {
+                              setSelectedEmployeeId(employee.employeeId);
+                              setMappingMode("individual");
+                            }}
+                          >
+                            <span className="table-avatar">
+                              {employee.name
+                                .split(" ")
+                                .map((part) => part[0])
+                                .slice(0, 2)
+                                .join("")}
+                            </span>
+                            <span className="table-employee-details">
+                              <strong>{employee.name}</strong>
+                              <small>{employee.functionalRole}</small>
+                            </span>
+                          </button>
+                        </td>
 
-                      const rowMapping =
-                        mappings[
-                          employee.employeeId
-                        ] ||
-                        createEmptyMapping();
-
-                      const isCurrent =
-                        employee.employeeId ===
-                        selectedEmployeeId;
-
-                      return (
-                        <tr
-                          key={
-                            employee.employeeId
-                          }
-                          className={
-                            isCurrent
-                              ? "current-row"
-                              : ""
-                          }
-                        >
-
-                          <td className="serial-column">
-                            {index + 1}
+                        {FORM_TYPES.map((form) => (
+                          <td key={form.id} className="form-column">
+                            <MappingToggle
+                              checked={Boolean(rowMapping[form.id])}
+                              disabled={Boolean(rowMapping.locked)}
+                              label={`${employee.name} ${form.label}`}
+                              onChange={() =>
+                                updateMapping(
+                                  employee.employeeId,
+                                  form.id,
+                                  !rowMapping[form.id]
+                                )
+                              }
+                            />
                           </td>
+                        ))}
 
-                          <td className="employee-column">
-
+                        <td className="actions-column">
+                          <div className="row-actions">
                             <button
                               type="button"
-                              className="table-employee-button"
-                              onClick={() => {
-
-                                setMappingMode(
-                                  "individual"
-                                );
-
-                                setFunctionalRole(
-                                  employee.functionalRole
-                                );
-
-                                setSelectedEmployeeId(
-                                  employee.employeeId
-                                );
-
-                              }}
+                              className="row-save-button"
+                              onClick={() => persistMappings(mappings)}
                             >
-
-                              <span className="table-avatar">
-
-                                {employee.name
-                                  .split(" ")
-                                  .map(
-                                    (part) =>
-                                      part[0]
-                                  )
-                                  .slice(0, 2)
-                                  .join("")}
-
-                              </span>
-
-                              <span className="table-employee-details">
-
-                                <strong>
-                                  {
-                                    employee.name
-                                  }
-                                </strong>
-
-                                <small>
-                                  {
-                                    employee.functionalRole
-                                  }
-                                </small>
-
-                              </span>
-
+                              <Save size={14} />
+                              Save
                             </button>
-
-                          </td>
-
-                          {FORM_TYPES.map(
-                            (form) => (
-
-                              <td
-                                key={
-                                  form.id
-                                }
-                                className="form-column"
-                              >
-
-                                <MappingToggle
-                                  checked={Boolean(
-                                    rowMapping[
-                                      form.id
-                                    ]
-                                  )}
-                                  disabled={Boolean(
-                                    rowMapping.locked
-                                  )}
-                                  label={`${employee.name} ${form.label}`}
-                                  onChange={() =>
-                                    updateMapping(
-                                      employee.employeeId,
-                                      form.id,
-                                      !rowMapping[
-                                        form.id
-                                      ]
-                                    )
-                                  }
-                                />
-
-                              </td>
-
-                            )
-                          )}
-
-                          <td className="actions-column">
-
-                            <div className="row-actions">
-
-                              <button
-                                type="button"
-                                className="row-save-button"
-                                onClick={() =>
-                                  persistMappings(
-                                    mappings
-                                  )
-                                }
-                              >
-                                <Save
-                                  size={14}
-                                />
-
-                                Save
-                              </button>
-
-                              <button
-                                type="button"
-                                className={`row-lock-button ${
-                                  rowMapping.locked
-                                    ? "unlock"
-                                    : ""
-                                }`}
-                                onClick={() =>
-                                  toggleRowLock(
-                                    employee.employeeId
-                                  )
-                                }
-                              >
-
-                                {rowMapping.locked ? (
-                                  <Unlock
-                                    size={14}
-                                  />
-                                ) : (
-                                  <Lock
-                                    size={14}
-                                  />
-                                )}
-
-                                {rowMapping.locked
-                                  ? "Unlock"
-                                  : "Lock"}
-
-                              </button>
-
-                            </div>
-
-                          </td>
-
-                        </tr>
-                      );
-                    }
-                  )}
-
+                            <button
+                              type="button"
+                              className={`row-lock-button ${rowMapping.locked ? "unlock" : ""}`}
+                              onClick={() => toggleRowLock(employee.employeeId)}
+                            >
+                              {rowMapping.locked ? (
+                                <Unlock size={14} />
+                              ) : (
+                                <Lock size={14} />
+                              )}
+                              {rowMapping.locked ? "Unlock" : "Lock"}
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
-
               </table>
-
             </div>
-
           </section>
-
         </div>
 
-        {/* ==========================================================
-            FOOTER
-        =========================================================== */}
-
         <footer className="map-modal-footer">
-
           <div className="map-footer-status">
-
             {saved ? (
               <>
                 <Check size={17} />
-
                 Mapping saved successfully
               </>
             ) : (
               <>
                 <ShieldCheck size={17} />
-
-                Responsibility changes require an
-                explicit save
+                Responsibility changes require an explicit save
               </>
             )}
-
           </div>
-
           <button
             type="button"
             className="map-footer-close"
@@ -1793,26 +957,10 @@ const allSelected = FORM_TYPES.every(
           >
             Close
           </button>
-
         </footer>
-
       </div>
     </div>
   );
 }
-
-
-  const handleBulkSave = async () => {
-    if (!parsedEmployees || parsedEmployees.length === 0) return alert("No employees found!");
-    try {
-      const res = await axios.post("/api/admin/employee-mappings/bulk-save", { mappings: parsedEmployees });
-      if (res.status === 200 || res.status === 201) {
-        alert("? Mass mappings saved successfully to MongoDB!");
-        if (typeof fetchMappings === "function") fetchMappings();
-      }
-    } catch (err) {
-      alert("? Save failed: " + (err.response?.data?.message || err.message));
-    }
-  };
 
 export default MapEmployeePage;

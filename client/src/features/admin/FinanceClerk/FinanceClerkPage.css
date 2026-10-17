@@ -1,0 +1,988 @@
+.fc-shell {
+  width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.fc-shell .ad-main {
+  flex: 1 1 0%;
+  min-width: 0;
+}
+
+.fc-content {
+  width: 100%;
+  max-width: 1600px;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.fc-shell .ad-page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px 24px;
+}
+
+.fc-subtitle {
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.fc-year-select {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.fc-year-select select,
+.fc-month-select select {
+  max-width: 100%;
+  padding: 9px 11px;
+  color: #102a43;
+  background: #fff;
+  border: 1px solid #dce5ef;
+  border-radius: 8px;
+  font: inherit;
+  font-size: 12px;
+}
+
+.fc-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.fc-kpi-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  min-width: 0;
+  padding: 20px 17px;
+  background: #fff;
+  border: 1px solid #e5edf5;
+  border-radius: 14px;
+  box-shadow: 0 3px 12px rgba(16, 42, 67, 0.035);
+}
+
+.fc-kpi-icon,
+.fc-task-icon,
+.fc-upload-icon,
+.fc-payroll-icon,
+.fc-placeholder-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 42px;
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+}
+
+.fc-kpi-icon.blue,
+.fc-task-icon.blue {
+  color: #2563eb;
+  background: #eaf2ff;
+}
+
+.fc-kpi-icon.purple,
+.fc-task-icon.purple {
+  color: #7c3aed;
+  background: #f0eaff;
+}
+
+.fc-kpi-icon.amber,
+.fc-task-icon.amber {
+  color: #b7791f;
+  background: #fff4df;
+}
+
+.fc-kpi-icon.green,
+.fc-task-icon.green {
+  color: #16804a;
+  background: #e4f8ee;
+}
+
+.fc-kpi-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+  padding-top: 13px;
+}
+
+.fc-kpi-copy > span {
+  display: block;
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fc-kpi-copy > strong {
+  display: block;
+  margin-top: 7px;
+  color: #102a43;
+  font-size: clamp(23px, 2vw, 30px);
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.fc-kpi-copy > small {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fc-trend {
+  position: absolute;
+  top: 13px;
+  right: 12px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.fc-trend small {
+  font-size: 9px;
+  font-weight: 500;
+}
+
+.fc-trend.up {
+  color: #b7791f;
+}
+
+.fc-trend.down {
+  color: #16804a;
+}
+
+.fc-main-grid,
+.fc-lower-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.45fr) minmax(300px, 0.85fr);
+  align-items: stretch;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.fc-lower-grid {
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 0.9fr);
+}
+
+.fc-card {
+  min-width: 0;
+  padding: 21px;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid #e5edf5;
+  border-radius: 15px;
+  box-shadow: 0 3px 12px rgba(16, 42, 67, 0.035);
+}
+
+.fc-card .ad-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 19px;
+}
+
+.fc-card .ad-card-header h2 {
+  margin-top: 6px;
+  color: #102a43;
+  font-size: 17px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.fc-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 0;
+  color: #1768a8;
+  background: transparent;
+  border: 0;
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.fc-link-button:hover {
+  color: #0d4f83;
+}
+
+.fc-table-wrap {
+  width: 100%;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.fc-table,
+.fc-activity-table {
+  width: 100%;
+  min-width: 740px;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.fc-activity-table {
+  min-width: 580px;
+}
+
+.fc-table th,
+.fc-activity-table th {
+  padding: 12px 10px;
+  color: #64748b;
+  background: #f8fafc;
+  border-bottom: 1px solid #e5edf5;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.035em;
+}
+
+.fc-table td,
+.fc-activity-table td {
+  padding: 13px 10px;
+  color: #475569;
+  border-bottom: 1px solid #edf2f7;
+  font-size: 11px;
+  vertical-align: middle;
+}
+
+.fc-table td:first-child,
+.fc-activity-table td:nth-child(3) {
+  color: #102a43;
+  font-weight: 700;
+}
+
+.fc-table tbody tr:last-child td,
+.fc-activity-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.fc-status {
+  display: inline-block;
+  max-width: 160px;
+  padding: 5px 8px;
+  border-radius: 99px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.4;
+  white-space: normal;
+}
+
+.fc-status.draft {
+  color: #475569;
+  background: #e9eef5;
+}
+
+.fc-status.documents {
+  color: #a16207;
+  background: #fef3c7;
+}
+
+.fc-status.ready,
+.fc-status.completed {
+  color: #047857;
+  background: #d1fae5;
+}
+
+.fc-status.preparing,
+.fc-status.in-progress {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.fc-status.updated {
+  color: #6d28d9;
+  background: #ede9fe;
+}
+
+.fc-open-button {
+  padding: 7px 10px;
+  color: #1768a8;
+  background: #edf6ff;
+  border: 1px solid #d7eaff;
+  border-radius: 7px;
+  font-size: 10px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fc-open-button:hover {
+  background: #dceeff;
+}
+
+.fc-empty {
+  padding: 25px 12px !important;
+  color: #64748b !important;
+  text-align: center;
+}
+
+.fc-task-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.fc-task-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px;
+  text-align: left;
+  background: #f8fafc;
+  border: 1px solid #e7edf4;
+  border-radius: 11px;
+  cursor: pointer;
+}
+
+.fc-task-item:hover {
+  background: #eff6ff;
+  border-color: #d4e6fa;
+}
+
+.fc-task-icon {
+  flex-basis: 38px;
+  width: 38px;
+  height: 38px;
+}
+
+.fc-task-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fc-task-copy strong {
+  display: block;
+  color: #102a43;
+  font-size: 11px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fc-task-copy small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.fc-task-item > b {
+  color: #102a43;
+  font-size: 15px;
+}
+
+.fc-task-item > svg:last-child {
+  flex-shrink: 0;
+  color: #64748b;
+}
+
+.fc-payroll-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.fc-month-select {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  color: #64748b;
+}
+
+.fc-month-select select {
+  width: 135px;
+}
+
+.fc-upload-summary {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 15px;
+  background: #f8fafc;
+  border: 1px solid #e7edf4;
+  border-radius: 11px;
+}
+
+.fc-upload-icon {
+  flex-basis: 40px;
+  width: 40px;
+  color: #2563eb;
+  background: #eaf2ff;
+}
+
+.fc-upload-copy {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.fc-upload-copy strong {
+  display: block;
+  color: #102a43;
+  font-size: 12px;
+}
+
+.fc-upload-copy small {
+  display: block;
+  margin-top: 5px;
+  color: #64748b;
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.fc-progress {
+  height: 7px;
+  margin-top: 13px;
+  overflow: hidden;
+  background: #e5edf5;
+  border-radius: 99px;
+}
+
+.fc-progress span {
+  display: block;
+  width: 80%;
+  height: 100%;
+  background: #3b82f6;
+  border-radius: inherit;
+}
+
+.fc-progress-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  color: #16804a;
+  white-space: nowrap;
+}
+
+.fc-progress-value strong {
+  font-size: 14px;
+}
+
+.fc-progress-value small {
+  color: #64748b;
+  font-size: 9px;
+}
+
+.fc-payroll-stats {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.fc-payroll-stats > div {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+  padding: 12px;
+  background: #fff;
+  border: 1px solid #e7edf4;
+  border-radius: 10px;
+}
+
+.fc-payroll-icon {
+  display: grid;
+  place-items: center;
+  flex: 0 0 32px;
+  width: 32px;
+  height: 32px;
+  color: #1768a8;
+  background: #edf6ff;
+  border-radius: 9px;
+}
+
+.fc-payroll-stats > div > span:last-child {
+  min-width: 0;
+}
+
+.fc-payroll-stats strong {
+  display: block;
+  color: #102a43;
+  font-size: 17px;
+}
+
+.fc-payroll-stats small {
+  display: block;
+  margin-top: 4px;
+  color: #64748b;
+  font-size: 9px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.fc-payroll-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  width: 100%;
+  margin-top: 14px;
+  padding: 11px 14px;
+  color: #fff;
+  background: #1768a8;
+  border: 1px solid #1768a8;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fc-payroll-button:hover {
+  background: #125687;
+}
+
+.fc-placeholder {
+  min-height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+}
+
+.fc-placeholder-icon {
+  color: #1768a8;
+  background: #eaf2ff;
+}
+
+.fc-placeholder h2 {
+  margin-top: 18px;
+  color: #102a43;
+  font-size: 21px;
+}
+
+.fc-placeholder p {
+  max-width: 650px;
+  margin-top: 10px;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.7;
+}
+
+.fc-demo-note {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px solid #e5edf5;
+  border-radius: 9px;
+}
+
+.fc-back-button {
+  margin-top: 14px;
+  padding: 10px 15px;
+  color: #fff;
+  background: #1768a8;
+  border: 0;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.fc-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 18px 0 5px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.fc-clear-search {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  padding: 4px;
+  color: #64748b;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.fc-notification-dot {
+  position: absolute;
+  top: 2px;
+  right: 1px;
+  width: 7px;
+  height: 7px;
+  background: #ef4444;
+  border: 1px solid #fff;
+  border-radius: 50%;
+}
+
+.fc-shell .ad-notification-button {
+  position: relative;
+}
+
+.fc-user-details {
+  min-width: 0;
+}
+
+.fc-user-details strong,
+.fc-user-details span {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.fc-user-details span {
+  margin-top: 3px;
+  color: #9fb3c8;
+  font-size: 10px;
+}
+
+.fc-profile .ad-profile-text small {
+  display: block;
+  margin-top: 3px;
+  color: #64748b;
+  font-size: 10px;
+}
+
+.fc-overlay {
+  z-index: 20;
+}
+
+@media (max-width: 1350px) {
+  .fc-kpi-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fc-main-grid,
+  .fc-lower-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  .fc-kpi-grid {
+    gap: 12px;
+  }
+
+  .fc-kpi-card {
+    flex-direction: column;
+    padding: 15px;
+  }
+
+  .fc-kpi-copy {
+    padding-top: 0;
+  }
+
+  .fc-trend {
+    top: 12px;
+    right: 10px;
+  }
+
+  .fc-card {
+    padding: 15px;
+  }
+
+  .fc-card .ad-card-header {
+    flex-wrap: wrap;
+  }
+
+  .fc-upload-summary {
+    flex-wrap: wrap;
+  }
+
+  .fc-progress-value {
+    margin-left: auto;
+  }
+}
+
+@media (max-width: 440px) {
+  .fc-kpi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fc-year-select {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .fc-year-select select {
+    max-width: 60%;
+  }
+
+  .fc-payroll-stats {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .fc-month-select select {
+    width: 125px;
+  }
+}
+
+/* ==========================================
+   FINANCE CLERK — COMPACT DASHBOARD OVERRIDES
+   ========================================== */
+
+.fc-shell .ad-page-header {
+  gap: 12px 18px;
+}
+
+.fc-subtitle {
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.fc-year-select {
+  gap: 8px;
+}
+
+.fc-year-select select,
+.fc-month-select select {
+  padding: 7px 9px;
+}
+
+.fc-kpi-grid {
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.fc-kpi-card {
+  gap: 10px;
+  padding: 14px 15px;
+  border-radius: 12px;
+}
+
+.fc-kpi-icon {
+  flex-basis: 36px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+}
+
+.fc-kpi-copy {
+  padding-top: 5px;
+}
+
+.fc-kpi-copy > span {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.fc-kpi-copy > strong {
+  margin-top: 4px;
+  font-size: clamp(21px, 1.7vw, 26px);
+  line-height: 1.15;
+}
+
+.fc-kpi-copy > small {
+  margin-top: 4px;
+  font-size: 10px;
+  line-height: 1.4;
+}
+
+.fc-trend {
+  top: 9px;
+  right: 10px;
+  font-size: 9px;
+}
+
+.fc-main-grid,
+.fc-lower-grid {
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.fc-card {
+  padding: 16px;
+  border-radius: 13px;
+}
+
+.fc-card .ad-card-header {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.fc-card .ad-card-header h2 {
+  margin-top: 4px;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.fc-table th,
+.fc-activity-table th {
+  padding: 9px 8px;
+  font-size: 9px;
+}
+
+.fc-table td,
+.fc-activity-table td {
+  padding: 9px 8px;
+  font-size: 10px;
+}
+
+.fc-status {
+  padding: 4px 7px;
+  font-size: 9px;
+}
+
+.fc-open-button {
+  padding: 5px 8px;
+  font-size: 9px;
+}
+
+.fc-task-list {
+  gap: 7px;
+}
+
+.fc-task-item {
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 9px;
+}
+
+.fc-task-icon {
+  flex-basis: 32px;
+  width: 32px;
+  height: 32px;
+}
+
+.fc-task-copy strong {
+  font-size: 10px;
+  line-height: 1.35;
+}
+
+.fc-task-copy small {
+  margin-top: 2px;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.fc-task-item > b {
+  font-size: 13px;
+}
+
+.fc-upload-summary {
+  gap: 10px;
+  padding: 11px;
+  border-radius: 9px;
+}
+
+.fc-upload-icon {
+  flex-basis: 34px;
+  width: 34px;
+  height: 34px;
+}
+
+.fc-upload-copy strong {
+  font-size: 11px;
+}
+
+.fc-upload-copy small {
+  margin-top: 3px;
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.fc-progress {
+  height: 6px;
+  margin-top: 9px;
+}
+
+.fc-progress-value {
+  gap: 2px;
+}
+
+.fc-progress-value strong {
+  font-size: 12px;
+}
+
+.fc-payroll-stats {
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.fc-payroll-stats > div {
+  gap: 8px;
+  padding: 9px;
+  border-radius: 9px;
+}
+
+.fc-payroll-icon {
+  flex-basis: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.fc-payroll-stats strong {
+  font-size: 15px;
+}
+
+.fc-payroll-stats small {
+  margin-top: 2px;
+  font-size: 9px;
+  line-height: 1.35;
+}
+
+.fc-payroll-button {
+  margin-top: 10px;
+  padding: 9px 12px;
+}
+
+.fc-placeholder {
+  min-height: 220px;
+}
+
+.fc-placeholder h2 {
+  margin-top: 12px;
+  font-size: 18px;
+}
+
+.fc-placeholder p {
+  margin-top: 7px;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.fc-footer {
+  padding-top: 12px;
+}
+
+@media (max-width: 1350px) {
+  .fc-kpi-grid {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 760px) {
+  .fc-kpi-card {
+    flex-direction: row;
+    padding: 12px;
+  }
+
+  .fc-kpi-copy {
+    padding-top: 2px;
+  }
+
+  .fc-card {
+    padding: 13px;
+  }
+
+  .fc-task-item {
+    padding: 9px;
+  }
+
+  .fc-upload-summary {
+    gap: 9px;
+  }
+}
+
+@media (max-width: 440px) {
+  .fc-kpi-card {
+    padding: 12px;
+  }
+}

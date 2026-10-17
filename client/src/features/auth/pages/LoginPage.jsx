@@ -1,9 +1,28 @@
+﻿
 import { useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { Link, useNavigate } from "react-router-dom";
-import { Eye, EyeOff, ShieldCheck, LockKeyhole, UserPlus, LogIn } from "lucide-react";
-import { loginStart, loginSuccess, loginFailure } from "../authSlice";
-import { loginUser, registerUser } from "../../../services/api/auth.api";
+import {
+  Eye,
+  EyeOff,
+  ShieldCheck,
+  LockKeyhole,
+  UserPlus,
+  LogIn,
+} from "lucide-react";
+
+import {
+  loginStart,
+  loginSuccess,
+  loginFailure,
+} from "../authSlice";
+
+import {
+  loginUser,
+  registerUser,
+} from "../../../services/api/auth.api";
+
+import { getDashboardDestination } from "../../../components/auth/dashboardRouting";
 
 export default function LoginPage() {
   const dispatch = useDispatch();
@@ -12,8 +31,7 @@ export default function LoginPage() {
   const { status } = useSelector((state) => state.auth);
   const isLoading = status === "loading";
 
-  const [mode, setMode] = useState("login"); // 'login' | 'register'
-  const [selectedRole, setSelectedRole] = useState("employee"); // 'super_admin' | 'admin' | 'employee'
+  const [mode, setMode] = useState("login");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
 
@@ -26,19 +44,21 @@ export default function LoginPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm((prev) => ({ ...prev, [name]: value }));
+
+    setForm((prev) => ({
+      ...prev,
+      [name]: value,
+    }));
+
     if (error) setError("");
   };
 
-  const getDestination = (role) => {
-    if (role === "super_admin") return "/super-admin";
-    if (role === "admin") return "/admin";
-    return "/dashboard";
-  };
+  const getDestination = (user) => getDashboardDestination(user);
 
   const handleLoginSubmit = async (e) => {
     e.preventDefault();
-    if (!form.email || !form.password) {
+
+    if (!form.email.trim() || !form.password) {
       setError("Please enter your email and password.");
       return;
     }
@@ -47,23 +67,36 @@ export default function LoginPage() {
       setError("");
       dispatch(loginStart());
 
+      // Same login request for every account type.
+      // The backend determines the user's actual role.
       const result = await loginUser({
-        email: form.email,
+        email: form.email.trim(),
         password: form.password,
-        role: selectedRole,
       });
 
+      if (!result?.token || !result?.user) {
+        throw new Error("Invalid login response from server.");
+      }
+
       dispatch(loginSuccess(result));
-      navigate(getDestination(result.user.role), { replace: true });
+
+      navigate(getDestination(result.user), {
+        replace: true,
+      });
     } catch (err) {
       dispatch(loginFailure());
-      setError(err.message || "Invalid credentials or unauthorized role.");
+      setError(
+        err.message || "Login failed. Please check your credentials."
+      );
     }
   };
 
+  // Registration is temporarily retained for development/testing.
+  // Remove it before production and create accounts through authorized admins.
   const handleRegisterSubmit = async (e) => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.password) {
+
+    if (!form.name.trim() || !form.email.trim() || !form.password) {
       setError("Full Name, Email and Password are required.");
       return;
     }
@@ -76,18 +109,27 @@ export default function LoginPage() {
         name: form.name.trim(),
         email: form.email.trim(),
         password: form.password,
-        role: selectedRole,
-        employeeId: form.employeeId || undefined,
+        employeeId: form.employeeId.trim() || undefined,
+
+        // Do not allow the registration form to choose a privileged role.
+        role: "employee",
       };
 
       const result = await registerUser(payload);
 
-      if (result.token && result.user) {
+      if (result?.token && result?.user) {
         dispatch(loginSuccess(result));
-        navigate(getDestination(result.user.role), { replace: true });
+
+        navigate(getDestination(result.user), {
+          replace: true,
+        });
       } else {
-        setError("Account created, please sign in.");
         setMode("login");
+        setForm((prev) => ({
+          ...prev,
+          password: "",
+        }));
+        setError("Account created. Please sign in.");
       }
     } catch (err) {
       dispatch(loginFailure());
@@ -98,11 +140,13 @@ export default function LoginPage() {
   return (
     <div className="auth-page">
       <div className="auth-shell">
+        {/* Branding panel */}
         <section className="auth-brand-panel">
           <div className="auth-brand">
             <div className="auth-brand-icon">
               <ShieldCheck size={28} />
             </div>
+
             <div>
               <strong>FMS</strong>
               <span>Finance Management</span>
@@ -110,21 +154,28 @@ export default function LoginPage() {
           </div>
 
           <div className="auth-brand-content">
-            <span className="auth-eyebrow">Government Finance Management</span>
+            <span className="auth-eyebrow">
+              Government Finance Management
+            </span>
+
             <h1>
-              One secure place for your <span> financial workflow.</span>
+              One secure place for your{" "}
+              <span>financial workflow.</span>
             </h1>
+
             <p>
-              Manage claims, approvals, reimbursements and financial records
-              through a controlled digital workflow.
+              Manage claims, approvals, reimbursements and financial
+              records through a controlled digital workflow.
             </p>
 
             <div className="auth-security-card">
               <LockKeyhole size={20} />
+
               <div>
-                <strong>Secure & verified access</strong>
+                <strong>Secure &amp; verified access</strong>
                 <span>
-                  Access is controlled according to your assigned role and permissions.
+                  Access is controlled according to your assigned role
+                  and permissions.
                 </span>
               </div>
             </div>
@@ -135,12 +186,14 @@ export default function LoginPage() {
           </div>
         </section>
 
+        {/* Login panel */}
         <section className="auth-form-panel">
           <div className="auth-form-container">
             <div className="auth-mobile-brand">
               <div className="auth-brand-icon">
                 <ShieldCheck size={25} />
               </div>
+
               <div>
                 <strong>FMS</strong>
                 <span>Finance Management</span>
@@ -149,17 +202,21 @@ export default function LoginPage() {
 
             <div className="auth-heading">
               <span className="auth-small-label">
-                {mode === "login" ? "Welcome back" : "New User Registration"}
+                {mode === "login" ? "Welcome back" : "Testing Mode"}
               </span>
-              <h2>{mode === "login" ? "Sign in to FMS" : "Create Account"}</h2>
+
+              <h2>
+                {mode === "login" ? "Sign in to FMS" : "Create Account"}
+              </h2>
+
               <p>
                 {mode === "login"
-                  ? "Select your account type and enter credentials."
-                  : "Choose your role and register to get immediate access."}
+                  ? "Enter your credentials to access your account."
+                  : "Register temporarily for development testing."}
               </p>
             </div>
 
-            {/* Mode Switch Tabs */}
+            {/* Sign In / Register tabs */}
             <div
               style={{
                 display: "flex",
@@ -176,98 +233,34 @@ export default function LoginPage() {
                   setMode("login");
                   setError("");
                 }}
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "none",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  background: mode === "login" ? "#ffffff" : "transparent",
-                  color: mode === "login" ? "#0f172a" : "#64748b",
-                  boxShadow: mode === "login" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                }}
+                style={getTabStyle(mode === "login")}
               >
-                <LogIn size={16} /> Sign In
+                <LogIn size={16} />
+                Sign In
               </button>
+
               <button
                 type="button"
                 onClick={() => {
                   setMode("register");
                   setError("");
                 }}
-                style={{
-                  flex: 1,
-                  padding: "8px",
-                  borderRadius: "6px",
-                  border: "none",
-                  fontWeight: 600,
-                  fontSize: "14px",
-                  cursor: "pointer",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                  background: mode === "register" ? "#ffffff" : "transparent",
-                  color: mode === "register" ? "#0f172a" : "#64748b",
-                  boxShadow: mode === "register" ? "0 1px 3px rgba(0,0,0,0.1)" : "none",
-                }}
+                style={getTabStyle(mode === "register")}
               >
-                <UserPlus size={16} /> Register
+                <UserPlus size={16} />
+                Register
               </button>
             </div>
 
             <form
-              onSubmit={mode === "login" ? handleLoginSubmit : handleRegisterSubmit}
+              onSubmit={
+                mode === "login"
+                  ? handleLoginSubmit
+                  : handleRegisterSubmit
+              }
               className="auth-form"
             >
-              {/* Common Role Selection Grid */}
-              <div className="auth-field">
-                <label>
-                  {mode === "login" ? "Account Type" : "Registering As"}
-                </label>
-                <div className="auth-role-grid">
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "super_admin" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("super_admin")}
-                  >
-                    <strong>Super Admin</strong>
-                    <span>Management</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "admin" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("admin")}
-                  >
-                    <strong>Admin</strong>
-                    <span>Finance Operations</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className={`auth-role-card ${
-                      selectedRole === "employee" ? "active" : ""
-                    }`}
-                    onClick={() => setSelectedRole("employee")}
-                  >
-                    <strong>Employee</strong>
-                    <span>Staff Access</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Extra Register Fields */}
+              {/* Registration-only fields */}
               {mode === "register" && (
                 <>
                   <div className="auth-field">
@@ -276,37 +269,38 @@ export default function LoginPage() {
                       id="reg-name"
                       name="name"
                       type="text"
-                      placeholder="e.g. Sahaj Dubey"
+                      placeholder="Enter your full name"
                       value={form.name}
                       onChange={handleChange}
+                      autoComplete="name"
                       required
                     />
                   </div>
 
-                  {selectedRole === "employee" && (
-                    <div className="auth-field">
-                      <label htmlFor="reg-empId">Employee ID (Optional)</label>
-                      <input
-                        id="reg-empId"
-                        name="employeeId"
-                        type="text"
-                        placeholder="e.g. EMP-1042"
-                        value={form.employeeId}
-                        onChange={handleChange}
-                      />
-                    </div>
-                  )}
+                  <div className="auth-field">
+                    <label htmlFor="reg-empId">
+                      Employee ID (Optional)
+                    </label>
+                    <input
+                      id="reg-empId"
+                      name="employeeId"
+                      type="text"
+                      placeholder="Enter employee ID"
+                      value={form.employeeId}
+                      onChange={handleChange}
+                    />
+                  </div>
                 </>
               )}
 
-              {/* Email */}
+              {/* Common email field */}
               <div className="auth-field">
                 <label htmlFor="email">Email address</label>
                 <input
                   id="email"
                   name="email"
                   type="email"
-                  placeholder="you@department.gov.in"
+                  placeholder="Enter your email address"
                   value={form.email}
                   onChange={handleChange}
                   autoComplete="email"
@@ -314,14 +308,18 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* Password */}
+              {/* Common password field */}
               <div className="auth-field">
                 <div className="auth-label-row">
                   <label htmlFor="password">Password</label>
+
                   {mode === "login" && (
-                    <Link to="/forgot-password">Forgot password?</Link>
+                    <Link to="/forgot-password">
+                      Forgot password?
+                    </Link>
                   )}
                 </div>
+
                 <div className="auth-password">
                   <input
                     id="password"
@@ -330,15 +328,28 @@ export default function LoginPage() {
                     placeholder="Enter your password"
                     value={form.password}
                     onChange={handleChange}
-                    autoComplete={mode === "login" ? "current-password" : "new-password"}
+                    autoComplete={
+                      mode === "login"
+                        ? "current-password"
+                        : "new-password"
+                    }
                     required
                   />
+
                   <button
                     type="button"
-                    onClick={() => setShowPassword((current) => !current)}
-                    aria-label={showPassword ? "Hide password" : "Show password"}
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
                   >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    {showPassword ? (
+                      <EyeOff size={18} />
+                    ) : (
+                      <Eye size={18} />
+                    )}
                   </button>
                 </div>
               </div>
@@ -357,25 +368,48 @@ export default function LoginPage() {
                 {isLoading
                   ? "Processing..."
                   : mode === "login"
-                  ? `Sign in as ${
-                      selectedRole === "super_admin"
-                        ? "Super Admin"
-                        : selectedRole === "admin"
-                        ? "Admin"
-                        : "Employee"
-                    }`
-                  : `Create ${
-                      selectedRole === "super_admin"
-                        ? "Super Admin"
-                        : selectedRole === "admin"
-                        ? "Admin"
-                        : "Employee"
-                    } Account`}
+                    ? "Sign In"
+                    : "Register for Testing"}
               </button>
+
+              {mode === "register" && (
+                <p
+                  style={{
+                    fontSize: "12px",
+                    color: "#64748b",
+                    marginTop: "12px",
+                    textAlign: "center",
+                  }}
+                >
+                  Testing only. Public registration must be disabled
+                  before production.
+                </p>
+              )}
             </form>
           </div>
         </section>
       </div>
     </div>
   );
+}
+
+function getTabStyle(isActive) {
+  return {
+    flex: 1,
+    padding: "10px 8px",
+    borderRadius: "6px",
+    border: "none",
+    fontWeight: 600,
+    fontSize: "14px",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: "6px",
+    background: isActive ? "#ffffff" : "transparent",
+    color: isActive ? "#0f172a" : "#64748b",
+    boxShadow: isActive
+      ? "0 1px 3px rgba(0,0,0,0.1)"
+      : "none",
+  };
 }

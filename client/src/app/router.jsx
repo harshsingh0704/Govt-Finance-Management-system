@@ -1,4 +1,4 @@
-﻿import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
@@ -11,6 +11,9 @@ import DashboardPage from "../features/dashboard/DashboardPage";
 import ProfilePage from "../features/profile/ProfilePage";
 import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
+import FinanceClerkPage from "../features/admin/FinanceClerk/FinanceClerkPage";
+import HeadOfDepartmentPage from "../features/admin/HOD/HeadOfDepartmentPage";
+import HeadOfOfficePage from "../features/admin/HOA/HeadOfOfficePage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
 import EmployeeManagementPage from "../features/admin/employee-management/EmployeeManagementPage";
 import EmployeeAuditLogPage from "../features/admin/employee-management/EmployeeAuditLogPage";
@@ -23,6 +26,7 @@ import LTCClaimPage from "../features/ltc/LTCClaimPage";
 import LTCAdvancePage from "../features/ltc/LTCAdvancePage";
 import MedicalClaimPage from "../features/medical/MedicalClaimPage";
 import MedicalAdvancePage from "../features/medical/MedicalAdvancePage";
+import OrganizationHierarchyPage from "../features/admin/employee-management/OrganizationHierarchyPage";
 
 export const router = createBrowserRouter([
   {
@@ -52,6 +56,18 @@ export const router = createBrowserRouter([
             element: <AdminPage />,
           },
           {
+            path: "/admin/finance-clerk",
+            element: <FinanceClerkPage />,
+          },
+          {
+            path: "/admin/head-of-department",
+            element: <HeadOfDepartmentPage />,
+          },
+          {
+            path: "/admin/head-of-office",
+            element: <HeadOfOfficePage />,
+          },
+          {
             path: "/admin/employee-management",
             element: <EmployeeManagementPage />,
           },
@@ -67,6 +83,11 @@ export const router = createBrowserRouter([
             path: "/admin/employee-management/map",
             element: <MapEmployeePage />,
           },
+          {
+           path: "/admin/employee-management/hierarchy",
+          element: <OrganizationHierarchyPage />,
+},
+
           {
             path: "/admin/services/accommodation",
             element: <AccommodationPage />,

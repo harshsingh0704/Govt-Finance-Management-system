@@ -11,6 +11,9 @@ import DashboardPage from "../features/dashboard/DashboardPage";
 import ProfilePage from "../features/profile/ProfilePage";
 import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
+import ITCellInchargeDashboard from "../features/admin/it-cell-incharge/ItCellIncharge";
+import SampleInchargeDashboard from "../features/admin/sample-incharge/SampleIncharge";
+import FacilitiesInchargeDashboard from "../features/admin/facilities-incharge/App";
 import FinanceClerkPage from "../features/admin/FinanceClerk/FinanceClerkPage";
 import HeadOfDepartmentPage from "../features/admin/HOD/HeadOfDepartmentPage";
 import HeadOfOfficePage from "../features/admin/HOA/HeadOfOfficePage";
@@ -28,7 +31,38 @@ import MedicalClaimPage from "../features/medical/MedicalClaimPage";
 import MedicalAdvancePage from "../features/medical/MedicalAdvancePage";
 import OrganizationHierarchyPage from "../features/admin/employee-management/OrganizationHierarchyPage";
 
+const enableITCellPreview =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_IT_CELL_PREVIEW === "true";
+
+const enableFacilitiesPreview =
+  import.meta.env.DEV &&
+  import.meta.env.VITE_FACILITIES_PREVIEW === "true";
+
 export const router = createBrowserRouter([
+
+
+  ...(enableFacilitiesPreview
+    ? [
+        {
+          path: "/admin/facilities-incharge",
+          element: <FacilitiesInchargeDashboard />,
+        },
+      ]
+    : []),
+  ...(enableITCellPreview
+    ? [
+        {
+          path: "/admin/it-cell-incharge",
+          element: <ITCellInchargeDashboard />,
+        },
+        {
+          path: "/admin/sample-incharge",
+          element: <SampleInchargeDashboard />,
+        },
+      ]
+    : []),
+
   {
     path: "/login",
     element: <LoginPage />,
@@ -54,6 +88,10 @@ export const router = createBrowserRouter([
           {
             path: "/admin",
             element: <AdminPage />,
+          },
+          {
+            path: "/admin/it-cell-incharge",
+            element: <ITCellInchargeDashboard />,
           },
           {
             path: "/admin/finance-clerk",

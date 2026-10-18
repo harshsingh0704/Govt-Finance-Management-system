@@ -15,6 +15,7 @@ import ITCellInchargeDashboard from "../features/admin/it-cell-incharge/ItCellIn
 import SampleInchargeDashboard from "../features/admin/sample-incharge/SampleIncharge";
 import FacilitiesInchargeDashboard from "../features/admin/facilities-incharge/App";
 import FinanceClerkPage from "../features/admin/FinanceClerk/FinanceClerkPage";
+import FinanceOfficerPage from "../features/admin/FinanceOfficer/FinanceOfficerPage";
 import HeadOfDepartmentPage from "../features/admin/HOD/HeadOfDepartmentPage";
 import HeadOfOfficePage from "../features/admin/HOA/HeadOfOfficePage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
@@ -96,6 +97,10 @@ export const router = createBrowserRouter([
           {
             path: "/admin/finance-clerk",
             element: <FinanceClerkPage />,
+          },
+          {
+            path: "/admin/finance-officer",
+            element: <FinanceOfficerPage />,
           },
           {
             path: "/admin/head-of-department",

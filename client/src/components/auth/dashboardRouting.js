@@ -1,4 +1,4 @@
-﻿const normalize = (value) =>
+const normalize = (value) =>
   typeof value === "string"
     ? value.trim().toLowerCase().replace(/[\s_-]+/g, " ")
     : "";
@@ -25,6 +25,7 @@ export function getFunctionalDashboard(user) {
 
   const destinations = {
     "finance clerk": "/admin/finance-clerk",
+    "finance officer": "/admin/finance-officer",
     "hod": "/admin/head-of-department",
     "head of department": "/admin/head-of-department",
     "head of office": "/admin/head-of-office",

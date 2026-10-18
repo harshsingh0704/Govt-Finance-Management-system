@@ -992,3 +992,262 @@
     width: 100%;
   }
 }
+
+
+/* ---------- Add Employee entry method and Excel mass import ---------- */
+.ce-entry-body, .ce-mass-body { padding: 28px 32px 0; overflow-y: auto; }
+.ce-entry-body .ce-section-heading, .ce-mass-body .ce-section-heading { margin-bottom: 22px; }
+.ce-entry-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; margin: 24px 0; }
+.ce-entry-option { min-height: 230px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; padding: 24px; border: 1px solid #dce5ef; border-radius: 14px; background: #fff; color: #17324e; text-align: left; font: inherit; cursor: pointer; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.ce-entry-option:hover { border-color: #7da7ce; box-shadow: 0 8px 22px rgba(23, 74, 124, .09); transform: translateY(-2px); }
+.ce-entry-option-icon { width: 48px; height: 48px; display: grid; place-items: center; border-radius: 12px; background: #edf4fb; color: #174a7c; }
+.ce-entry-option > strong { font-size: 18px; }
+.ce-entry-option > span:not(.ce-entry-option-icon) { color: #66798d; font-size: 13px; line-height: 1.55; }
+.ce-entry-option .ce-entry-option-action { display: inline-flex; align-items: center; gap: 7px; margin-top: auto; color: #174a7c !important; font-weight: 700; }
+.ce-entry-note, .ce-mass-hint { margin: 16px 0; color: #64778b; font-size: 12px; line-height: 1.6; }
+.ce-entry-footer { margin: 24px -32px 0; }
+.ce-individual-toolbar { padding: 12px 24px 0; }
+.ce-mass-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+.ce-upload-button { position: relative; display: inline-flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 16px; border-radius: 8px; background: #174a7c; color: #fff; font-size: 12px; font-weight: 700; cursor: pointer; }
+.ce-upload-button input { position: absolute; inset: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+.ce-file-chip { display: flex; align-items: center; gap: 9px; margin-top: 16px; padding: 11px 13px; border: 1px solid #dce8df; border-radius: 8px; background: #f5fbf6; color: #245c3c; font-size: 13px; }
+.ce-file-chip span { margin-left: auto; color: #60776a; }
+.ce-mass-alert { margin: 14px 0; padding: 12px 14px; border: 1px solid #f0caca; border-radius: 8px; background: #fff6f6; color: #a32929; font-size: 13px; line-height: 1.5; }
+.ce-mass-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin: 18px 0; }
+.ce-mass-summary > div { display: flex; flex-direction: column; gap: 5px; padding: 14px; border: 1px solid #e1e8f0; border-radius: 9px; background: #f8fafc; }
+.ce-mass-summary strong { color: #173b60; font-size: 20px; }
+.ce-mass-summary span { color: #708196; font-size: 11px; }
+.ce-preview-table-wrap { max-height: 300px; overflow: auto; border: 1px solid #e0e7ef; border-radius: 9px; }
+.ce-preview-table { width: 100%; border-collapse: collapse; font-size: 12px; text-align: left; }
+.ce-preview-table th { position: sticky; top: 0; z-index: 1; background: #f2f6fa; color: #425970; font-weight: 700; }
+.ce-preview-table th, .ce-preview-table td { padding: 10px 12px; border-bottom: 1px solid #e8edf2; vertical-align: top; }
+.ce-preview-table td { color: #4d6074; }
+.ce-preview-invalid td { background: #fff8f6; color: #a13b2b; }
+.ce-import-result { margin: 18px 0; padding: 15px; border: 1px solid #cfe4d5; border-radius: 10px; background: #f6fbf7; color: #245c3c; }
+.ce-import-result > strong { display: block; margin-bottom: 8px; }
+.ce-import-errors { margin: 12px 0 0; padding-left: 20px; color: #9d3028; font-size: 12px; }
+.ce-entry-footer .ce-primary-button:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+@media (max-width: 700px) { .ce-entry-body, .ce-mass-body { padding: 22px 18px 0; } .ce-entry-options { grid-template-columns: 1fr; } .ce-entry-footer { margin-left: -18px; margin-right: -18px; } .ce-mass-summary { gap: 7px; } .ce-mass-summary > div { padding: 10px; } .ce-preview-table th, .ce-preview-table td { padding: 8px; } }
+
+/* ---------- Add Employee entry chooser refinement ---------- */
+
+/* Modal width: 80% of viewport; retain existing height constraints */
+.ce-modal {
+  width: 80vw;
+  max-width: 1400px;
+  max-height: calc(100vh - 48px);
+}
+
+/* Compact entry choices */
+.ce-entry-options {
+  gap: 14px;
+  margin: 20px 0;
+}
+
+.ce-entry-option {
+  min-height: 190px;
+  padding: 20px;
+  gap: 10px;
+  border: 1.5px solid #cbd9e8;
+  border-radius: 12px;
+  background: #f9fbfe;
+  box-shadow: 0 2px 6px rgba(23, 74, 124, 0.04);
+  transition: background 0.18s ease, border-color 0.18s ease,
+    box-shadow 0.18s ease, transform 0.18s ease;
+}
+
+.ce-entry-option:hover {
+  border-color: #2874b8;
+  background: #edf5ff;
+  box-shadow: 0 6px 16px rgba(23, 74, 124, 0.12);
+  transform: translateY(-1px);
+}
+
+.ce-entry-option:focus-visible {
+  outline: 3px solid rgba(40, 116, 184, 0.35);
+  outline-offset: 3px;
+  border-color: #2874b8;
+  background: #edf5ff;
+}
+
+.ce-entry-option:active {
+  background: #e2efff;
+  transform: translateY(0);
+}
+
+.ce-entry-option-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+}
+
+.ce-entry-option > strong {
+  font-size: 16px;
+  line-height: 1.35;
+}
+
+.ce-entry-option > span:not(.ce-entry-option-icon) {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.ce-entry-option .ce-entry-option-action {
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 700px) {
+  .ce-modal {
+    width: 100%;
+    max-width: 100%;
+    max-height: calc(100vh - 24px);
+  }
+
+  .ce-entry-option {
+    min-height: 160px;
+    padding: 16px;
+  }
+}
+
+/* ---------- Add Employee modal height and navigation visibility ---------- */
+
+.ce-modal {
+  width: 80vw;
+  max-width: 1400px;
+  height: 90vh;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ce-modal-header {
+  flex-shrink: 0;
+}
+
+.ce-modal-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.ce-modal-footer {
+  flex-shrink: 0;
+}
+
+@media (max-width: 700px) {
+  .ce-modal {
+    width: calc(100vw - 24px);
+    height: 92vh;
+    max-height: 92vh;
+  }
+}
+
+/* ---------- Mass Entry: compact, polished import layout ---------- */
+
+.ce-modal:has(.ce-mass-body) {
+  width: min(1000px, 88vw);
+  height: auto;
+  max-height: 86vh;
+  margin: auto;
+  border-radius: 18px;
+}
+
+.ce-mass-body {
+  padding: 28px 32px 26px;
+  overflow-y: auto;
+}
+
+.ce-mass-body h1,
+.ce-mass-body h2 {
+  margin-top: 8px;
+  margin-bottom: 8px;
+  color: #17324e;
+  letter-spacing: -0.025em;
+}
+
+.ce-mass-body p {
+  line-height: 1.55;
+}
+
+.ce-mass-body input[type="file"] {
+  max-width: 100%;
+}
+
+.ce-mass-body button {
+  border-radius: 10px;
+  transition: background-color .18s ease,
+              border-color .18s ease,
+              box-shadow .18s ease,
+              transform .18s ease;
+}
+
+.ce-mass-body button:hover:not(:disabled) {
+  box-shadow: 0 4px 12px rgba(23, 74, 124, .12);
+  transform: translateY(-1px);
+}
+
+.ce-mass-body button:focus-visible {
+  outline: 3px solid rgba(40, 116, 184, .35);
+  outline-offset: 3px;
+}
+
+.ce-mass-body button:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+.ce-modal:has(.ce-mass-body) .ce-modal-footer {
+  padding: 14px 32px;
+  min-height: 68px;
+  background: #f8fafc;
+}
+
+.ce-modal:has(.ce-mass-body) .ce-modal-footer button {
+  min-height: 42px;
+  padding: 10px 18px;
+  font-size: 13px;
+}
+
+@media (max-width: 700px) {
+  .ce-modal:has(.ce-mass-body) {
+    width: calc(100vw - 24px);
+    max-height: 92vh;
+    border-radius: 14px;
+  }
+
+  .ce-mass-body {
+    padding: 22px 18px;
+  }
+
+  .ce-modal:has(.ce-mass-body) .ce-modal-footer {
+    padding: 12px 18px;
+  }
+}
+
+/* Full-field Excel preview */
+.ce-preview-full-table {
+  min-width: 1900px;
+  width: max-content;
+}
+
+.ce-preview-full-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #edf4fb;
+  white-space: nowrap;
+}
+
+.ce-preview-full-table td {
+  vertical-align: top;
+  min-width: 110px;
+  max-width: 260px;
+  overflow-wrap: anywhere;
+}
+
+.ce-preview-full-table th:last-child,
+.ce-preview-full-table td:last-child {
+  min-width: 240px;
+}

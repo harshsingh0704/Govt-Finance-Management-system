@@ -158,6 +158,13 @@ export default function CreateEmployeeModal({ isOpen, onClose }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [created, setCreated] = useState(false);
+  const [entryMode, setEntryMode] = useState("choose");
+  const [excelFile, setExcelFile] = useState(null);
+  const [excelRows, setExcelRows] = useState([]);
+  const [excelError, setExcelError] = useState("");
+  const [excelLoading, setExcelLoading] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   if (!isOpen) {
     return null;
@@ -281,6 +288,13 @@ setErrors(nextErrors);
     setForm(INITIAL_FORM);
     setErrors({});
     setCreated(false);
+    setEntryMode("choose");
+    setExcelFile(null);
+    setExcelRows([]);
+    setExcelError("");
+    setExcelLoading(false);
+    setImporting(false);
+    setImportResult(null);
     onClose();
   };
 
@@ -294,6 +308,163 @@ setErrors(nextErrors);
      */
 
     setCreated(true);
+  };
+
+  const handleExcelSelection = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setExcelError("");
+    setImportResult(null);
+    setExcelRows([]);
+    setExcelFile(null);
+
+    if (!/\.(xlsx|xls)$/i.test(file.name)) {
+      setExcelError("Please upload an Excel file (.xlsx or .xls).");
+      event.target.value = "";
+      return;
+    }
+
+    setExcelLoading(true);
+    try {
+      const XLSX = await import("xlsx");
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      if (!sheet) throw new Error("The workbook does not contain a worksheet.");
+
+      const rows = XLSX.utils.sheet_to_json(sheet, { defval: "", raw: false });
+      if (!rows.length) throw new Error("The Excel worksheet is empty.");
+
+      const normalizeKey = (key) => String(key).trim().toLowerCase().replace(/[^a-z0-9]/g, "");
+      const getValue = (row, ...aliases) => {
+        for (const alias of aliases) {
+          const value = row[normalizeKey(alias)];
+          if (value !== undefined && String(value).trim() !== "") return String(value).trim();
+        }
+        return "";
+      };
+      const yesNo = (value) => {
+        const normalized = String(value || "").trim().toLowerCase();
+        if (["yes", "y", "true", "1"].includes(normalized)) return "Yes";
+        if (["no", "n", "false", "0"].includes(normalized)) return "No";
+        return String(value || "").trim();
+      };
+
+      const normalizedRows = rows.map((sourceRow, index) => {
+        const source = Object.fromEntries(Object.entries(sourceRow).map(([key, value]) => [normalizeKey(key), value]));
+        const employeeId = getValue(source, "Employee ID", "Employee Code", "Emp ID");
+        const name = getValue(source, "Full Name", "Employee Name", "Name");
+        const officialEmail = getValue(source, "Official Email ID", "Official Email", "Email");
+        const joiningDate = getValue(source, "Joining Date", "Date of Joining");
+        const department = getValue(source, "Department Name", "Department");
+        const designation = getValue(source, "Designation");
+        const payband = getValue(source, "Payband / Payscale", "Payband", "Payscale", "Pay Scale");
+        const functionalRole = getValue(source, "Functional Role / Authority", "Functional Role", "Functional Assignment");
+        const isSupervisor = yesNo(getValue(source, "Is Supervisor", "Supervisor Yes No"));
+        const supervisorType = getValue(source, "Supervisor Type", "Supervisor Position Type");
+        const reportingSupervisor = getValue(source, "Reporting Supervisor", "Supervisor", "Reports To");
+        const supervisorPosition = getValue(source, "Position / Incharge", "Position Incharge", "Position", "Incharge");
+        const parentLab = yesNo(getValue(source, "Parent Lab", "Has Parent Lab"));
+        let deputation = yesNo(getValue(source, "Deputation", "On Deputation"));
+        const parentResearchInstitute = getValue(source, "Parent Research Institute Name", "Parent Research Institute");
+        const accountsOfficer = getValue(source, "Accounts Officer Name", "Accounts Officer");
+
+        // Match the wizard rule: Parent Lab employees are not on deputation.
+        if (parentLab === "Yes") deputation = "No";
+
+        const issues = [];
+        if (!employeeId) issues.push("Employee ID is required");
+        if (!name) issues.push("Full Name is required");
+        if (!officialEmail) issues.push("Official Email ID is required");
+        else if (!/^\S+@\S+\.\S+$/.test(officialEmail)) issues.push("Official Email ID is invalid");
+        if (!joiningDate) issues.push("Joining Date is required");
+        if (!department) issues.push("Department Name is required");
+        if (!designation) issues.push("Designation is required");
+        if (!payband) issues.push("Payband / Payscale is required");
+        if (!functionalRole) issues.push("Functional Role / Authority is required");
+        if (!["Yes", "No"].includes(isSupervisor)) issues.push("Is Supervisor must be Yes or No");
+        if (isSupervisor === "Yes" && !supervisorType) issues.push("Supervisor Type is required when Is Supervisor is Yes");
+        if (isSupervisor === "No" && !reportingSupervisor) issues.push("Reporting Supervisor is required when Is Supervisor is No");
+        if (isSupervisor === "Yes" && reportingSupervisor) issues.push("Reporting Supervisor should be blank for a supervisor");
+        if (isSupervisor === "No" && supervisorType) issues.push("Supervisor Type should be blank for a non-supervisor");
+        if (supervisorPosition && isSupervisor !== "Yes") issues.push("Position / Incharge applies only to supervisors");
+        if (!["Yes", "No"].includes(parentLab)) issues.push("Parent Lab must be Yes or No");
+        if (!["Yes", "No"].includes(deputation)) issues.push("Deputation must be Yes or No");
+        if (parentLab === "No" && deputation === "Yes" && !parentResearchInstitute) issues.push("Parent Research Institute Name is required for this deputation case");
+        if (parentLab === "No" && deputation === "Yes" && !accountsOfficer) issues.push("Accounts Officer Name is required for this deputation case");
+
+        return {
+          rowNumber: index + 2,
+          employeeId, name, officialEmail, joiningDate, department, designation,
+          payband, functionalRole, isSupervisor, supervisorType, reportingSupervisor,
+          supervisorPosition, parentLab, deputation, parentResearchInstitute,
+          accountsOfficer, issues,
+        };
+      });
+
+      const seen = new Set();
+      normalizedRows.forEach((row) => {
+        if (!row.employeeId) return;
+        const key = row.employeeId.trim().toUpperCase();
+        if (seen.has(key)) row.issues.push("Duplicate Employee ID in this file");
+        seen.add(key);
+      });
+
+      const invalidCount = normalizedRows.filter((row) => row.issues.length).length;
+      if (invalidCount) {
+        setExcelError(`${invalidCount} row(s) need correction. Review the preview below before continuing.`);
+      }
+      setExcelFile(file);
+      setExcelRows(normalizedRows);
+    } catch (error) {
+      setExcelError(error.message || "Unable to read the Excel file.");
+    } finally {
+      setExcelLoading(false);
+      event.target.value = "";
+    }
+  };
+
+  const handleBulkImport = async () => {
+    setExcelError("The current /api/employees/bulk-import endpoint does not save all 16 Individual Entry fields. The sheet is validated and previewed, but import is paused to prevent reporting, role, payband, lab, or deputation data from being silently discarded. The backend import contract must support these fields before full import can be enabled.");
+    return;
+
+    if (!excelFile || !excelRows.length) {
+      setExcelError("Choose a valid Excel file before importing.");
+      return;
+    }
+    const invalidRows = excelRows.filter((row) => row.issues.length);
+    if (invalidRows.length) {
+      setExcelError("Correct all highlighted rows in the Excel file and upload it again before importing.");
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setExcelError("Authentication token not found. Please sign in again.");
+      return;
+    }
+
+    setImporting(true);
+    setExcelError("");
+    setImportResult(null);
+    try {
+      const formData = new FormData();
+      formData.append("file", excelFile);
+      const response = await fetch("http://localhost:5000/api/employees/bulk-import", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(data.message || data.error || `Import failed (HTTP ${response.status}).`);
+      }
+      setImportResult(data);
+    } catch (error) {
+      setExcelError(error.message || "Employee import failed.");
+    } finally {
+      setImporting(false);
+    }
   };
 
   const selectedRole = FUNCTIONAL_ROLES.find(
@@ -340,8 +511,99 @@ setErrors(nextErrors);
           </button>
         </header>
 
-        {!created ? (
+        {!created && entryMode === "choose" ? (
+          <div className="ce-entry-body">
+            <SectionHeading
+              eyebrow="Add Employee"
+              title="Choose an entry method"
+              description="Create one employee using the existing guided form, or upload an Excel sheet for a bulk import."
+            />
+            <div className="ce-entry-options">
+              <button type="button" className="ce-entry-option" onClick={() => setEntryMode("individual")}>
+                <span className="ce-entry-option-icon"><UserPlus size={24} /></span>
+                <strong>Individual Entry</strong>
+                <span>Enter one employee through the existing five-step wizard.</span>
+                <span className="ce-entry-option-action">Continue individually <ArrowRight size={16} /></span>
+              </button>
+              <button type="button" className="ce-entry-option" onClick={() => setEntryMode("mass")}>
+                <span className="ce-entry-option-icon"><Users size={24} /></span>
+                <strong>Mass Entry</strong>
+                <span>Upload an Excel file, review validation results, then import valid rows.</span>
+                <span className="ce-entry-option-action">Upload Excel file <ArrowRight size={16} /></span>
+              </button>
+            </div>
+            <div className="ce-entry-note">Mass import currently requires Employee ID, Full Name, and Department. Other fields are sent only as supported by the existing import API.</div>
+            <footer className="ce-modal-footer ce-entry-footer">
+              <button type="button" className="ce-secondary-button" onClick={handleClose}>Cancel</button>
+            </footer>
+          </div>
+        ) : !created && entryMode === "mass" ? (
+          <div className="ce-mass-body">
+            <SectionHeading
+              eyebrow="Mass Entry"
+              title="Import employees from Excel"
+              description="Upload .xlsx or .xls containing all 16 Individual Entry fields. Review validation results before import."
+            />
+            <div className="ce-mass-toolbar">
+              <button type="button" className="ce-secondary-button" onClick={() => { setEntryMode("choose"); setExcelError(""); setImportResult(null); }}> <ArrowLeft size={16} /> Change entry method</button>
+              <label className="ce-upload-button">
+                {excelLoading ? "Reading file…" : "Choose Excel file"}
+                <input type="file" accept=".xlsx,.xls" onChange={handleExcelSelection} disabled={excelLoading || importing} />
+              </label>
+            </div>
+            <p className="ce-mass-hint">Use all 16 wizard columns: Employee ID, Full Name, Official Email ID, Joining Date, Department Name, Designation, Payband / Payscale, Functional Role / Authority, Is Supervisor, Supervisor Type, Reporting Supervisor, Position / Incharge, Parent Lab, Deputation, Parent Research Institute Name, and Accounts Officer Name. Use Yes/No for Is Supervisor, Parent Lab, and Deputation.</p>
+            {excelFile && <div className="ce-file-chip"><Check size={16} /> {excelFile.name} <span>{excelRows.length} row(s)</span></div>}
+            {excelError && <div className="ce-mass-alert" role="alert">{excelError}</div>}
+            {excelRows.length > 0 && (
+              <>
+                <div className="ce-mass-summary">
+                  <div><strong>{excelRows.length}</strong><span>Total rows</span></div>
+                  <div><strong>{excelRows.filter((row) => !row.issues.length).length}</strong><span>Valid rows</span></div>
+                  <div><strong>{excelRows.filter((row) => row.issues.length).length}</strong><span>Rows to fix</span></div>
+                </div>
+                <div className="ce-preview-table-wrap">
+                  <table className="ce-preview-table ce-preview-full-table">
+                    <thead><tr>
+                      <th>Row</th><th>Employee ID</th><th>Full Name</th><th>Official Email ID</th><th>Joining Date</th>
+                      <th>Department</th><th>Designation</th><th>Payband / Payscale</th><th>Functional Role / Authority</th>
+                      <th>Is Supervisor</th><th>Supervisor Type</th><th>Reporting Supervisor</th><th>Position / Incharge</th>
+                      <th>Parent Lab</th><th>Deputation</th><th>Parent Research Institute Name</th><th>Accounts Officer Name</th><th>Validation</th>
+                    </tr></thead>
+                    <tbody>{excelRows.slice(0, 100).map((row) => (
+                      <tr key={`${row.rowNumber}-${row.employeeId}`} className={row.issues.length ? "ce-preview-invalid" : ""}>
+                        <td>{row.rowNumber}</td><td>{row.employeeId || "—"}</td><td>{row.name || "—"}</td><td>{row.officialEmail || "—"}</td><td>{row.joiningDate || "—"}</td>
+                        <td>{row.department || "—"}</td><td>{row.designation || "—"}</td><td>{row.payband || "—"}</td><td>{row.functionalRole || "—"}</td>
+                        <td>{row.isSupervisor || "—"}</td><td>{row.supervisorType || "—"}</td><td>{row.reportingSupervisor || "—"}</td><td>{row.supervisorPosition || "—"}</td>
+                        <td>{row.parentLab || "—"}</td><td>{row.deputation || "—"}</td><td>{row.parentResearchInstitute || "—"}</td><td>{row.accountsOfficer || "—"}</td>
+                        <td>{row.issues.length ? row.issues.join("; ") : "Ready"}</td>
+                      </tr>
+                    ))}</tbody>
+                  </table>
+                  {excelRows.length > 100 && <p className="ce-mass-hint">Showing first 100 rows of {excelRows.length}. Validation covers all rows.</p>}
+                </div>
+              </>
+            )}
+            {importResult && (
+              <div className="ce-import-result" role="status">
+                <strong>{importResult.message || "Import response received"}</strong>
+                <div className="ce-mass-summary">
+                  <div><strong>{importResult.totalRows ?? excelRows.length}</strong><span>Total rows</span></div>
+                  <div><strong>{importResult.created ?? importResult.successCount ?? 0}</strong><span>Imported</span></div>
+                  <div><strong>{importResult.failed ?? importResult.failedCount ?? importResult.skipped ?? 0}</strong><span>Failed / skipped</span></div>
+                </div>
+                {Array.isArray(importResult.errors) && importResult.errors.length > 0 && <ul className="ce-import-errors">{importResult.errors.map((item, index) => <li key={index}>{typeof item === "string" ? item : JSON.stringify(item)}</li>)}</ul>}
+              </div>
+            )}
+            <footer className="ce-modal-footer ce-entry-footer">
+              <button type="button" className="ce-secondary-button" onClick={handleClose} disabled={importing}>Cancel</button>
+              <button type="button" className="ce-primary-button" onClick={handleBulkImport} disabled={!excelFile || !excelRows.length || importing || excelLoading}>
+                {importing ? "Importing…" : "Import employees"}
+              </button>
+            </footer>
+          </div>
+        ) : !created ? (
           <>
+            {entryMode === "individual" && <div className="ce-individual-toolbar"><button type="button" className="ce-secondary-button" onClick={() => setEntryMode("choose")}><ArrowLeft size={16} /> Change entry method</button></div>}
             <div className="ce-modal-body">
               <StepIndicator currentStep={currentStep} />
 

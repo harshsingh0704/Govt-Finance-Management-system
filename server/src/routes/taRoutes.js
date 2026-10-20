@@ -15,6 +15,9 @@ router.get('/claim/:id', authMiddleware, taController.getClaimById);
 
 // GET /api/ta/claims/:employeeId - Fetch claims history for an employee
 router.get('/all', authMiddleware, taController.getAllClaims);
+
+router.get("/claims/pending", authMiddleware, taController.getPendingClaims);
+
 router.get('/claims/:employeeId', authMiddleware, taController.getClaimsByEmployee);
 
 // PATCH /api/ta/claim/:id/status - Approve / Reject claim

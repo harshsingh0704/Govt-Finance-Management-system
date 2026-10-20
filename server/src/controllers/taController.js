@@ -30,6 +30,27 @@ const WORKFLOW = {
   },
 };
 
+const normalizeRole = (role) =>
+  String(role || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ");
+
+const STAGE_ROLES = {
+  HOD: ["head of department", "hod"],
+  HOA: ["head of office", "hoa"],
+  FINANCE_OFFICER: ["finance officer"],
+  FINANCE_CLERK: ["finance clerk"],
+  FINAL_SANCTION: ["finance officer"],
+};
+
+function userCanActAtStage(user, stage) {
+  return (STAGE_ROLES[stage] || []).includes(
+    normalizeRole(user?.role)
+  );
+}
+
 
 async function getEmployeeId(user) {
   if (!user?._id) return null;
@@ -360,6 +381,55 @@ exports.getClaimsByEmployee = async (req, res) => {
   }
 };
 
+exports.getPendingClaims = async (req, res) => {
+  try {
+    const role = normalizeRole(req.user?.role);
+
+    const stagesByRole = {
+      hod: ["HOD"],
+      "head of department": ["HOD"],
+      hoa: ["HOA"],
+      "head of office": ["HOA"],
+      "finance officer": ["FINANCE_OFFICER", "FINAL_SANCTION"],
+      "finance clerk": ["FINANCE_CLERK"],
+    };
+
+    const stages = stagesByRole[role];
+
+    if (!stages) {
+      return res.status(403).json({
+        success: false,
+        message: "Your role cannot access approval queues.",
+      });
+    }
+
+    const claims = await TAClaim.find({
+      currentStage: { $in: stages },
+      status: { $in: [
+        "PENDING_HOD",
+        "PENDING_HOA",
+        "PENDING_FINANCE_OFFICER",
+        "PENDING_FINANCE_CLERK",
+        "PENDING_FINAL_SANCTION",
+      ]},
+    })
+      .populate("employeeId", "name employeeCode designation department")
+      .sort({ submittedAt: 1 });
+
+    return res.json({
+      success: true,
+      count: claims.length,
+      claims,
+    });
+  } catch (error) {
+    console.error("Pending claims fetch error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Unable to load pending claims.",
+    });
+  }
+};
+
 // Get all TA claims (existing endpoint)
 exports.getAllClaims = async (req, res) => {
   try {
@@ -427,6 +497,24 @@ exports.updateClaimStatus = async (req, res) => {
     }
 
     const stage = claim.currentStage;
+    
+if (!userCanActAtStage(req.user, stage)) {
+  return res.status(403).json({
+    success: false,
+    message: "Your role is not authorized to process this claim at its current stage.",
+  });
+}
+
+if (
+  ["REJECTED", "SENT_BACK"].includes(finalAction) &&
+  !String(comments || "").trim()
+) {
+  return res.status(400).json({
+    success: false,
+    message: "Please provide a reason for rejection or sending the claim back.",
+  });
+}
+
 
     if (!WORKFLOW[stage]) {
       return res.status(400).json({

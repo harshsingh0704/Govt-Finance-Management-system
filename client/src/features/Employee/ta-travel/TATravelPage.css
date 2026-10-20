@@ -1,0 +1,821 @@
+.ta-page {
+  min-height: 100%;
+  padding: 28px 32px 40px;
+  background: #f5f7fb;
+  color: #172033;
+}
+
+/* ============================================================
+   PAGE HEADER
+============================================================ */
+
+.ta-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.ta-breadcrumb {
+  margin-bottom: 10px;
+  color: #718096;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.ta-breadcrumb span {
+  margin: 0 7px;
+  color: #a0aec0;
+}
+
+.ta-title-row {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+}
+
+.ta-title-icon,
+.ta-section-icon {
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  background: #eaf1ff;
+  color: #1f4f96;
+}
+
+.ta-title-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+}
+
+.ta-title-row h1 {
+  margin: 0;
+  color: #14213d;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.ta-title-row p {
+  margin: 5px 0 0;
+  color: #718096;
+  font-size: 13px;
+}
+
+.ta-date-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 150px;
+  padding: 10px 14px;
+  border: 1px solid #e1e7f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f4f96;
+}
+
+.ta-date-indicator span,
+.ta-date-indicator strong {
+  display: block;
+}
+
+.ta-date-indicator span {
+  margin-bottom: 2px;
+  color: #7a879b;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.ta-date-indicator strong {
+  color: #26354d;
+  font-size: 13px;
+}
+
+/* ============================================================
+   FORM
+============================================================ */
+
+.ta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.ta-card {
+  overflow: hidden;
+  border: 1px solid #e1e7f0;
+  border-radius: 13px;
+  background: #ffffff;
+  box-shadow: 0 2px 7px rgba(25, 42, 70, 0.035);
+}
+
+/* ============================================================
+   SECTION HEADER
+============================================================ */
+
+.ta-section-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.ta-section-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+
+.ta-section-heading h2 {
+  margin: 0;
+  color: #1d2b44;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.ta-section-heading p {
+  margin: 4px 0 0;
+  color: #7a879b;
+  font-size: 12px;
+}
+
+/* ============================================================
+   FORM GRID
+============================================================ */
+
+.ta-form-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  padding: 22px;
+}
+
+.ta-form-grid-single {
+  grid-template-columns: 1fr;
+}
+
+/* ============================================================
+   FIELD
+============================================================ */
+
+.ta-field {
+  min-width: 0;
+}
+
+.ta-field-wide {
+  grid-column: span 2;
+}
+
+.ta-field label,
+.ta-document-header label {
+  display: block;
+  margin-bottom: 7px;
+  color: #344158;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ta-field label > span,
+.ta-document-header label > span {
+  margin-left: 3px;
+  color: #c43c3c;
+}
+
+.ta-input-wrapper {
+  display: flex;
+  align-items: center;
+  min-height: 42px;
+  border: 1px solid #d9e0eb;
+  border-radius: 8px;
+  background: #ffffff;
+  transition:
+    border-color 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.ta-input-wrapper:focus-within {
+  border-color: #4a76b8;
+  box-shadow: 0 0 0 3px rgba(74, 118, 184, 0.1);
+}
+
+.ta-input-wrapper.has-error {
+  border-color: #d55a5a;
+}
+
+.ta-input-wrapper svg {
+  margin-left: 12px;
+  flex-shrink: 0;
+  color: #738198;
+}
+
+.ta-input-wrapper input,
+.ta-input-wrapper select {
+  width: 100%;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #26354d;
+  font: inherit;
+  font-size: 13px;
+}
+
+.ta-input-wrapper svg + input {
+  padding-left: 9px;
+}
+
+.ta-input-wrapper input::placeholder {
+  color: #a3adbc;
+}
+
+.ta-input-wrapper select {
+  cursor: pointer;
+}
+
+.ta-currency-symbol {
+  padding-left: 12px;
+  color: #738198;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.ta-currency-symbol + input {
+  padding-left: 7px;
+}
+
+.ta-error {
+  display: block;
+  margin-top: 5px;
+  color: #c43c3c;
+  font-size: 11px;
+}
+
+/* ============================================================
+   RADIO GROUP
+============================================================ */
+
+.ta-radio-group {
+  width: 100%;
+}
+
+.ta-radio-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.ta-radio-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  min-height: 72px;
+  box-sizing: border-box;
+  padding: 14px 16px;
+  border: 1px solid #dce3ed;
+  border-radius: 9px;
+  background: #ffffff;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ta-radio-option:hover {
+  border-color: #aebed4;
+  background: #fafcff;
+}
+
+.ta-radio-option.selected {
+  border-color: #4a76b8;
+  background: #f5f8fd;
+  box-shadow: 0 0 0 2px rgba(74, 118, 184, 0.08);
+}
+
+.ta-radio-option input {
+  margin-top: 3px;
+  accent-color: #1f4f96;
+}
+
+.ta-radio-option span {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ta-radio-option strong {
+  color: #2b3950;
+  font-size: 13px;
+}
+
+.ta-radio-option small {
+  color: #8490a3;
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+/* ============================================================
+   TA APPROVAL
+============================================================ */
+
+.ta-approval-content {
+  padding: 22px;
+}
+
+.ta-question-label {
+  display: block;
+  margin-bottom: 12px;
+  color: #344158;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.ta-question-label b {
+  margin-left: 3px;
+  color: #c43c3c;
+}
+
+.ta-approval-card .ta-radio-row {
+  max-width: 760px;
+}
+
+/* ============================================================
+   DOCUMENTS
+============================================================ */
+
+.ta-documents {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 22px;
+}
+
+.ta-document-field {
+  min-width: 0;
+}
+
+.ta-document-header {
+  margin-bottom: 8px;
+}
+
+.ta-document-header label {
+  margin-bottom: 3px;
+}
+
+.ta-document-header small {
+  color: #8994a6;
+  font-size: 11px;
+}
+
+.ta-document-upload-row {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  gap: 10px;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  background: #fafbfd;
+}
+
+.ta-document-upload-row.has-file {
+  border-style: solid;
+  border-color: #94a3b8;
+  background: #ffffff;
+}
+
+.ta-document-upload-row.has-error {
+  border-color: #d55a5a;
+}
+
+.ta-document-upload-row input[type="file"] {
+  display: none;
+}
+
+.ta-document-upload-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  gap: 7px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid #d3dce8;
+  border-radius: 7px;
+  background: #ffffff;
+  color: #40526c;
+  font-size: 11px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.ta-document-upload-button:hover {
+  border-color: #94a3b8;
+  background: #f8fafc;
+}
+
+.ta-document-file-name {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  color: #46556d;
+  font-size: 11px;
+  font-weight: 550;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ta-document-empty {
+  overflow: hidden;
+  color: #9aa5b5;
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ta-document-remove {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  margin-left: auto;
+  flex-shrink: 0;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #7b8799;
+  cursor: pointer;
+}
+
+.ta-document-remove:hover {
+  color: #dc2626;
+  background: #fef2f2;
+}
+
+/* ============================================================
+   CLAIM SUMMARY
+============================================================ */
+
+.ta-summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 15px;
+  min-height: 42px;
+  box-sizing: border-box;
+  padding: 0 14px;
+  border: 1px solid #d9e3ef;
+  border-radius: 8px;
+  background: #f7faff;
+}
+
+.ta-summary-total span {
+  color: #59687e;
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.ta-summary-total strong {
+  color: #1f4f96;
+  font-size: 15px;
+  font-weight: 750;
+}
+
+/* ============================================================
+   DECLARATION
+============================================================ */
+
+.ta-declaration-content {
+  padding: 22px;
+}
+
+.ta-declaration {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  cursor: pointer;
+}
+
+.ta-declaration input {
+  width: 16px;
+  height: 16px;
+  margin: 2px 0 0;
+  flex-shrink: 0;
+  accent-color: #1f4f96;
+}
+
+.ta-declaration span {
+  color: #536178;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.ta-declaration-error {
+  margin-left: 27px;
+}
+
+/* ============================================================
+   ACTIONS
+============================================================ */
+
+.ta-form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.ta-primary-button,
+.ta-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.ta-primary-button {
+  border: 1px solid #1f4f96;
+  background: #1f4f96;
+  color: #ffffff;
+}
+
+.ta-secondary-button {
+  border: 1px solid #d6deea;
+  background: #ffffff;
+  color: #45536a;
+}
+
+.ta-primary-button:hover,
+.ta-secondary-button:hover {
+  transform: translateY(-1px);
+}
+
+.ta-primary-button:hover {
+  box-shadow: 0 5px 14px rgba(31, 79, 150, 0.18);
+}
+
+/* ============================================================
+   RECORDS
+============================================================ */
+
+.ta-records-card {
+  margin-top: 22px;
+}
+
+.ta-records-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #edf1f6;
+}
+
+.ta-records-header h2 {
+  margin: 0;
+  color: #1d2b44;
+  font-size: 15px;
+}
+
+.ta-records-header p {
+  margin: 4px 0 0;
+  color: #7a879b;
+  font-size: 12px;
+}
+
+.ta-record-count {
+  padding: 6px 10px;
+  border-radius: 20px;
+  background: #eef3fa;
+  color: #45638c;
+  font-size: 11px;
+  font-weight: 650;
+}
+
+.ta-empty-state {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 44px 20px;
+  text-align: center;
+  color: #91a0b5;
+}
+
+.ta-empty-state h3 {
+  margin: 12px 0 4px;
+  color: #4b5a71;
+  font-size: 14px;
+}
+
+.ta-empty-state p {
+  margin: 0;
+  color: #8b97a9;
+  font-size: 12px;
+}
+
+/* ============================================================
+   TABLE
+============================================================ */
+
+.ta-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.ta-table {
+  width: 100%;
+  min-width: 950px;
+  border-collapse: collapse;
+}
+
+.ta-table th {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e8edf4;
+  background: #fafbfd;
+  color: #68758a;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.ta-table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #eef2f6;
+  color: #4b5870;
+  font-size: 12px;
+  vertical-align: middle;
+}
+
+.ta-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.ta-employee-cell strong,
+.ta-employee-cell span {
+  display: block;
+}
+
+.ta-employee-cell strong {
+  color: #26354d;
+  font-size: 12px;
+}
+
+.ta-employee-cell span {
+  margin-top: 3px;
+  color: #8a96a8;
+  font-size: 10px;
+}
+
+.ta-journey-cell {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.ta-approval-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 650;
+}
+
+.ta-approval-badge.approved {
+  background: #eaf6ef;
+  color: #287a4b;
+}
+
+.ta-approval-badge.pending {
+  background: #fff6df;
+  color: #9a6b08;
+}
+
+.ta-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 8px;
+  border-radius: 20px;
+  background: #eaf6ef;
+  color: #287a4b;
+  font-size: 10px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   RESPONSIVE
+============================================================ */
+
+@media (max-width: 1050px) {
+  .ta-form-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .ta-field-wide {
+    grid-column: span 2;
+  }
+
+  .ta-documents {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .ta-page {
+    padding: 20px 16px 30px;
+  }
+
+  .ta-page-header {
+    flex-direction: column;
+  }
+
+  .ta-date-indicator {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .ta-form-grid {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .ta-field-wide {
+    grid-column: span 1;
+  }
+
+  .ta-section-heading {
+    padding: 17px 18px;
+  }
+
+  .ta-approval-content,
+  .ta-declaration-content {
+    padding: 18px;
+  }
+
+  .ta-radio-row {
+    grid-template-columns: 1fr;
+  }
+
+  .ta-documents {
+    grid-template-columns: 1fr;
+    padding: 18px;
+  }
+
+  .ta-document-upload-row {
+    flex-wrap: wrap;
+  }
+
+  .ta-document-file-name {
+    min-width: 120px;
+  }
+
+  .ta-form-actions {
+    width: 100%;
+  }
+
+  .ta-primary-button,
+  .ta-secondary-button {
+    flex: 1;
+  }
+}
+
+/* Force TA declaration checkbox to remain visible */
+.ta-card .ta-declaration-content label.ta-declaration input[type="checkbox"] {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  appearance: auto !important;
+  -webkit-appearance: checkbox !important;
+  position: static !important;
+  width: 18px !important;
+  height: 18px !important;
+  min-width: 18px !important;
+  flex: 0 0 18px !important;
+  margin: 2px 0 0 !important;
+  accent-color: #1f4f96;
+  cursor: pointer;
+}

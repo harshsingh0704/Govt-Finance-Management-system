@@ -1,4 +1,4 @@
-// Helper to extract JWT token from localStorage (fms_auth or plain token)
+﻿// Helper to extract JWT token from localStorage (fms_auth or plain token)
 
 function getStoredAuthToken() {
 
@@ -29,8 +29,7 @@ function getStoredAuthToken() {
   return "";
 
 }
-
-import CreateClaimModal from '../dashboard/CreateClaimModal';
+import CreateClaimModal from "../Employee/claims/EmployeeClaimsPage.jsx";
 
 import { useState, useEffect } from "react";
 

@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router-dom";
+﻿import { createBrowserRouter } from "react-router-dom";
 
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
@@ -7,17 +7,16 @@ import RootRedirect from "../components/auth/RootRedirect";
 import LoginPage from "../features/auth/pages/LoginPage";
 import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
 
-import DashboardPage from "../features/dashboard/DashboardPage";
+import DashboardPage from "../features/Employee/dashboard/EmployeeDashboardPage";
 import ProfilePage from "../features/profile/ProfilePage";
 import ClaimsPage from "../features/claims/pages/ClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
-import ITCellInchargeDashboard from "../features/admin/it-cell-incharge/ItCellIncharge";
-import SampleInchargeDashboard from "../features/admin/sample-incharge/SampleIncharge";
-import FacilitiesInchargeDashboard from "../features/admin/facilities-incharge/App";
-import FinanceClerkPage from "../features/admin/FinanceClerk/FinanceClerkPage";
-import FinanceOfficerPage from "../features/admin/FinanceOfficer/FinanceOfficerPage";
-import HeadOfDepartmentPage from "../features/admin/HOD/HeadOfDepartmentPage";
-import HeadOfOfficePage from "../features/admin/HOA/HeadOfOfficePage";
+import ITCellInchargeDashboard from "../features/it-cell-incharge/ItCellIncharge";
+import SampleInchargeDashboard from "../features/sample-incharge/SampleIncharge";
+import FacilitiesInchargeDashboard from "../features/facilities-incharge/App";
+import FinanceClerkPage from "../features/FinanceClerk/FinanceClerkPage";
+import HeadOfDepartmentPage from "../features/HOD/HeadOfDepartmentPage";
+import HeadOfOfficePage from "../features/HOA/HeadOfOfficePage";
 import SuperAdminPage from "../features/admin/SuperAdminPage";
 import EmployeeManagementPage from "../features/admin/employee-management/EmployeeManagementPage";
 import EmployeeAuditLogPage from "../features/admin/employee-management/EmployeeAuditLogPage";
@@ -41,8 +40,6 @@ const enableFacilitiesPreview =
   import.meta.env.VITE_FACILITIES_PREVIEW === "true";
 
 export const router = createBrowserRouter([
-
-
   ...(enableFacilitiesPreview
     ? [
         {
@@ -51,6 +48,7 @@ export const router = createBrowserRouter([
         },
       ]
     : []),
+
   ...(enableITCellPreview
     ? [
         {
@@ -72,6 +70,7 @@ export const router = createBrowserRouter([
     path: "/unauthorized",
     element: <UnauthorizedPage />,
   },
+
   {
     element: <ProtectedRoute />,
     children: [
@@ -83,33 +82,11 @@ export const router = createBrowserRouter([
           { path: "/claims", element: <ClaimsPage /> },
         ],
       },
+
       {
         element: <RoleRoute allowedRoles={["admin"]} />,
         children: [
-          {
-            path: "/admin",
-            element: <AdminPage />,
-          },
-          {
-            path: "/admin/it-cell-incharge",
-            element: <ITCellInchargeDashboard />,
-          },
-          {
-            path: "/admin/finance-clerk",
-            element: <FinanceClerkPage />,
-          },
-          {
-            path: "/admin/finance-officer",
-            element: <FinanceOfficerPage />,
-          },
-          {
-            path: "/admin/head-of-department",
-            element: <HeadOfDepartmentPage />,
-          },
-          {
-            path: "/admin/head-of-office",
-            element: <HeadOfOfficePage />,
-          },
+          { path: "/admin", element: <AdminPage /> },
           {
             path: "/admin/employee-management",
             element: <EmployeeManagementPage />,
@@ -127,10 +104,73 @@ export const router = createBrowserRouter([
             element: <MapEmployeePage />,
           },
           {
-           path: "/admin/employee-management/hierarchy",
-          element: <OrganizationHierarchyPage />,
-},
+            path: "/admin/employee-management/hierarchy",
+            element: <OrganizationHierarchyPage />,
+          },
+        ],
+      },
 
+      {
+        element: (
+          <RoleRoute allowedRoles={["establishment", "super_admin"]} />
+        ),
+        children: [
+          { path: "/super-admin", element: <SuperAdminPage /> },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["head of office"]} />,
+        children: [
+          {
+            path: "/admin/head-of-office",
+            element: <HeadOfOfficePage />,
+          },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["head of department"]} />,
+        children: [
+          {
+            path: "/admin/head-of-department",
+            element: <HeadOfDepartmentPage />,
+          },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["finance officer"]} />,
+        children: [
+          { path: "/finance-officer", element: <AdminPage /> },
+        ],
+      },
+
+      {
+        element: <RoleRoute allowedRoles={["finance clerk"]} />,
+        children: [
+          {
+            path: "/admin/finance-clerk",
+            element: <FinanceClerkPage />,
+          },
+        ],
+      },
+
+      {
+        element: (
+          <RoleRoute
+            allowedRoles={[
+              "admin",
+              "establishment",
+              "super_admin",
+              "head of office",
+              "head of department",
+              "finance officer",
+              "finance clerk",
+            ]}
+          />
+        ),
+        children: [
           {
             path: "/admin/services/accommodation",
             element: <AccommodationPage />,
@@ -152,42 +192,18 @@ export const router = createBrowserRouter([
             element: <LTCAdvancePage />,
           },
           {
-  path: "/admin/services/ta/claim",
-  element: <TAClaimPage />,
-},          {
+            path: "/admin/services/ta/claim",
+            element: <TAClaimPage />,
+          },
+          {
             path: "/admin/services/ta/advance",
             element: <TAAdvancePage />,
           },
         ],
       },
-      {
-        element: <RoleRoute allowedRoles={["super_admin"]} />,
-        children: [
-          {
-            path: "/super-admin",
-            element: <SuperAdminPage />,
-          },
-        ],
-      },
     ],
   },
-  {
-    path: "/",
-    element: <RootRedirect />,
-  },
-  {
-    path: "*",
-    element: <RootRedirect />,
-  },
+
+  { path: "/", element: <RootRedirect /> },
+  { path: "*", element: <RootRedirect /> },
 ]);
-
-
-
-
-
-
-
-
-
-
-

@@ -1,3 +1,4 @@
+import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -5,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {
   ArrowLeft,
   CheckCircle2,
+  ChevronDown,
   Edit3,
   Mail,
   MapPin,
@@ -157,6 +159,7 @@ function SelectField({
 
 export default function ProfilePage() {
   const authUser = useSelector((state) => state.auth?.user);
+  const navigate = useNavigate();
 
   const [savedProfile, setSavedProfile] = useState(() => {
   try {
@@ -175,6 +178,8 @@ export default function ProfilePage() {
   }
 });
   const [isEditing, setIsEditing] = useState(false);
+  const [isOrganizationOpen, setIsOrganizationOpen] = useState(true);
+  const [isPersonalOpen, setIsPersonalOpen] = useState(true);
   const [saveMessage, setSaveMessage] = useState("");
 
   const employee = useMemo(
@@ -307,7 +312,23 @@ useEffect(() => {
   return (
     <div className="profile-page">
       <div className="profile-page-header">
-        <div>
+        <button
+          type="button"
+          className="profile-back-button"
+          onClick={() => {
+            if (window.history.state?.idx > 0) {
+              navigate(-1);
+            } else {
+              navigate("/dashboard", { replace: true });
+            }
+          }}
+          aria-label="Go back"
+          title="Go back"
+        >
+          <ArrowLeft size={20} strokeWidth={2.2} />
+        </button>
+
+        <div className="profile-page-heading-copy">
           <div className="profile-breadcrumb">
             Workspace <span>/</span> My Profile
           </div>
@@ -319,15 +340,6 @@ useEffect(() => {
             personal profile details.
           </p>
         </div>
-
-        <button
-          type="button"
-          className="profile-back-button"
-          onClick={() => window.history.back()}
-        >
-          <ArrowLeft size={17} />
-          Back
-        </button>
       </div>
 
       {saveMessage && (
@@ -400,20 +412,22 @@ useEffect(() => {
       <form onSubmit={handleSubmit(handleSave)}>
         <section className="profile-section-card">
           <div className="profile-section-header">
-            <div>
-              <h2>Organization Information</h2>
-              <p>
-                Employment information maintained by your
-                department.
-              </p>
-            </div>
-
-            <span className="profile-readonly-badge">
-              Read only
-            </span>
+            <button
+              type="button"
+              className="profile-section-toggle"
+              aria-expanded={isOrganizationOpen}
+              onClick={() => setIsOrganizationOpen((open) => !open)}
+            >
+              <span className="profile-section-toggle-copy">
+                <h2>Organization Information</h2>
+                <p>Employment information maintained by your department.</p>
+              </span>
+              <ChevronDown className={isOrganizationOpen ? "profile-chevron is-open" : "profile-chevron"} size={19} />
+            </button>
+            <span className="profile-readonly-badge">Read only</span>
           </div>
 
-          <div className="profile-readonly-grid">
+          {isOrganizationOpen && <div className="profile-readonly-grid">
             <ReadOnlyField
               label="Employee ID"
               value={employee.employeeId}
@@ -467,18 +481,23 @@ useEffect(() => {
                   : authUser?.role || "Employee"
               }
             />
-          </div>
+          </div>}
         </section>
 
         <section className="profile-section-card">
           <div className="profile-section-header">
-            <div>
-              <h2>Personal Information</h2>
-              <p>
-                Complete the information required for your employee
-                profile.
-              </p>
-            </div>
+            <button
+              type="button"
+              className="profile-section-toggle"
+              aria-expanded={isPersonalOpen}
+              onClick={() => setIsPersonalOpen((open) => !open)}
+            >
+              <span className="profile-section-toggle-copy">
+                <h2>Personal Information</h2>
+                <p>Complete the information required for your employee profile.</p>
+              </span>
+              <ChevronDown className={isPersonalOpen ? "profile-chevron is-open" : "profile-chevron"} size={19} />
+            </button>
 
             {!isEditing && (
               <button
@@ -492,6 +511,7 @@ useEffect(() => {
             )}
           </div>
 
+          {isPersonalOpen && <>
           <div className="profile-form-grid">
             <div className="profile-form-subsection">
               <div className="profile-form-subsection-header">
@@ -794,7 +814,7 @@ useEffect(() => {
             </div>
           )}
 
-          {isEditing && (
+          {isEditing && isPersonalOpen && (
             <div className="profile-form-actions">
               <button
                 type="button"
@@ -815,6 +835,7 @@ useEffect(() => {
               </button>
             </div>
           )}
+          </>}
         </section>
       </form>
 

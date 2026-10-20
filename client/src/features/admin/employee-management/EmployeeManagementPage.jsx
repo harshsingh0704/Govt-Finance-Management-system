@@ -320,16 +320,22 @@ function TextAreaField({
 
 function SectionHeader({ icon: Icon, title, description }) {
   return (
-    <div className="employee-section-header">
-      <div className="employee-section-icon">
-        <Icon size={19} />
+    <summary className="employee-section-summary">
+      <div className="employee-section-heading">
+        <div className="employee-section-icon">
+          <Icon size={19} />
+        </div>
+
+        <div className="employee-section-heading-text">
+          <h2>{title}</h2>
+          {description && <p>{description}</p>}
+        </div>
       </div>
 
-      <div>
-        <h2>{title}</h2>
-        {description && <p>{description}</p>}
-      </div>
-    </div>
+      <span className="employee-section-chevron" aria-hidden="true">
+        <ChevronDown size={19} />
+      </span>
+    </summary>
   );
 }
 
@@ -680,7 +686,7 @@ function EmployeeManagementPage() {
                 </div>
               </div>
 
-              <section className="employee-section">
+              <details className="employee-section">
                 <SectionHeader
                   icon={UserRound}
                   title="Personal Information"
@@ -837,9 +843,9 @@ function EmployeeManagementPage() {
                     }
                   />
                 </div>
-              </section>
+              </details>
 
-              <section className="employee-section">
+              <details className="employee-section">
                 <SectionHeader
                   icon={Building2}
                   title="Organization Information"
@@ -934,9 +940,9 @@ function EmployeeManagementPage() {
                     }
                   />
                 </div>
-              </section>
+              </details>
 
-              <section className="employee-section">
+              <details className="employee-section">
                 <SectionHeader
                   icon={Users}
                   title="Reporting Details"
@@ -973,9 +979,9 @@ function EmployeeManagementPage() {
                     }
                   />
                 </div>
-              </section>
+              </details>
 
-              <section className="employee-section">
+              <details className="employee-section">
                 <SectionHeader
                   icon={Building2}
                   title="Lab & Deputation"
@@ -1023,7 +1029,7 @@ function EmployeeManagementPage() {
                     }
                   />
                 </div>
-              </section>
+              </details>
 
               <div className="employee-page-footer">
                 <div>
@@ -1057,4 +1063,3 @@ function EmployeeManagementPage() {
 }
 
 export default EmployeeManagementPage;
-

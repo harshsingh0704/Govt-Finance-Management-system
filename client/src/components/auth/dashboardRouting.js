@@ -11,8 +11,6 @@ export function getFunctionalDashboard(user) {
       ? user.employee
       : {};
 
-  // Explicit API assignment fields only.
-  // Never infer dashboard access from name, email, designation, or department.
   const assignment =
     user.functionalAssignment ??
     user.functionalRole ??
@@ -26,33 +24,43 @@ export function getFunctionalDashboard(user) {
   const destinations = {
     "finance clerk": "/admin/finance-clerk",
     "finance officer": "/admin/finance-officer",
-    "hod": "/admin/head-of-department",
+    hod: "/admin/head-of-department",
     "head of department": "/admin/head-of-department",
+    hoa: "/admin/head-of-office",
     "head of office": "/admin/head-of-office",
-    "hoa": "/admin/head-of-office",
   };
 
   return destinations[value] || null;
 }
 
 export function getDashboardDestination(user, fallbackRole) {
-  const role = normalize(user?.role ?? fallbackRole).replace(/ /g, "_");
+  const role = normalize(user?.role ?? fallbackRole);
 
-  if (role === "super_admin") return "/super-admin";
-  if (role === "admin") return "/admin";
+  const destinations = {
+    establishment: "/super-admin",
+    "super admin": "/super-admin",
+    admin: "/admin",
+    "head of office": "/admin/head-of-office",
+    hoa: "/admin/head-of-office",
+    "head of department": "/admin/head-of-department",
+    hod: "/admin/head-of-department",
+    "finance officer": "/finance-officer",
+    "finance clerk": "/admin/finance-clerk",
+    employee: "/dashboard",
+  };
 
-  if (role === "employee") {
-    return getFunctionalDashboard(user) || "/dashboard";
-  }
-
-  return "/dashboard";
+  return destinations[role] || "/unauthorized";
 }
 
 export function hasFunctionalDashboardAccess(user, pathname) {
-  const role = normalize(user?.role).replace(/ /g, "_");
+  if (!user) return false;
 
-  if (role !== "employee") return false;
-
+  const role = normalize(user.role);
   const assignedDashboard = getFunctionalDashboard(user);
-  return Boolean(assignedDashboard && assignedDashboard === pathname);
+
+  if (role === "employee") {
+    return Boolean(assignedDashboard && assignedDashboard === pathname);
+  }
+
+  return getDashboardDestination(user) === pathname;
 }

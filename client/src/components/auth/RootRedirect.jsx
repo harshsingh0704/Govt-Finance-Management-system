@@ -1,18 +1,18 @@
-﻿import { useSelector } from "react-redux";
+﻿
+import { useSelector } from "react-redux";
 import { Navigate } from "react-router-dom";
 import { getDashboardDestination } from "./dashboardRouting";
 
 export default function RootRedirect() {
-  const { user, role, isAuthenticated } = useSelector((state) => state.auth);
+  const { user, role, isAuthenticated } = useSelector(
+    (state) => state.auth
+  );
 
-  if (!isAuthenticated) {
+  if (!isAuthenticated || !user) {
     return <Navigate to="/login" replace />;
   }
 
-  return (
-    <Navigate
-      to={getDashboardDestination(user, role)}
-      replace
-    />
-  );
+  const destination = getDashboardDestination(user, role);
+
+  return <Navigate to={destination} replace />;
 }

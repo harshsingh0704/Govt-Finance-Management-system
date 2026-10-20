@@ -1,4 +1,4 @@
-﻿
+
 const Employee = require("../models/Employee");
 const User = require("../models/User");
 const XLSX = require("xlsx");
@@ -83,7 +83,6 @@ exports.createEmployee = async (req, res) => {
 // Import employee master records from Excel
 exports.bulkImportEmployees = async (req, res) => {
   try {
-    // 1. Check uploaded file
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -91,30 +90,16 @@ exports.bulkImportEmployees = async (req, res) => {
       });
     }
 
-    // 2. Read Excel workbook from memory
-    const workbook = XLSX.read(req.file.buffer, {
-      type: "buffer",
-    });
-
-    const firstSheetName = workbook.SheetNames[0];
-
-    if (!firstSheetName) {
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer" });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName || !workbook.Sheets[sheetName]) {
       return res.status(400).json({
         success: false,
-        message: "The Excel file contains no worksheets.",
+        message: "The Excel file contains no readable worksheet.",
       });
     }
 
-    const sheet = workbook.Sheets[firstSheetName];
-
-    if (!sheet) {
-      return res.status(400).json({
-        success: false,
-        message: "Could not read the first worksheet.",
-      });
-    }
-
-    const rows = XLSX.utils.sheet_to_json(sheet, {
+    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
       defval: "",
       raw: false,
     });
@@ -125,7 +110,6 @@ exports.bulkImportEmployees = async (req, res) => {
         message: "The Excel worksheet is empty.",
       });
     }
-
     if (rows.length > 1000) {
       return res.status(400).json({
         success: false,
@@ -133,159 +117,187 @@ exports.bulkImportEmployees = async (req, res) => {
       });
     }
 
-    // 3. Normalize column names so these headers are equivalent:
-    // Employee_ID, Employee ID, employeeId, Employee-ID
-    const normalizeKey = (key) =>
-      String(key)
-        .trim()
-        .toLowerCase()
-        .replace(/[\s_-]+/g, "");
-
-    const getValue = (row, ...keys) => {
-      const normalizedRow = {};
-
-      for (const [key, value] of Object.entries(row)) {
-        normalizedRow[normalizeKey(key)] = value;
-      }
-
-      for (const key of keys) {
-        const value = normalizedRow[normalizeKey(key)];
-
-        if (
-          value !== undefined &&
-          value !== null &&
-          String(value).trim() !== ""
-        ) {
-          return String(value).trim();
+    const norm = (s) => String(s ?? "").trim().toLowerCase()
+      .replace(/[\s_-]+/g, "");
+    const value = (row, ...aliases) => {
+      const map = {};
+      for (const [k, v] of Object.entries(row)) map[norm(k)] = v;
+      for (const alias of aliases) {
+        const v = map[norm(alias)];
+        if (v !== undefined && v !== null && String(v).trim() !== "") {
+          return String(v).trim();
         }
       }
-
       return "";
     };
+    const yesNo = (v) => {
+      const s = String(v).trim().toLowerCase();
+      if (["yes", "y", "true", "1"].includes(s)) return true;
+      if (["no", "n", "false", "0"].includes(s)) return false;
+      return null;
+    };
+    const parseDate = (v) => {
+      if (v === null || v === undefined || String(v).trim() === "") {
+        return null;
+      }
 
-    // 4. Supported functional assignments
-    const allowedAssignments = new Set([
-      "Employee",
-      "Head of Office",
-      "Head of Department",
-      "Finance Officer",
-      "Finance Clerk",
-      "IT Cell In-charge",
-      "Sample In-charge",
-      "Facilities In-charge",
-      "Vehicles In-charge",
-      "Field Station 1 In-charge",
-      "Field Station 2 In-charge",
-    ]);
+      if (typeof v === "number" && Number.isFinite(v)) {
+        if (v < 1 || v > 2958465) return null;
+        const d = new Date(Date.UTC(1899, 11, 30) + v * 86400000);
+        return Number.isNaN(d.getTime()) ? null : d;
+      }
+
+      const text = String(v).trim();
+      let year, month, day;
+      let match = text.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);
+
+      if (match) {
+        [, year, month, day] = match.map(Number);
+      } else {
+        match = text.match(/^(\d{1,2})[/-](\d{1,2})[/-](\d{4})$/);
+        if (!match) return null;
+        [, day, month, year] = match.map(Number);
+      }
+
+      const d = new Date(Date.UTC(year, month - 1, day));
+
+      if (
+        d.getUTCFullYear() !== year ||
+        d.getUTCMonth() !== month - 1 ||
+        d.getUTCDate() !== day
+      ) {
+        return null;
+      }
+
+      return d;
+    };
 
     const errors = [];
-    const seenCodes = new Set();
     const candidates = [];
+    const seenCodes = new Set();
+    const seenEmails = new Set();
 
-    // 5. Validate Excel rows
-    rows.forEach((row, index) => {
-      const rowNumber = index + 2;
+    rows.forEach((row, i) => {
+      const rowNumber = i + 2;
+      const employeeCode = value(row, "Employee ID", "Employee_ID",
+        "employeeCode", "Employee Code");
+      const name = value(row, "Full Name", "Full_Name", "name",
+        "Employee Name");
+      const email = value(row, "Official Email ID", "Official Email",
+        "Email", "Email Address").toLowerCase();
+      const joiningText = value(row, "Joining Date", "joiningDate");
+      const department = value(row, "Department Name", "Department");
+      const designation = value(row, "Designation");
+      const payband = value(row, "Payband / Payscale", "Payband",
+        "Payscale", "Pay Scale");
+      const functionalAssignment = value(row, "Functional Role / Authority",
+        "Functional Role", "Functional Assignment", "Functional_Assignment");
+      const supervisorFlagText = value(row, "Is Supervisor", "isSupervisor");
+      const supervisorFlag = yesNo(supervisorFlagText);
+      const supervisorRole = value(row, "Supervisor Type", "supervisorRole");
+      const reportingSupervisor = value(row, "Reporting Supervisor",
+        "Supervisor", "Reports To", "reportingSupervisor");
+      const supervisorPosition = value(row, "Position / Incharge",
+        "Position/Incharge", "Supervisor Position", "supervisorPosition");
+      const parentLabText = value(row, "Parent Lab", "parentLab");
+      const parentLabFlag = yesNo(parentLabText);
+      const deputationText = value(row, "Deputation", "isDeputed");
+      const deputationFlag = yesNo(deputationText);
+      const parentInstituteName = value(row, "Parent Research Institute Name",
+        "Parent Research Institute", "Parent Institute Name",
+        "parentInstituteName");
+      const accountsOfficerName = value(row, "Accounts Officer Name",
+        "Accounts Officer", "accountsOfficerName");
 
-      const employeeCode = getValue(
-        row,
-        "Employee_ID",
-        "Employee ID",
-        "employeeCode",
-        "Employee Code"
-      );
-
-      const name = getValue(
-        row,
-        "Full_Name",
-        "Full Name",
-        "name",
-        "Employee Name"
-      );
-
-      const email = getValue(row, "Email", "Email Address");
-      const department = getValue(row, "Department");
-      const designation =
-        getValue(row, "Designation") || "Officer";
-
-      const functionalAssignment =
-        getValue(
-          row,
-          "Functional_Assignment",
-          "Functional Assignment"
-        ) || "Employee";
-
-      if (!employeeCode || !name || !department) {
-        errors.push({
-          row: rowNumber,
-          employeeCode: employeeCode || "",
-          message:
-            "Employee ID, Full Name, and Department are required.",
-        });
-
-        return;
+      const rowErrors = [];
+      if (!employeeCode) rowErrors.push("Employee ID is required.");
+      if (!name) rowErrors.push("Full Name is required.");
+      if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        rowErrors.push("A valid Official Email ID is required.");
+      }
+      if (!joiningText || !parseDate(joiningText)) {
+        rowErrors.push("A valid Joining Date is required.");
+      }
+      if (!department) rowErrors.push("Department Name is required.");
+      if (!designation) rowErrors.push("Designation is required.");
+      if (!payband) rowErrors.push("Payband / Payscale is required.");
+      if (!functionalAssignment) {
+        rowErrors.push("Functional Role / Authority is required.");
+      }
+      if (supervisorFlag === null) {
+        rowErrors.push("Is Supervisor must be Yes or No.");
+      }
+      if (parentLabFlag === null) {
+        rowErrors.push("Parent Lab must be Yes or No.");
+      }
+      if (deputationFlag === null) {
+        rowErrors.push("Deputation must be Yes or No.");
+      }
+      if (supervisorFlag === true && !supervisorRole) {
+        rowErrors.push("Supervisor Type is required for a supervisor.");
+      }
+      if (supervisorFlag === true && reportingSupervisor) {
+        rowErrors.push("A supervisor should not have Reporting Supervisor set.");
+      }
+      if (supervisorFlag === false && !reportingSupervisor) {
+        rowErrors.push("Reporting Supervisor is required for a non-supervisor.");
+      }
+      if (supervisorFlag !== true && supervisorPosition) {
+        rowErrors.push("Position / Incharge is only valid for supervisors.");
+      }
+      if (parentLabFlag === false && deputationFlag === true &&
+          (!parentInstituteName || !accountsOfficerName)) {
+        rowErrors.push(
+          "Parent Research Institute Name and Accounts Officer Name are required when Parent Lab is No and Deputation is Yes."
+        );
       }
 
-      const normalizedCode = employeeCode.toUpperCase();
+      const codeKey = employeeCode.toUpperCase();
+      if (employeeCode && seenCodes.has(codeKey)) {
+        rowErrors.push("Duplicate Employee ID in the Excel file.");
+      }
+      if (employeeCode) seenCodes.add(codeKey);
 
-      if (seenCodes.has(normalizedCode)) {
+      if (email && seenEmails.has(email)) {
+        rowErrors.push("Duplicate email in the Excel file.");
+      }
+      if (email) seenEmails.add(email);
+
+      if (rowErrors.length) {
         errors.push({
           row: rowNumber,
           employeeCode,
-          message: "Duplicate Employee ID in the Excel file.",
+          message: rowErrors.join(" "),
         });
-
-        return;
-      }
-
-      seenCodes.add(normalizedCode);
-
-      if (!allowedAssignments.has(functionalAssignment)) {
-        errors.push({
-          row: rowNumber,
-          employeeCode,
-          message: `Invalid functional assignment: ${functionalAssignment}`,
-        });
-
-        return;
-      }
-
-      const basicPayText = getValue(
-        row,
-        "Basic_Pay",
-        "Basic Pay",
-        "basicPay"
-      );
-
-      const basicPay = basicPayText
-        ? Number(basicPayText.replace(/,/g, ""))
-        : 45000;
-
-      if (!Number.isFinite(basicPay) || basicPay < 0) {
-        errors.push({
-          row: rowNumber,
-          employeeCode,
-          message: "Basic Pay must be a non-negative number.",
-        });
-
         return;
       }
 
       candidates.push({
+        rowNumber,
         employeeCode,
         name,
         email,
+        joiningDate: parseDate(joiningText),
         department,
         designation,
+        payband,
+        // Kept configurable until the organization confirms the role list.
         functionalAssignment,
-        basicPay,
-        rowNumber,
+        isSupervisor: supervisorFlag,
+        supervisorRole: supervisorRole || undefined,
+        reportingSupervisor: reportingSupervisor || undefined,
+        supervisorPosition: supervisorPosition || undefined,
+        parentLab: parentLabFlag ? "Yes" : "No",
+        isDeputed: deputationFlag,
+        parentInstituteName: parentInstituteName || undefined,
+        accountsOfficerName: accountsOfficerName || undefined,
       });
     });
 
-    if (!candidates.length) {
+    if (errors.length) {
       return res.status(400).json({
         success: false,
-        message: "No valid employee rows were found.",
+        message: "Import validation failed. No employees were imported.",
         totalRows: rows.length,
         created: 0,
         failed: errors.length,
@@ -293,92 +305,99 @@ exports.bulkImportEmployees = async (req, res) => {
       });
     }
 
-    // 6. Check employee IDs already in MongoDB
-    const existing = await Employee.find({
-      employeeCode: {
-        $in: candidates.map((employee) => employee.employeeCode),
-      },
-    }).select("employeeCode");
+    const codes = candidates.map((e) => e.employeeCode.toUpperCase());
+    const emails = candidates.map((e) => e.email.toLowerCase());
 
-    const existingCodes = new Set(
-      existing.map((employee) =>
-        String(employee.employeeCode).toUpperCase()
-      )
-    );
+    const existingEmployees = await Employee.find({
+      $or: [
+        { employeeId: { $in: codes } },
+        { employeeCode: { $in: codes } },
+        { email: { $in: emails } },
+      ],
+    }).select("employeeId employeeCode email");
 
-    // 7. Prepare new employee master records
-    const newEmployees = [];
+    const existingUsers = await User.find({
+      email: { $in: emails },
+    }).select("email");
 
-    for (const employee of candidates) {
-      if (existingCodes.has(employee.employeeCode.toUpperCase())) {
-        errors.push({
-          row: employee.rowNumber,
-          employeeCode: employee.employeeCode,
-          message: "Employee ID already exists in MongoDB.",
+    const existingCodes = new Set(existingEmployees
+      .flatMap((e) => [
+        String(e.employeeId || "").toUpperCase(),
+        String(e.employeeCode || "").toUpperCase(),
+      ]));
+    const existingEmails = new Set([
+      ...existingEmployees.map((e) => String(e.email || "").toLowerCase()),
+      ...existingUsers.map((u) => String(u.email || "").toLowerCase()),
+    ]);
+
+    const duplicateErrors = [];
+    for (const e of candidates) {
+      if (existingCodes.has(e.employeeCode.toUpperCase())) {
+        duplicateErrors.push({
+          row: e.rowNumber,
+          employeeCode: e.employeeCode,
+          message: "Employee ID already exists in the database.",
         });
-
-        continue;
       }
+      if (existingEmails.has(e.email.toLowerCase())) {
+        duplicateErrors.push({
+          row: e.rowNumber,
+          employeeCode: e.employeeCode,
+          message: "Official email already exists in the database.",
+        });
+      }
+    }
 
-      newEmployees.push({
-        employeeCode: employee.employeeCode,
-        name: employee.name,
-        email: employee.email,
-        department: employee.department,
-        designation: employee.designation,
-        functionalAssignment: employee.functionalAssignment,
-        basicPay: employee.basicPay,
-
-        // Imported employee records do not need login accounts.
-        userId: null,
+    if (duplicateErrors.length) {
+      return res.status(409).json({
+        success: false,
+        message: "Duplicate records found. No employees were imported.",
+        totalRows: rows.length,
+        created: 0,
+        failed: duplicateErrors.length,
+        errors: duplicateErrors,
       });
     }
 
-    // 8. Save records to MongoDB
-    let created = 0;
+    const newEmployees = candidates.map((e) => ({
+      employeeId: e.employeeCode,
+      employeeCode: e.employeeCode,
+      name: e.name,
+      email: e.email,
+      joiningDate: e.joiningDate,
+      department: e.department,
+      designation: e.designation,
+      payband: e.payband,
+      functionalAssignment: e.functionalAssignment,
+      isSupervisor: e.isSupervisor,
+      supervisorRole: e.supervisorRole,
+      reportingSupervisor: e.reportingSupervisor,
+      supervisorPosition: e.supervisorPosition,
+      parentLab: e.parentLab,
+      isDeputed: e.isDeputed,
+      parentInstituteName: e.parentInstituteName,
+      accountsOfficerName: e.accountsOfficerName,
+      userId: null,
+    }));
 
-    if (newEmployees.length > 0) {
-      const inserted = await Employee.insertMany(newEmployees, {
-        ordered: true,
-      });
-
-      created = inserted.length;
-    }
-
-    // 9. Return import summary
+    const inserted = await Employee.insertMany(newEmployees, { ordered: true });
     return res.status(201).json({
       success: true,
-      message:
-        created > 0
-          ? "Employee bulk import completed."
-          : "No new employees were imported.",
+      message: "Employee bulk import completed.",
       totalRows: rows.length,
-      created,
-      failed: errors.length,
-      errors,
+      created: inserted.length,
+      failed: 0,
+      errors: [],
     });
   } catch (error) {
     console.error("Employee bulk import error:", error);
-
-    // Mongoose schema validation failure
-    if (error.name === "ValidationError") {
+    if (error.name === "ValidationError" || error.name === "CastError") {
       return res.status(400).json({
         success: false,
-        message: "Employee data failed schema validation.",
+        message: "Employee data failed validation.",
         error: error.message,
       });
     }
-
-    // Invalid MongoDB field value
-    if (error.name === "CastError") {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid employee field value.",
-        error: error.message,
-      });
-    }
-
-    // Duplicate key error
     if (error.code === 11000) {
       return res.status(409).json({
         success: false,
@@ -387,8 +406,6 @@ exports.bulkImportEmployees = async (req, res) => {
         duplicateKey: error.keyValue || null,
       });
     }
-
-    // Unexpected database or server error
     return res.status(500).json({
       success: false,
       message: "Employee import failed.",

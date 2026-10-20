@@ -100,10 +100,25 @@ exports.login = async (req, res) => {
       });
     }
 
-    const user = await User.findOne({
-      email: email.trim().toLowerCase(),
-      password,
-    });
+   const user = await User.findOne({
+  email: email.trim().toLowerCase(),
+});
+
+if (!user || user.isActive === false) {
+  return res.status(401).json({
+    success: false,
+    error: "Invalid email or password.",
+  });
+}
+
+const isPasswordValid = await user.comparePassword(password);
+
+if (!isPasswordValid) {
+  return res.status(401).json({
+    success: false,
+    error: "Invalid email or password.",
+  });
+}
 
     if (!user || user.isActive === false) {
       return res.status(401).json({

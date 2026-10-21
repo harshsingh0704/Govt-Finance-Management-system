@@ -1,4 +1,4 @@
-﻿
+﻿const Employee = require("../models/Employee");
 const mongoose = require("mongoose");
 const TAClaim = require("../models/TAClaim");
 const TAAdvance = require("../models/TAAdvance");
@@ -6,7 +6,7 @@ const Approval = require("../models/Approval");
 const AuditLog = require("../models/AuditLog");
 const { calculateTAClaim } = require("../services/taCalculationService");
 
-// Approval workflow stages
+// Approval workflow
 const WORKFLOW = {
   HOD: {
     next: "HOA",
@@ -51,18 +51,58 @@ function userCanActAtStage(user, stage) {
   );
 }
 
-
+// Find the Employee record linked to the authenticated user.
+// Never trust employeeId supplied by the frontend.
 async function getEmployeeId(user) {
-  if (!user?._id) return null;
+  const userId = user?._id || user?.id;
 
-  const employee = await require("../models/Employee").findOne({
-    userId: user._id,
+  if (
+    !userId ||
+    !mongoose.Types.ObjectId.isValid(String(userId))
+  ) {
+    return null;
+  }
+
+  // Support an explicitly linked employee ID if present.
+  const linkedEmployeeId =
+    user.employeeId && typeof user.employeeId === "object"
+      ? user.employeeId._id
+      : user.employeeId;
+
+  if (
+    linkedEmployeeId &&
+    mongoose.Types.ObjectId.isValid(String(linkedEmployeeId))
+  ) {
+    const linkedEmployee = await Employee.findById(
+      linkedEmployeeId
+    ).select("_id");
+
+    if (
+      linkedEmployee &&
+      String(linkedEmployee.userId) === String(userId)
+    ) {
+      return linkedEmployee._id;
+    }
+  }
+
+  // Standard relationship: Employee.userId references User._id.
+  const employee = await Employee.findOne({
+    userId,
   }).select("_id");
 
-  return employee ? employee._id : null;
+  if (employee) {
+    return employee._id;
+  }
+
+  console.warn(
+    `No Employee record linked to User ${String(userId)}. ` +
+      "Check that Employee.userId matches User._id."
+  );
+
+  return null;
 }
 
-// Helper: safely convert a number
+// Convert form values to safe numbers.
 function toNumber(value, fallback = 0) {
   if (value === undefined || value === null || value === "") {
     return fallback;
@@ -72,21 +112,30 @@ function toNumber(value, fallback = 0) {
   return Number.isFinite(number) ? number : fallback;
 }
 
-// Apply for TA advance
+function employeeNotLinked(res) {
+  return res.status(400).json({
+    success: false,
+    message:
+      "Your account is not linked to an employee record. " +
+      "Please ask the administrator to link your User account " +
+      "to your Employee record.",
+  });
+}
+
+// Submit TA advance
 exports.createAdvance = async (req, res) => {
   try {
+    const employeeId = await getEmployeeId(req.user);
+
+    if (!employeeId) {
+      return employeeNotLinked(res);
+    }
+
     const advance = new TAAdvance({
       ...req.body,
-      employeeId:await getEmployeeId(req.user),
+      // The authenticated employee is always used.
+      employeeId,
     });
-
-    if (!advance.employeeId) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Your account is not linked to an employee record. Please contact the administrator.",
-      });
-    }
 
     await advance.save();
 
@@ -96,6 +145,8 @@ exports.createAdvance = async (req, res) => {
       advance,
     });
   } catch (error) {
+    console.error("TA advance submission error:", error);
+
     return res.status(400).json({
       success: false,
       message: error.message,
@@ -109,11 +160,7 @@ exports.createClaim = async (req, res) => {
     const employeeId = await getEmployeeId(req.user);
 
     if (!employeeId) {
-      return res.status(400).json({
-        success: false,
-        message:
-          "Your account is not linked to an employee record. Please contact the administrator.",
-      });
+      return employeeNotLinked(res);
     }
 
     const {
@@ -151,7 +198,7 @@ exports.createClaim = async (req, res) => {
       documents,
     } = req.body;
 
-    // Required schema fields
+    // Validate required fields.
     if (
       !projectName ||
       !fromPlace ||
@@ -162,42 +209,59 @@ exports.createClaim = async (req, res) => {
       return res.status(400).json({
         success: false,
         message:
-          "Project name, journey origin, journey destination, departure date, and return date are required.",
+          "Project name, journey origin, journey destination, " +
+          "departure date, and return date are required.",
       });
     }
 
-    if (new Date(fromDate) > new Date(toDate)) {
+    const departure = new Date(fromDate);
+    const returnDate = new Date(toDate);
+
+    if (
+      Number.isNaN(departure.getTime()) ||
+      Number.isNaN(returnDate.getTime())
+    ) {
       return res.status(400).json({
         success: false,
-        message: "The return date cannot be earlier than the departure date.",
+        message: "Please provide valid travel dates.",
+      });
+    }
+
+    if (departure > returnDate) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "The return date cannot be earlier than the departure date.",
       });
     }
 
     if (declaration !== true && declaration !== "true") {
       return res.status(400).json({
         success: false,
-        message: "Please accept the declaration before submitting.",
+        message:
+          "Please accept the declaration before submitting.",
       });
     }
 
     const normalizedFare = toNumber(travelFare ?? fare);
     const normalizedMileage = toNumber(roadMileage);
     const normalizedAllowance = toNumber(dailyAllowance);
+
     const normalizedAccommodation = toNumber(
       accommodation ?? accommodationCharges
     );
+
     const normalizedOtherExpenses = toNumber(otherExpenses);
     const normalizedAdvance = toNumber(advanceAmountRequested);
     const normalizedAdjustedAdvance = toNumber(advanceAdjusted);
 
-    const { grossAmount: calculatedGross, netAmount: calculatedNet } =
-      calculateTAClaim({
-        fare: normalizedFare,
-        roadMileage: normalizedMileage,
-        dailyAllowance: normalizedAllowance,
-        accommodationCharges: normalizedAccommodation,
-        advanceAdjusted: normalizedAdjustedAdvance,
-      });
+    const { grossAmount: calculatedGross } = calculateTAClaim({
+      fare: normalizedFare,
+      roadMileage: normalizedMileage,
+      dailyAllowance: normalizedAllowance,
+      accommodationCharges: normalizedAccommodation,
+      advanceAdjusted: normalizedAdjustedAdvance,
+    });
 
     const grossAmount =
       calculatedGross + normalizedOtherExpenses;
@@ -218,21 +282,26 @@ exports.createClaim = async (req, res) => {
 
       claimType,
       tourType:
-        claimType === "Outstation" ? "Out-of-station" : claimType || "Local",
+        claimType === "Outstation"
+          ? "Out-of-station"
+          : claimType || "Local",
 
       purposeOfJourney,
       projectName,
       fromPlace,
       toPlace,
-      fromDate,
-      toDate,
+      fromDate: departure,
+      toDate: returnDate,
       departureTime,
       arrivalTime,
       modeOfTravel,
 
       taAdvanceApproved,
+
       officeTransportation:
-        officeTransportation === true || officeTransportation === "true",
+        officeTransportation === true ||
+        officeTransportation === "true",
+
       publicTransportation: publicTransportation || "Train",
 
       travelFare: normalizedFare,
@@ -258,12 +327,12 @@ exports.createClaim = async (req, res) => {
       approvalHistory: [],
     });
 
+    // Save the claim in MongoDB.
     await claim.save();
 
-    // Create the approval queue record.
-    // This retains the existing Approval model integration.
     let approvalId = null;
 
+    // Create approval queue record.
     try {
       const approval = await Approval.create({
         claimType: "TAClaim",
@@ -283,13 +352,13 @@ exports.createClaim = async (req, res) => {
 
       approvalId = approval._id;
     } catch (approvalError) {
-      // Do not leave a saved claim appearing to have failed.
       console.error(
         "TA claim saved, but approval queue creation failed:",
         approvalError.message
       );
     }
 
+    // Audit log is best-effort.
     try {
       await AuditLog.create({
         userId: req.user._id,
@@ -303,7 +372,10 @@ exports.createClaim = async (req, res) => {
         },
       });
     } catch (auditError) {
-      console.error("TA claim audit log failed:", auditError.message);
+      console.error(
+        "TA claim audit log failed:",
+        auditError.message
+      );
     }
 
     return res.status(201).json({
@@ -322,7 +394,7 @@ exports.createClaim = async (req, res) => {
   }
 };
 
-// Get a single claim
+// Get a single TA claim
 exports.getClaimById = async (req, res) => {
   try {
     if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
@@ -332,8 +404,10 @@ exports.getClaimById = async (req, res) => {
       });
     }
 
-    const claim = await TAClaim.findById(req.params.id)
-      .populate("employeeId", "name employeeCode designation department");
+    const claim = await TAClaim.findById(req.params.id).populate(
+      "employeeId",
+      "name employeeCode designation department"
+    );
 
     if (!claim) {
       return res.status(404).json({
@@ -342,7 +416,10 @@ exports.getClaimById = async (req, res) => {
       });
     }
 
-    return res.json({ success: true, claim });
+    return res.json({
+      success: true,
+      claim,
+    });
   } catch (error) {
     return res.status(500).json({
       success: false,
@@ -357,14 +434,12 @@ exports.getClaimsByEmployee = async (req, res) => {
     const employeeId = await getEmployeeId(req.user);
 
     if (!employeeId) {
-      return res.status(400).json({
-        success: false,
-        message: "Your account is not linked to an employee record.",
-      });
+      return employeeNotLinked(res);
     }
 
-    // Ignore employeeId supplied in the URL for employee-owned history.
-    const claims = await TAClaim.find({ employeeId }).sort({
+    const claims = await TAClaim.find({
+      employeeId,
+    }).sort({
       createdAt: -1,
     });
 
@@ -374,6 +449,8 @@ exports.getClaimsByEmployee = async (req, res) => {
       claims,
     });
   } catch (error) {
+    console.error("Employee TA claims fetch error:", error);
+
     return res.status(500).json({
       success: false,
       message: error.message,
@@ -381,6 +458,7 @@ exports.getClaimsByEmployee = async (req, res) => {
   }
 };
 
+// Get pending claims for the current approval role
 exports.getPendingClaims = async (req, res) => {
   try {
     const role = normalizeRole(req.user?.role);
@@ -404,17 +482,26 @@ exports.getPendingClaims = async (req, res) => {
     }
 
     const claims = await TAClaim.find({
-      currentStage: { $in: stages },
-      status: { $in: [
-        "PENDING_HOD",
-        "PENDING_HOA",
-        "PENDING_FINANCE_OFFICER",
-        "PENDING_FINANCE_CLERK",
-        "PENDING_FINAL_SANCTION",
-      ]},
+      currentStage: {
+        $in: stages,
+      },
+      status: {
+        $in: [
+          "PENDING_HOD",
+          "PENDING_HOA",
+          "PENDING_FINANCE_OFFICER",
+          "PENDING_FINANCE_CLERK",
+          "PENDING_FINAL_SANCTION",
+        ],
+      },
     })
-      .populate("employeeId", "name employeeCode designation department")
-      .sort({ submittedAt: 1 });
+      .populate(
+        "employeeId",
+        "name employeeCode designation department"
+      )
+      .sort({
+        submittedAt: 1,
+      });
 
     return res.json({
       success: true,
@@ -423,6 +510,7 @@ exports.getPendingClaims = async (req, res) => {
     });
   } catch (error) {
     console.error("Pending claims fetch error:", error);
+
     return res.status(500).json({
       success: false,
       message: "Unable to load pending claims.",
@@ -430,12 +518,17 @@ exports.getPendingClaims = async (req, res) => {
   }
 };
 
-// Get all TA claims (existing endpoint)
+// Get all TA claims
 exports.getAllClaims = async (req, res) => {
   try {
     const claims = await TAClaim.find()
-      .populate("employeeId", "name employeeCode designation department")
-      .sort({ createdAt: -1 });
+      .populate(
+        "employeeId",
+        "name employeeCode designation department"
+      )
+      .sort({
+        createdAt: -1,
+      });
 
     return res.json({
       success: true,
@@ -471,7 +564,6 @@ exports.updateClaimStatus = async (req, res) => {
       });
     }
 
-    // Support legacy callers that send status: approved/rejected.
     const normalizedAction = String(action || status || "")
       .trim()
       .toUpperCase();
@@ -497,29 +589,31 @@ exports.updateClaimStatus = async (req, res) => {
     }
 
     const stage = claim.currentStage;
-    
-if (!userCanActAtStage(req.user, stage)) {
-  return res.status(403).json({
-    success: false,
-    message: "Your role is not authorized to process this claim at its current stage.",
-  });
-}
 
-if (
-  ["REJECTED", "SENT_BACK"].includes(finalAction) &&
-  !String(comments || "").trim()
-) {
-  return res.status(400).json({
-    success: false,
-    message: "Please provide a reason for rejection or sending the claim back.",
-  });
-}
+    if (!userCanActAtStage(req.user, stage)) {
+      return res.status(403).json({
+        success: false,
+        message:
+          "Your role is not authorized to process this claim at its current stage.",
+      });
+    }
 
+    if (
+      ["REJECTED", "SENT_BACK"].includes(finalAction) &&
+      !String(comments || "").trim()
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please provide a reason for rejection or sending the claim back.",
+      });
+    }
 
     if (!WORKFLOW[stage]) {
       return res.status(400).json({
         success: false,
-        message: "This claim is not awaiting an approval action.",
+        message:
+          "This claim is not awaiting an approval action.",
       });
     }
 
@@ -543,8 +637,7 @@ if (
       claim.sanctionedBy = req.user._id;
       claim.sanctionedAt = new Date();
     } else {
-      const nextStage = WORKFLOW[stage].next;
-      claim.currentStage = nextStage;
+      claim.currentStage = WORKFLOW[stage].next;
       claim.status = WORKFLOW[stage].status;
     }
 
@@ -567,7 +660,10 @@ if (
         },
       });
     } catch (auditError) {
-      console.error("TA claim audit log failed:", auditError.message);
+      console.error(
+        "TA claim audit log failed:",
+        auditError.message
+      );
     }
 
     return res.json({

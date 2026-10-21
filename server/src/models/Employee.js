@@ -11,14 +11,12 @@ userId: {
   default: null,
   required: false,
 },
-
-    // Legacy database identifier; kept aligned with employeeCode.
-    employeeId: {
-      type: String,
-      unique: true,
-      trim: true,
-    },
-
+ employeeId: {
+  type: String,
+  unique: true,
+  sparse: true,
+  trim: true,
+},
     employeeCode: {
       type: String,
       unique: true,

@@ -3,6 +3,7 @@ require("dotenv").config();
 
 const mongoose = require("mongoose");
 const User = require("./src/models/User");
+const Employee = require("./src/models/Employee");
 
 const testUsers = [
   {
@@ -40,6 +41,7 @@ const testUsers = [
     email: "super@gmail.com",
     role: "Establishment",
   },
+  
 ];
 
 const TEST_PASSWORD = process.env.FMS_TEST_PASSWORD;
@@ -59,21 +61,57 @@ async function seedTestUsers() {
     await mongoose.connect(process.env.MONGO_URL);
 
     for (const testUser of testUsers) {
-      const existingUser = await User.findOne({
+      let user = await User.findOne({
         email: testUser.email,
       });
 
-      if (existingUser) {
-        console.log(`Already exists: ${testUser.email} — skipped`);
-        continue;
+      if (!user) {
+        user = await User.create({
+          ...testUser,
+          password: TEST_PASSWORD,
+        });
+
+        console.log(`Created user: ${testUser.email}`);
+      } else {
+        console.log(`User already exists: ${testUser.email}`);
       }
 
-      await User.create({
-        ...testUser,
-        password: TEST_PASSWORD,
-      });
+      // Create a linked Employee record for the test employee.
+     // Create Employee profile for the test employee
+if (testUser.email === "employeetest@gmail.com") {
+  const user = await User.findOne({
+    email: "employeetest@gmail.com",
+  });
 
-      console.log(`Created: ${testUser.email} (${testUser.role})`);
+  if (!user) {
+    throw new Error(
+      "Test employee user was not found in the database."
+    );
+  }
+
+  let employee = await Employee.findOne({
+    userId: user._id,
+  });
+
+  if (!employee) {
+    employee = await Employee.create({
+      userId: user._id,
+      employeeId: "TEST-EMP-001",
+      employeeCode: "TEST-EMP-001",
+      designation: "Test Employee",
+      department: "General Administration",
+      functionalAssignment: "Employee",
+      basicPay: 45000,
+      gradePay: 4200,
+      parentLab: "IWST Bangalore",
+    });
+
+    console.log("Created Employee profile:", employee._id);
+  } else {
+    console.log("Employee profile already exists:", employee._id);
+  }
+}
+       
     }
 
     console.log("\nTest account seeding completed.");

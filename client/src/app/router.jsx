@@ -3,7 +3,7 @@
 import ProtectedRoute from "../components/auth/ProtectedRoute";
 import RoleRoute from "../components/auth/RoleRoute";
 import RootRedirect from "../components/auth/RootRedirect";
-
+import FinanceOfficerPage from "../features/FinanceOfficer/FinanceOfficerPage";
 import LoginPage from "../features/auth/pages/LoginPage";
 import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
 
@@ -142,7 +142,7 @@ export const router = createBrowserRouter([
       {
         element: <RoleRoute allowedRoles={["finance officer"]} />,
         children: [
-          { path: "/finance-officer", element: <AdminPage /> },
+          { path: "/finance-officer", element: <FinanceOfficerPage /> },
         ],
       },
 

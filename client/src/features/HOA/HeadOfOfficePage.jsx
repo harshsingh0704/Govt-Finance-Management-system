@@ -1,89 +1,157 @@
-import { useState } from "react";
+
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import axios from "axios";
 import {
-  Activity,
-  Bell,
-  CalendarDays,
-  CheckCircle2,
-  ChevronRight,
-  ClipboardCheck,
-  FileCheck2,
-  FileText,
-  FolderOpen,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Search,
-  Settings,
-  ShieldCheck,
-  Users,
-  X,
-  BarChart3,
+  Activity, Bell, CalendarDays, Check, CheckCircle2, ChevronLeft,
+  ChevronRight, ClipboardCheck, FileCheck2, FileText, FolderOpen,
+  LayoutDashboard, LogOut, Menu, Search, Settings, ShieldCheck,
+  Users, X, XCircle, BarChart3, RefreshCw, Clock, ExternalLink, Wallet,
 } from "lucide-react";
-
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
 import "./HeadOfOfficePage.css";
 
-const stats = [
-  { label: "Office Employees", value: "48", detail: "Office overview", icon: Users, tone: "blue" },
-  { label: "Pending Leave Requests", value: "06", detail: "Require review", icon: CalendarDays, tone: "amber" },
-  { label: "Pending Claims", value: "12", detail: "Awaiting approval", icon: FileCheck2, tone: "green" },
-  { label: "Pending Approvals", value: "18", detail: "Across office workflows", icon: ClipboardCheck, tone: "purple" },
-];
-
-const leaves = [
-  { id: "LV-1042", employee: "Ankit Sharma", type: "Casual Leave", dates: "12–14 Oct 2026", status: "Pending" },
-  { id: "LV-1043", employee: "Priya Patel", type: "Earned Leave", dates: "15–17 Oct 2026", status: "Pending" },
-  { id: "LV-1044", employee: "Rahul Kumar", type: "On Duty", dates: "18 Oct 2026", status: "Review" },
-];
-
-const claims = [
-  { id: "CL-2041", employee: "Rahul Kumar", type: "TA Claim", amount: "₹12,450", status: "Pending" },
-  { id: "CL-2042", employee: "Priya Patel", type: "LTC Claim", amount: "₹18,300", status: "Pending" },
-  { id: "CL-2043", employee: "Ankit Sharma", type: "Medical Claim", amount: "₹8,900", status: "Review" },
-];
-
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Employee Management", icon: Users },
-  { label: "Leave & Requests", icon: CalendarDays, count: "6" },
-  { label: "Claims Approval", icon: ClipboardCheck, count: "12" },
+  { label: "Leave & Requests", icon: CalendarDays },
+  { label: "Claims Approval", icon: ClipboardCheck },
   { label: "Documents", icon: FolderOpen },
   { label: "Reports", icon: BarChart3 },
-  { label: "Notifications", icon: Bell, count: "5" },
+  { label: "Notifications", icon: Bell },
   { label: "My Settings", icon: Settings },
 ];
 
-function getInitials(name) {
-  return (name || "User")
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
+const getToken = () => {
+  try {
+    return JSON.parse(localStorage.getItem("fms_auth") || "{}").token ||
+      localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+  } catch {
+    return localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+  }
+};
+const pick = (...values) => values.find((v) => v !== undefined && v !== null && v !== "");
+const idOf = (claim) => String(claim?._id || claim?.id || "");
+const employee = (claim) => claim?.employeeId && typeof claim.employeeId === "object" ? claim.employeeId : claim?.employee && typeof claim.employee === "object" ? claim.employee : claim?.employeeDetails || {};
+const employeeName = (claim) => pick(claim?.employeeName, employee(claim)?.fullName, employee(claim)?.name, employee(claim)?.employeeName, "Employee details unavailable");
+const employeeCode = (claim) => pick(claim?.employeeCode, claim?.employeeNumber, employee(claim)?.employeeCode, employee(claim)?.employeeId, "Not available");
+const amountOf = (claim) => pick(claim?.totalClaim, claim?.totalAmount, claim?.claimAmount, claim?.amount, claim?.netAmount, null);
+const amount = (value) => {
+  if (value === null || value === undefined || value === "") return "Not available";
+  const n = Number(value);
+  return Number.isFinite(n) ? n.toLocaleString("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 2 }) : "Not available";
+};
+const date = (value) => {
+  if (!value) return "Not available";
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? "Not available" : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+};
+const initials = (value) => String(value || "NA").trim().split(/\s+/).slice(0, 2).map((x) => x[0]).join("").toUpperCase();
+const routeOf = (claim) => {
+  const from = pick(claim?.fromPlace, claim?.from, claim?.fromLocation, claim?.journeyFrom);
+  const to = pick(claim?.toPlace, claim?.to, claim?.toLocation, claim?.journeyTo);
+  return pick(claim?.journey, from && to ? `${from} → ${to}` : null, from, to, "Not provided");
+};
+const docsOf = (claim) => {
+  const docs = pick(claim?.documents, claim?.supportingDocuments, claim?.attachments, claim?.uploadedDocuments, []);
+  return Array.isArray(docs) ? docs : [];
+};
+const historyOf = (claim) => {
+  const h = pick(claim?.approvalHistory, claim?.approvalStages, claim?.history, []);
+  return Array.isArray(h) ? h : [];
+};
+const statusLabel = (s) => String(s || "UNKNOWN").replaceAll("_", " ");
+
+function DetailField({ label, value }) {
+  if (value === undefined || value === null || value === "") return null;
+  return <div className="hoo-review-field"><span>{label}</span><strong>{String(value)}</strong></div>;
 }
 
 export default function HeadOfOfficePage() {
-  const user = useSelector((state) => state.auth.user);
+  const user = useSelector((state) => state.auth?.user);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
+  const [selectedId, setSelectedId] = useState("");
+  const [tab, setTab] = useState("claim");
+  const [remarks, setRemarks] = useState({});
+  const [busyId, setBusyId] = useState("");
 
-  const name = user?.name || user?.fullName || user?.employeeName || "Head of Office";
-  const employeeId = user?.employeeId || user?.employee_id || user?.empId || "Not available";
+  const name = pick(user?.name, user?.fullName, user?.employeeName, "Head of Office");
+  const employeeId = pick(user?.employeeId, user?.employee_id, user?.empId, "Not available");
 
-  const visibleLeaves = leaves.filter((item) =>
-    `${item.id} ${item.employee} ${item.type}`.toLowerCase().includes(search.toLowerCase())
+  const fetchClaims = useCallback(async () => {
+    setLoading(true);
+    setError("");
+    try {
+      const token = getToken();
+      const response = await axios.get("http://localhost:5000/api/ta/claims/pending", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = response.data;
+      const list = Array.isArray(data) ? data : Array.isArray(data?.claims) ? data.claims : Array.isArray(data?.data) ? data.data : [];
+      setClaims(list.filter((claim) => String(claim.status || "").toUpperCase() === "PENDING_HOA"));
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to load HOA claims. Check your login and backend connection.");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSection === "Claims Approval") fetchClaims();
+  }, [activeSection, fetchClaims]);
+
+  const filteredClaims = claims.filter((claim) =>
+    [idOf(claim), employeeName(claim), employeeCode(claim), routeOf(claim), claim.claimType, claim.category, claim.purpose]
+      .join(" ").toLowerCase().includes(search.trim().toLowerCase())
   );
-  const visibleClaims = claims.filter((item) =>
-    `${item.id} ${item.employee} ${item.type}`.toLowerCase().includes(search.toLowerCase())
-  );
+  const selectedClaim = claims.find((claim) => idOf(claim) === selectedId) || null;
+
+  async function submitDecision(claim, decision) {
+    const id = idOf(claim);
+    const note = (remarks[id] || "").trim();
+    if ((decision === "send_back" || decision === "reject") && !note) {
+      setError("Enter remarks before sending back or rejecting a claim.");
+      return;
+    }
+    const verb = decision === "approve" ? "approve" : decision === "send_back" ? "send back" : "reject";
+    if (!window.confirm(`Are you sure you want to ${verb} this claim?`)) return;
+
+    setBusyId(id);
+    setError("");
+    setNotice("");
+    try {
+      const token = getToken();
+      await axios.patch(`http://localhost:5000/api/ta/claim/${id}/status`, {
+        decision,
+        remarks: note,
+      }, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setNotice("Claim decision submitted successfully.");
+      setSelectedId("");
+      setRemarks((prev) => {
+        const next = { ...prev };
+        delete next[id];
+        return next;
+      });
+      await fetchClaims();
+    } catch (err) {
+      setError(err.response?.data?.message || "Unable to save the decision. Check the backend route and request format.");
+    } finally {
+      setBusyId("");
+    }
+  }
 
   function signOut() {
     dispatch(logout());
@@ -92,294 +160,123 @@ export default function HeadOfOfficePage() {
 
   return (
     <div className="ad-shell hoo-shell">
-      {sidebarOpen && (
-        <button
-          type="button"
-          className="ad-mobile-overlay hoo-overlay"
-          aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
+      {sidebarOpen && <button className="ad-mobile-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />}
       <aside className={`ad-sidebar ${sidebarOpen ? "open" : ""}`}>
-        <div className="ad-brand">
-          <div className="ad-brand-mark">FMS</div>
-          <div>
-            <strong>Government Finance</strong>
-            <span>Management System</span>
-          </div>
-        </div>
-
-        <div className="ad-sidebar-scroll">
-          <nav className="ad-nav" aria-label="Head of Office navigation">
-            <span className="ad-nav-label">Office Workspace</span>
-            {navigation.map(({ label, icon: Icon, count }) => (
-              <button
-                type="button"
-                key={label}
-                className={`ad-nav-item ${activeSection === label ? "active" : ""}`}
-                onClick={() => {
-                  setActiveSection(label);
-                  setSidebarOpen(false);
-                }}
-              >
-                <Icon size={17} />
-                <span>{label}</span>
-                {count && <small>{count}</small>}
-              </button>
-            ))}
-          </nav>
-        </div>
-
+        <div className="ad-brand"><div className="ad-brand-mark">FMS</div><div><strong>Government Finance</strong><span>Management System</span></div></div>
+        <nav className="ad-nav">
+          <span className="ad-nav-label">Office Workspace</span>
+          {navigation.map(({ label, icon: Icon }) => <button key={label} className={`ad-nav-item ${activeSection === label ? "active" : ""}`} onClick={() => { setActiveSection(label); setSelectedId(""); setSidebarOpen(false); }}><Icon size={17} /><span>{label}</span>{label === "Claims Approval" && claims.length > 0 && <small>{claims.length}</small>}</button>)}
+        </nav>
         <div className="ad-sidebar-footer">
-          <div className="ad-user-mini">
-            <div className="ad-avatar">{getInitials(name)}</div>
-            <div className="hoo-user-details">
-              <strong>{name}</strong>
-              <span>Head of Office</span>
-            </div>
-          </div>
-          <button type="button" className="ad-logout-button" onClick={signOut}>
-            <LogOut size={15} />
-            Sign out
-          </button>
+          <div className="ad-user-mini"><div className="ad-avatar">{initials(name)}</div><div><strong>{name}</strong><span>Head of Office</span><span>Emp ID: {employeeId}</span></div></div>
+          <button className="ad-logout-button" onClick={signOut}><LogOut size={15} /> Sign out</button>
         </div>
       </aside>
 
       <main className="ad-main">
         <header className="ad-topbar">
           <div className="ad-topbar-left">
-            <button
-              type="button"
-              className="ad-menu-button"
-              aria-label="Open navigation"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} />
-            </button>
-            <label className="ad-search">
-              <Search size={16} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search employees, claims, requests..."
-                aria-label="Search dashboard records"
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="hoo-clear-search"
-                  aria-label="Clear search"
-                  onClick={() => setSearch("")}
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </label>
+            <button className="ad-menu-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
+            <label className="ad-search"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees, claims, requests..." />{search && <button aria-label="Clear search" onClick={() => setSearch("")}><X size={14} /></button>}</label>
           </div>
-          <div className="ad-topbar-right">
-            <button
-              type="button"
-              className="ad-notification-button"
-              aria-label="Open notifications"
-              onClick={() => setActiveSection("Notifications")}
-            >
-              <Bell size={19} />
-              <span className="hoo-notification-dot">5</span>
-            </button>
-            <div className="ad-profile-wrapper">
-              <div className="ad-profile-button hoo-profile">
-                <div className="ad-avatar">{getInitials(name)}</div>
-                <div className="ad-profile-text">
-                  <strong>{name}</strong>
-                  <span>Head of Office</span>
-                </div>
-              </div>
-            </div>
-          </div>
+          <div className="ad-topbar-right"><span className="hoo-top-role"><ShieldCheck size={16} /> HOA Workspace</span><div className="ad-avatar">{initials(name)}</div></div>
         </header>
 
         <div className="ad-content hoo-content">
-          <section className="ad-page-header">
-            <div>
-              <span className="ad-eyebrow">Office Operations / {activeSection}</span>
-              <h1>{activeSection}</h1>
-              <p className="hoo-subtitle">
-                {activeSection === "Dashboard"
-                  ? "Office overview, pending approvals and recent activities."
-                  : `Head of Office workspace for ${activeSection.toLowerCase()}.`}
-              </p>
-            </div>
-            <div className="hoo-header-meta">
-              <div className="hoo-meta-item">
-                <span>Employee ID</span>
-                <strong>{employeeId}</strong>
-              </div>
-              <div className="hoo-meta-item">
-                <span>Financial Year</span>
-                <strong>2026–2027</strong>
-              </div>
-            </div>
+          <section className="ad-page-header hoo-page-heading">
+            <div><span className="ad-eyebrow">Office Operations / {selectedClaim ? "Claim Review" : activeSection}</span><h1>{selectedClaim ? "Review Claim" : activeSection === "Dashboard" ? "Office Overview" : activeSection}</h1><p className="hoo-subtitle">{selectedClaim ? `Reference ${idOf(selectedClaim)}` : "Review office activity and claims assigned to the Head of Office approval stage."}</p></div>
+            <div className="hoo-header-meta"><span>Employee ID <strong>{employeeId}</strong></span><span>Financial Year <strong>2026–2027</strong></span></div>
           </section>
 
-          {activeSection === "Dashboard" ? (
-            <>
-              <section className="ad-stats-grid hoo-stats-grid">
-                {stats.map(({ label, value, detail, icon: Icon, tone }) => (
-                  <article className={`ad-stat-card hoo-stat-card ${tone}`} key={label}>
-                    <div className="ad-stat-top">
-                      <div className={`hoo-stat-icon ${tone}`}><Icon size={21} /></div>
-                      <span className="hoo-stat-context">Office overview</span>
-                    </div>
-                    <div className="ad-stat-value">{value}</div>
-                    <div className="ad-stat-label">{label}</div>
-                    <div className="ad-stat-detail">{detail}</div>
-                  </article>
-                ))}
-              </section>
+          {error && <div className="hoo-message error" role="alert"><XCircle size={17} /><span>{error}</span><button onClick={() => setError("")} aria-label="Dismiss error"><X size={15} /></button></div>}
+          {notice && <div className="hoo-message success" role="status"><CheckCircle2 size={17} /><span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss message"><X size={15} /></button></div>}
 
-              <section className="hoo-overview-grid">
-                <article className="ad-card hoo-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Office operations</span>
-                      <h2>Request &amp; Claim Overview</h2>
-                    </div>
-                    <Activity size={19} />
-                  </div>
-                  <div className="hoo-bars">
-                    {[
-                      { month: "May", leave: 46, claim: 30 },
-                      { month: "Jun", leave: 65, claim: 40 },
-                      { month: "Jul", leave: 53, claim: 35 },
-                      { month: "Aug", leave: 72, claim: 48 },
-                      { month: "Sep", leave: 60, claim: 55 },
-                      { month: "Oct", leave: 82, claim: 63 },
-                    ].map((item) => (
-                      <div className="hoo-bar-group" key={item.month}>
-                        <div className="hoo-bar-pair">
-                          <span className="hoo-bar leave" style={{ height: `${item.leave}%` }} />
-                          <span className="hoo-bar claim" style={{ height: `${item.claim}%` }} />
-                        </div>
-                        <span>{item.month}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="hoo-legend">
-                    <span><i className="leave" /> Leave requests</span>
-                    <span><i className="claim" /> Claims</span>
-                  </div>
-                  <p className="hoo-demo-note">Illustrative data. Live figures will come from the FMS API.</p>
-                </article>
-
-                <article className="ad-card hoo-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Action required</span>
-                      <h2>Approval Summary</h2>
-                    </div>
-                    <ShieldCheck size={19} />
-                  </div>
-                  <div className="hoo-approval-summary">
-                    <button type="button" onClick={() => setActiveSection("Leave & Requests")}>
-                      <span className="hoo-summary-icon amber"><CalendarDays size={19} /></span>
-                      <span><strong>06</strong><small>Leave requests</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" onClick={() => setActiveSection("Claims Approval")}>
-                      <span className="hoo-summary-icon green"><FileCheck2 size={19} /></span>
-                      <span><strong>12</strong><small>Claims to review</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" onClick={() => setActiveSection("Documents")}>
-                      <span className="hoo-summary-icon blue"><FileText size={19} /></span>
-                      <span><strong>04</strong><small>Documents awaiting review</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                
-                  <div className="hoo-review-action">
-                    <button type="button" className="hoo-review-button" onClick={() => setActiveSection("Leave & Requests")}>Review</button>
-                  </div>
-                </article>
-              </section>
-
-              <section className="hoo-tables-grid">
-                <article className="ad-card hoo-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Employee services</span>
-                      <h2>Recent Leave Requests</h2>
-                    </div>
-                    <button type="button" className="ad-text-button" onClick={() => setActiveSection("Leave & Requests")}>View all →</button>
-                  </div>
-                  <div className="hoo-table-wrap">
-                    <table className="hoo-table">
-                      <thead><tr><th>Employee</th><th>Leave type</th><th>Dates</th><th>Status</th><th>Action</th></tr></thead>
-                      <tbody>
-                        {visibleLeaves.map((item) => (
-                          <tr key={item.id}>
-                            <td><strong>{item.employee}</strong><small>{item.id}</small></td>
-                            <td>{item.type}</td>
-                            <td>{item.dates}</td>
-                            <td><span className={`hoo-status ${item.status.toLowerCase()}`}>{item.status}</span></td>
-                            <td></td>
-                          </tr>
-                        ))}
-                        {visibleLeaves.length === 0 && <tr><td colSpan="5" className="hoo-empty">No matching leave requests.</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-
-                <article className="ad-card hoo-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Financial services</span>
-                      <h2>Recent Claims for Approval</h2>
-                    </div>
-                    <button type="button" className="ad-text-button" onClick={() => setActiveSection("Claims Approval")}>View all →</button>
-                  </div>
-                  <div className="hoo-table-wrap">
-                    <table className="hoo-table">
-                      <thead><tr><th>Employee</th><th>Claim type</th><th>Amount</th><th>Status</th><th>Action</th></tr></thead>
-                      <tbody>
-                        {visibleClaims.map((item) => (
-                          <tr key={item.id}>
-                            <td><strong>{item.employee}</strong><small>{item.id}</small></td>
-                            <td>{item.type}</td>
-                            <td className="hoo-amount">{item.amount}</td>
-                            <td><span className={`hoo-status ${item.status.toLowerCase()}`}>{item.status}</span></td>
-                            <td></td>
-                          </tr>
-                        ))}
-                        {visibleClaims.length === 0 && <tr><td colSpan="5" className="hoo-empty">No matching claims.</td></tr>}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-              </section>
-            </>
-          ) : (
-            <section className="ad-card hoo-section-placeholder">
-              <div className="hoo-placeholder-icon">
-                {activeSection === "Employee Management" ? <Users size={28} /> :
-                  activeSection === "Leave & Requests" ? <CalendarDays size={28} /> :
-                  activeSection === "Claims Approval" ? <ClipboardCheck size={28} /> :
-                  activeSection === "Documents" ? <FolderOpen size={28} /> :
-                  activeSection === "Reports" ? <BarChart3 size={28} /> :
-                  activeSection === "Notifications" ? <Bell size={28} /> : <Settings size={28} />}
+          {selectedClaim ? (
+            <section className="hoo-review-page">
+              <button className="hoo-back" onClick={() => { setSelectedId(""); setError(""); }}><ChevronLeft size={17} /> Back to claims</button>
+              <div className="hoo-review-hero">
+                <div className="hoo-review-avatar">{initials(employeeName(selectedClaim))}</div>
+                <div className="hoo-review-title"><span className="hoo-kicker">OFFICE FINANCIAL CONTROL</span><h2>{employeeName(selectedClaim)}</h2><p>{idOf(selectedClaim)} · {pick(selectedClaim.claimType, selectedClaim.type, selectedClaim.category, "Claim")}</p></div>
+                <span className="hoo-status pending"><i /> {statusLabel(selectedClaim.status)}</span>
               </div>
-              <h2>{activeSection}</h2>
-              <p>This workspace is a UI placeholder. Live records, permissions, and workflow actions will be connected in the next implementation phase.</p>
-              <button type="button" className="ad-primary-button" onClick={() => setActiveSection("Dashboard")}>Back to dashboard</button>
+              <div className="hoo-review-metrics">
+                <div><span>Claim amount</span><strong>{amount(amountOf(selectedClaim))}</strong></div>
+                <div><span>Submitted on</span><strong>{date(pick(selectedClaim.submittedAt, selectedClaim.createdAt))}</strong></div>
+                <div><span>Current stage</span><strong>{pick(selectedClaim.currentStage, "HOA")}</strong></div>
+              </div>
+              <div className="hoo-review-tabs" role="tablist" aria-label="Claim details">
+                {[["claim", "Claim details"], ["employee", "Employee"], ["documents", "Documents"], ["history", "Approval history"]].map(([value, label]) => <button key={value} role="tab" aria-selected={tab === value} className={tab === value ? "active" : ""} onClick={() => setTab(value)}>{label}</button>)}
+              </div>
+              <div className="hoo-review-content">
+                {tab === "claim" && <>
+                  <h3><FileText size={18} /> Claim information</h3>
+                  <div className="hoo-review-grid">
+                    <DetailField label="Claim reference" value={idOf(selectedClaim)} />
+                    <DetailField label="Claim type" value={pick(selectedClaim.claimType, selectedClaim.type)} />
+                    <DetailField label="Category" value={selectedClaim.category} />
+                    <DetailField label="Purpose" value={pick(selectedClaim.purpose, selectedClaim.purposeOfJourney, selectedClaim.travelPurpose)} />
+                    <DetailField label="Travel route" value={routeOf(selectedClaim)} />
+                    <DetailField label="From date" value={date(pick(selectedClaim.fromDate, selectedClaim.travelStartDate))} />
+                    <DetailField label="To date" value={date(pick(selectedClaim.toDate, selectedClaim.travelEndDate))} />
+                    <DetailField label="Financial year" value={selectedClaim.financialYear} />
+                    <DetailField label="Claim amount" value={amount(amountOf(selectedClaim))} />
+                    <DetailField label="Employee remarks" value={pick(selectedClaim.employeeRemarks, selectedClaim.remarks, selectedClaim.justification)} />
+                  </div>
+                  <h3 className="hoo-review-subtitle"><Wallet size={18} /> Financial breakdown</h3>
+                  <div className="hoo-review-grid">
+                    <DetailField label="Travel expenses" value={amount(selectedClaim.travelExpenses)} />
+                    <DetailField label="Daily allowance" value={amount(selectedClaim.dailyAllowance)} />
+                    <DetailField label="Accommodation" value={amount(selectedClaim.accommodation)} />
+                    <DetailField label="Other expenses" value={amount(selectedClaim.otherExpenses)} />
+                    <DetailField label="Deductions" value={amount(selectedClaim.deductions)} />
+                  </div>
+                </>}
+                {tab === "employee" && <><h3><Users size={18} /> Employee information</h3><div className="hoo-review-grid">
+                  <DetailField label="Employee name" value={employeeName(selectedClaim)} />
+                  <DetailField label="Employee ID" value={employeeCode(selectedClaim)} />
+                  <DetailField label="Designation" value={pick(employee(selectedClaim).designation, selectedClaim.designation)} />
+                  <DetailField label="Department" value={pick(employee(selectedClaim).department, selectedClaim.departmentName, selectedClaim.department)} />
+                  <DetailField label="Office" value={pick(employee(selectedClaim).office, selectedClaim.officeName, selectedClaim.office)} />
+                  <DetailField label="Email" value={pick(employee(selectedClaim).email, selectedClaim.email)} />
+                  <DetailField label="Contact" value={pick(employee(selectedClaim).phone, employee(selectedClaim).mobile, selectedClaim.phone)} />
+                </div></>}
+                {tab === "documents" && <><h3><FolderOpen size={18} /> Supporting documents</h3>
+                  {docsOf(selectedClaim).length ? <div className="hoo-doc-list">{docsOf(selectedClaim).map((doc, index) => {
+                    const url = typeof doc === "string" ? doc : pick(doc.url, doc.fileUrl, doc.path, doc.downloadUrl);
+                    const title = typeof doc === "string" ? doc.split("/").pop() : pick(doc.name, doc.fileName, doc.originalName, `Document ${index + 1}`);
+                    return <div className="hoo-document" key={`${title}-${index}`}><FileText size={21} /><div><strong>{title}</strong><span>{typeof doc === "object" ? pick(doc.type, doc.mimeType, "Supporting document") : "Supporting document"}{typeof doc === "object" && doc.uploadedAt ? ` · ${date(doc.uploadedAt)}` : ""}</span></div>{url && <a href={url} target="_blank" rel="noreferrer" aria-label={`Open ${title}`}><ExternalLink size={16} /></a>}</div>;
+                  })}</div> : <div className="hoo-empty"><FolderOpen size={28} /><strong>No supporting documents</strong><span>No documents were returned with this claim.</span></div>}
+                </>}
+                {tab === "history" && <><h3><Clock size={18} /> Approval history</h3>
+                  {historyOf(selectedClaim).length ? <div className="hoo-history-list">{historyOf(selectedClaim).map((entry, index) => <div className="hoo-history-item" key={index}><span className="hoo-history-dot" /><div><strong>{pick(entry.role, entry.stage, entry.approverRole, "Workflow action")}</strong><span>{pick(entry.action, entry.decision, entry.status, "Update")}</span><p>{pick(entry.remarks, entry.comments, entry.note, "")}</p><small>{pick(entry.reviewerName, entry.approverName, entry.name, "")} · {date(pick(entry.timestamp, entry.createdAt, entry.date))}</small></div></div>)}</div> : <div className="hoo-empty"><Clock size={28} /><strong>No approval history available</strong><span>The API did not return history entries for this claim.</span></div>}
+                </>}
+              </div>
+              <div className="hoo-decision">
+                <label htmlFor="hoo-review-remarks">Review remarks <span>Required for send back or rejection</span></label>
+                <textarea id="hoo-review-remarks" rows={3} value={remarks[idOf(selectedClaim)] || ""} onChange={(e) => setRemarks((prev) => ({ ...prev, [idOf(selectedClaim)]: e.target.value }))} placeholder="Add review notes or explain required corrections..." />
+                <div className="hoo-decision-buttons">
+                  <button className="hoo-approve" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "approve")}><Check size={16} /> {busyId ? "Saving..." : "Approve claim"}</button>
+                  <button className="hoo-return" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "send_back")}>Send back for correction</button>
+                  <button className="hoo-reject" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "reject")}><XCircle size={16} /> Reject claim</button>
+                </div>
+              </div>
             </section>
-          )}
-
-          <footer className="hoo-footer">
-            <span>Government Finance Management System</span>
-            <span>Head of Office Workspace · UI preview</span>
-          </footer>
+          ) : activeSection === "Claims Approval" ? (
+            <section className="hoo-claims-page">
+              <div className="hoo-claims-heading"><div><span className="hoo-kicker">OFFICE FINANCIAL CONTROL</span><h2>Claims requiring your attention</h2><p>Open a claim to inspect its submitted details and approval history.</p></div><button className="hoo-refresh" onClick={fetchClaims} disabled={loading}><RefreshCw size={16} /> {loading ? "Refreshing..." : "Refresh"}</button></div>
+              <button className="hoo-clickable-summary" onClick={() => setSearch("")}><span className="hoo-summary-icon"><ClipboardCheck size={23} /></span><span><small>Claims awaiting your review</small><strong>{loading ? "…" : claims.length}</strong></span><span className="hoo-queue-pill"><i /> HOA approval queue</span></button>
+              <div className="hoo-list-toolbar"><label><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employee, code, route or claim reference" /></label><span>{filteredClaims.length} claims shown · PENDING_HOA</span></div>
+              {loading ? <div className="hoo-empty"><span className="hoo-spinner" /><strong>Loading claims</strong><span>Fetching claims assigned to HOA.</span></div> :
+                filteredClaims.length === 0 ? <div className="hoo-empty"><ClipboardCheck size={29} /><strong>{error ? "Unable to load claims" : "You're all caught up"}</strong><span>{error || "No claims are currently awaiting HOA approval."}</span>{error && <button className="hoo-refresh" onClick={fetchClaims}>Try again</button>}</div> :
+                <div className="hoo-claim-list">{filteredClaims.map((claim) => <button className="hoo-claim-row" key={idOf(claim)} onClick={() => { setSelectedId(idOf(claim)); setTab("claim"); setError(""); }}>
+                  <span className="hoo-person-avatar">{initials(employeeName(claim))}</span>
+                  <span className="hoo-claim-main"><strong>{employeeName(claim)}</strong><small>{employeeCode(claim)} · Claim #{idOf(claim).slice(-8)}</small><span>{routeOf(claim)}</span></span>
+                  <span className="hoo-claim-type"><small>CLAIM TYPE</small><strong>{pick(claim.claimType, claim.type, claim.category, "Claim")}</strong><small>Submitted {date(pick(claim.submittedAt, claim.createdAt))}</small></span>
+                  <span className="hoo-claim-money"><small>CLAIM AMOUNT</small><strong>{amount(amountOf(claim))}</strong><span className="hoo-status pending">{statusLabel(claim.status)}</span></span><ChevronRight size={18} />
+                </button>)}</div>}
+            </section>
+          ) : <section className="hoo-other-section"><ShieldCheck size={26} /><h2>{activeSection}</h2><p>Use the existing office workspace for this section. Claims awaiting approval are managed in the HOA claims queue.</p><button className="hoo-refresh" onClick={() => setActiveSection("Claims Approval")}>Open claim approvals <ChevronRight size={16} /></button></section>}
+          <footer className="hoo-footer"><span>Government Finance Management System</span><span>Head of Office Workspace</span></footer>
         </div>
       </main>
     </div>

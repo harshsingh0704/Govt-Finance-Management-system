@@ -1,79 +1,155 @@
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import {
-  Activity,
-  Bell,
-  Building2,
-  CalendarDays,
-  ChartColumnIncreasing,
-  CheckCircle2,
-  ChevronDown,
-  ChevronRight,
-  ClipboardCheck,
-  FileCheck2,
-  FileText,
-  FolderOpen,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Search,
-  Settings,
-  ShieldCheck,
-  Users,
-  Wallet,
-  X,
+  Activity, Bell, Building2, CalendarDays, Check, CheckCircle2,
+  ChevronLeft, ChevronRight, ClipboardCheck, FileCheck2, FileText,
+  FolderOpen, LayoutDashboard, LogOut, Menu, Search, Settings,
+  ShieldCheck, Users, Wallet, X, XCircle, RefreshCw, Clock,
+  Download, ExternalLink,
 } from "lucide-react";
-
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
 import "./HeadOfDepartmentPage.css";
 
-const monthlyBudget = [
-  { month: "Apr", budget: 55, expenditure: 38 },
-  { month: "May", budget: 72, expenditure: 42 },
-  { month: "Jun", budget: 80, expenditure: 48 },
-  { month: "Jul", budget: 84, expenditure: 56 },
-  { month: "Aug", budget: 92, expenditure: 62 },
-  { month: "Sep", budget: 97, expenditure: 65 },
-  { month: "Oct", budget: 106, expenditure: 74 },
-];
-
-const requests = [
-  { id: "LV-1068", employee: "Priya Sharma", type: "Earned Leave", date: "14 Oct 2026", status: "Pending", section: "Leave & Requests" },
-  { id: "CL-2081", employee: "Rahul Mehta", type: "Medical Claim", date: "13 Oct 2026", status: "Pending", section: "Claims Approval" },
-  { id: "LV-1067", employee: "Ankit Verma", type: "Casual Leave", date: "12 Oct 2026", status: "Forwarded", section: "Leave & Requests" },
-  { id: "CL-2080", employee: "Neha Singh", type: "TA Claim", date: "11 Oct 2026", status: "Pending", section: "Claims Approval" },
-  { id: "LV-1066", employee: "Vikram Patel", type: "On Duty", date: "10 Oct 2026", status: "Approved", section: "Leave & Requests" },
-];
-
-const navigation = [
+const navItems = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Department Management", icon: Building2 },
-  { label: "Budget & Financial Oversight", icon: ChartColumnIncreasing },
-  { label: "Claims Approval", icon: FileCheck2, count: "12" },
-  { label: "Leave & Requests", icon: CalendarDays, count: "8" },
-  { label: "Reports", icon: Activity },
-  { label: "Notifications", icon: Bell, count: "5" },
+  { label: "Budget & Financial Oversight", icon: Activity },
+  { label: "Claims Approval", icon: FileCheck2 },
+  { label: "Leave & Requests", icon: CalendarDays },
+  { label: "Reports", icon: FileText },
+  { label: "Notifications", icon: Bell },
   { label: "My Settings", icon: Settings },
 ];
 
-const approvalItems = [
-  { label: "Leave Requests", detail: "06 requests pending approval", count: "06", section: "Leave & Requests", icon: CalendarDays, tone: "amber" },
-  { label: "Claims for Approval", detail: "12 claims pending review", count: "12", section: "Claims Approval", icon: FileCheck2, tone: "green" },
-  { label: "Forwarded Requests", detail: "03 requests from offices", count: "03", section: "Leave & Requests", icon: Users, tone: "blue" },
-  { label: "Documents for Review", detail: "04 documents pending", count: "04", section: "Department Management", icon: FileText, tone: "amber" },
-];
+const getToken = () => {
+  try {
+    return (
+      JSON.parse(localStorage.getItem("fms_auth") || "{}").token ||
+      localStorage.getItem("token") ||
+      localStorage.getItem("authToken") ||
+      ""
+    );
+  } catch {
+    return localStorage.getItem("token") || localStorage.getItem("authToken") || "";
+  }
+};
 
-function getInitials(value) {
-  return String(value || "HOD")
+const pick = (...values) =>
+  values.find((value) => value !== undefined && value !== null && value !== "");
+
+const getEmployee = (claim) =>
+  claim?.employeeId && typeof claim.employeeId === "object"
+    ? claim.employeeId
+    : claim?.employee && typeof claim.employee === "object"
+      ? claim.employee
+      : claim?.employeeDetails || {};
+
+const employeeName = (claim) =>
+  pick(
+    claim?.employeeName,
+    getEmployee(claim)?.fullName,
+    getEmployee(claim)?.name,
+    getEmployee(claim)?.employeeName,
+    "Employee details unavailable"
+  );
+
+const employeeCode = (claim) =>
+  pick(
+    claim?.employeeCode,
+    claim?.employeeNumber,
+    getEmployee(claim)?.employeeCode,
+    getEmployee(claim)?.employeeId,
+    "Not available"
+  );
+
+const claimId = (claim) => String(claim?._id || claim?.id || "");
+
+const amountValue = (claim) =>
+  pick(
+    claim?.netAmount,
+    claim?.totalClaim,
+    claim?.totalAmount,
+    claim?.claimAmount,
+    claim?.grossAmount,
+    claim?.totalFare,
+    claim?.amount,
+    null
+  );
+
+const formatAmount = (value) => {
+  if (value === null || value === undefined || value === "") return "Not available";
+  const number = Number(value);
+  return Number.isFinite(number)
+    ? number.toLocaleString("en-IN", {
+        style: "currency",
+        currency: "INR",
+        maximumFractionDigits: 2,
+      })
+    : "Not available";
+};
+
+const formatDate = (value) => {
+  if (!value) return "Not available";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime())
+    ? "Not available"
+    : date.toLocaleDateString("en-IN", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+};
+
+const initials = (name) =>
+  String(name || "NA")
     .trim()
     .split(/\s+/)
     .slice(0, 2)
     .map((part) => part[0])
     .join("")
     .toUpperCase();
+
+const journey = (claim) => {
+  const from = pick(claim?.fromPlace, claim?.fromLocation, claim?.from, claim?.journeyFrom);
+  const to = pick(claim?.toPlace, claim?.toLocation, claim?.to, claim?.journeyTo);
+  return pick(claim?.journey, from && to ? `${from} → ${to}` : null, from, to, "Not provided");
+};
+
+const statusLabel = (status) =>
+  String(status || "UNKNOWN").replaceAll("_", " ");
+
+function getDocuments(claim) {
+  const documents = pick(
+    claim?.documents,
+    claim?.supportingDocuments,
+    claim?.attachments,
+    claim?.uploadedDocuments,
+    []
+  );
+  return Array.isArray(documents) ? documents : [];
+}
+
+function getHistory(claim) {
+  const history = pick(
+    claim?.approvalHistory,
+    claim?.approvalStages,
+    claim?.history,
+    []
+  );
+  return Array.isArray(history) ? history : [];
+}
+
+function DetailField({ label, value }) {
+  if (value === undefined || value === null || value === "") return null;
+  return (
+    <div className="hod-detail-field">
+      <span>{label}</span>
+      <strong>{String(value)}</strong>
+    </div>
+  );
 }
 
 export default function HeadOfDepartmentPage() {
@@ -83,671 +159,345 @@ export default function HeadOfDepartmentPage() {
 
   const [activeSection, setActiveSection] = useState("Dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [claims, setClaims] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
   const [search, setSearch] = useState("");
-  const [period, setPeriod] = useState("Monthly");
-  
-  const [taClaims, setTaClaims] = useState([]);
-  const [claimsLoading, setClaimsLoading] = useState(false);
-  const [claimsError, setClaimsError] = useState("");
-  const [processingClaimId, setProcessingClaimId] = useState("");
-  const [claimActionError, setClaimActionError] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [selectedId, setSelectedId] = useState("");
+  const [tab, setTab] = useState("claim");
+  const [remarks, setRemarks] = useState("");
+  const [busyId, setBusyId] = useState("");
 
-  const getAuthToken = () => {
-    const fmsAuth = JSON.parse(
-      localStorage.getItem("fms_auth") || "{}"
-    );
+  const name = pick(user?.fullName, user?.name, user?.employeeName, user?.email?.split("@")[0], "Head of Department");
+  const employeeId = pick(user?.employeeId, user?.employee_id, user?.empId, "Not available");
 
-    return fmsAuth.token || localStorage.getItem("token");
-  };
-
-  async function fetchPendingTAClaims() {
-    setClaimsLoading(true);
-    setClaimsError("");
+  const fetchClaims = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
     try {
-      const token = getAuthToken();
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
 
-      if (!token) {
-        throw new Error("Please log in again to view pending claims.");
-      }
-
-      const response = await fetch(
-        "http://localhost:5000/api/ta/claims/pending",
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+      const response = await fetch("http://localhost:5000/api/ta/claims/pending", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
       const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "Unable to load claims.");
 
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to load TA claims.");
-      }
+      const received = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.claims)
+          ? data.claims
+          : Array.isArray(data?.data)
+            ? data.data
+            : [];
 
-      setTaClaims(Array.isArray(data.claims) ? data.claims : []);
-    } catch (error) {
-      setClaimsError(error.message || "Unable to load TA claims.");
+      setClaims(received.filter((claim) => String(claim.status || "").toUpperCase() === "PENDING_HOD"));
+    } catch (err) {
+      setError(err.message || "Unable to load HOD claims.");
     } finally {
-      setClaimsLoading(false);
+      setLoading(false);
     }
-  }
+  }, []);
 
   useEffect(() => {
-    if (activeSection === "Claims Approval") {
-      fetchPendingTAClaims();
-    }
-  }, [activeSection]);
+    if (activeSection === "Claims Approval") fetchClaims();
+  }, [activeSection, fetchClaims]);
 
-  async function handleTAClaimAction(claim, action) {
-    let comments = "";
+  const filteredClaims = claims.filter((claim) => {
+    const text = [
+      claimId(claim),
+      employeeName(claim),
+      employeeCode(claim),
+      journey(claim),
+      claim?.claimType,
+      claim?.category,
+      claim?.purpose,
+      claim?.status,
+    ].join(" ").toLowerCase();
 
-    if (action === "REJECTED" || action === "SENT_BACK") {
-      comments = window.prompt(
-        action === "REJECTED"
-          ? "Enter the reason for rejecting this claim:"
-          : "Enter the correction required:"
-      );
+    const matchesSearch = text.includes(search.trim().toLowerCase());
+    const matchesStatus = statusFilter === "ALL" ||
+      String(claim.status || "").toUpperCase() === statusFilter;
 
-      if (comments === null) return;
+    return matchesSearch && matchesStatus;
+  });
 
-      if (!comments.trim()) {
-        setClaimActionError("A reason is required for this action.");
-        return;
-      }
-    } else {
-      const confirmed = window.confirm(
-        "Approve this TA claim and forward it to the next stage?"
-      );
+  const selectedClaim = claims.find((claim) => claimId(claim) === selectedId) || null;
 
-      if (!confirmed) return;
-    }
-
-    setProcessingClaimId(claim._id);
-    setClaimActionError("");
-
-    try {
-      const token = getAuthToken();
-
-      const response = await fetch(
-        `http://localhost:5000/api/ta/claim/${claim._id}/status`,
-        {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({ action, comments }),
-        }
-      );
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || "Unable to process this claim.");
-      }
-
-      await fetchPendingTAClaims();
-
-      window.alert(data.message || "Claim action recorded successfully.");
-    } catch (error) {
-      setClaimActionError(
-        error.message || "Unable to process this claim."
-      );
-    } finally {
-      setProcessingClaimId("");
-    }
+  function openClaims() {
+    setActiveSection("Claims Approval");
+    setSelectedId("");
+    setTab("claim");
+    setSidebarOpen(false);
   }
 
+  async function submitDecision(claim, action) {
+    const id = claimId(claim);
+    const reason = remarks.trim();
 
-  const name =
-    user?.fullName ||
-    user?.name ||
-    user?.employeeName ||
-    user?.email?.split("@")[0] ||
-    "Department Head";
+    if ((action === "SENT_BACK" || action === "REJECTED") && !reason) {
+      setError("Enter review remarks before sending back or rejecting a claim.");
+      return;
+    }
 
-  const employeeId =
-    user?.employeeId ||
-    user?.employee_id ||
-    user?.empId ||
-    user?.employee?.employeeId ||
-    "Not available";
+    const verb = action === "APPROVED" ? "approve" : action === "SENT_BACK" ? "send back" : "reject";
+    if (!window.confirm(`Are you sure you want to ${verb} this claim?`)) return;
 
-  const filteredRequests = requests.filter((item) =>
-    `${item.id} ${item.employee} ${item.type} ${item.status}`
-      .toLowerCase()
-      .includes(search.toLowerCase())
-  );
+    setBusyId(id);
+    setError("");
+    setNotice("");
+
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch(`http://localhost:5000/api/ta/claim/${id}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action, comments: reason }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) throw new Error(data?.message || "Unable to save this decision.");
+
+      setNotice(data?.message || "Claim decision recorded successfully.");
+      setSelectedId("");
+      setRemarks("");
+      await fetchClaims();
+    } catch (err) {
+      setError(err.message || "Unable to submit the decision.");
+    } finally {
+      setBusyId("");
+    }
+  }
 
   function signOut() {
     dispatch(logout());
     navigate("/login", { replace: true });
   }
 
-  function openSection(section) {
-    setActiveSection(section);
-    setSidebarOpen(false);
-  }
-
   return (
     <div className="ad-shell hod-shell">
       {sidebarOpen && (
-        <button
-          type="button"
-          className="ad-mobile-overlay hod-overlay"
-          aria-label="Close navigation"
-          onClick={() => setSidebarOpen(false)}
-        />
+        <button className="ad-mobile-overlay" aria-label="Close navigation" onClick={() => setSidebarOpen(false)} />
       )}
 
       <aside className={`ad-sidebar ${sidebarOpen ? "open" : ""}`}>
         <div className="ad-brand">
           <div className="ad-brand-mark">FMS</div>
-          <div>
-            <strong>Government Finance</strong>
-            <span>Management System</span>
-          </div>
+          <div><strong>Government Finance</strong><span>Management System</span></div>
         </div>
 
-        <div className="ad-sidebar-scroll">
-          <nav className="ad-nav" aria-label="Head of Department navigation">
-            <span className="ad-nav-label">Department Workspace</span>
-            {navigation.map(({ label, icon: Icon, count }) => (
-              <button
-                type="button"
-                key={label}
-                className={`ad-nav-item ${activeSection === label ? "active" : ""}`}
-                onClick={() => openSection(label)}
-              >
-                <Icon size={17} />
-                <span>{label}</span>
-                {count && <small>{count}</small>}
-              </button>
-            ))}
-          </nav>
-        </div>
+        <nav className="ad-nav">
+          <span className="ad-nav-label">Department Workspace</span>
+          {navItems.map(({ label, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              className={`ad-nav-item ${activeSection === label ? "active" : ""}`}
+              onClick={() => {
+                setActiveSection(label);
+                setSelectedId("");
+                setSidebarOpen(false);
+              }}
+            >
+              <Icon size={17} />
+              <span>{label}</span>
+              {label === "Claims Approval" && claims.length > 0 && <small>{claims.length}</small>}
+            </button>
+          ))}
+        </nav>
 
         <div className="ad-sidebar-footer">
           <div className="ad-user-mini">
-            <div className="ad-avatar">{getInitials(name)}</div>
-            <div className="hod-user-details">
-              <strong>{name}</strong>
-              <span>Head of Department</span>
-              <span>Emp ID: {employeeId}</span>
-            </div>
+            <div className="ad-avatar">{initials(name)}</div>
+            <div><strong>{name}</strong><span>Head of Department</span><span>Emp ID: {employeeId}</span></div>
           </div>
-          <button type="button" className="ad-logout-button" onClick={signOut}>
-            <LogOut size={15} />
-            Sign out
-          </button>
+          <button className="ad-logout-button" onClick={signOut}><LogOut size={15} /> Sign out</button>
         </div>
       </aside>
 
       <main className="ad-main">
         <header className="ad-topbar">
           <div className="ad-topbar-left">
-            <button
-              type="button"
-              className="ad-menu-button"
-              aria-label="Open navigation"
-              onClick={() => setSidebarOpen(true)}
-            >
-              <Menu size={20} />
-            </button>
+            <button className="ad-menu-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
             <label className="ad-search">
               <Search size={16} />
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search employees, claims, requests, documents..."
-                aria-label="Search department records"
-              />
-              {search && (
-                <button
-                  type="button"
-                  className="hod-clear-search"
-                  aria-label="Clear search"
-                  onClick={() => setSearch("")}
-                >
-                  <X size={14} />
-                </button>
-              )}
+              <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search employees, claims, references..." />
+              {search && <button type="button" aria-label="Clear search" onClick={() => setSearch("")}><X size={14} /></button>}
             </label>
           </div>
-
           <div className="ad-topbar-right">
-            <button
-              type="button"
-              className="ad-notification-button"
-              aria-label="View notifications"
-              onClick={() => openSection("Notifications")}
-            >
-              <Bell size={19} />
-              <span className="hod-notification-dot">5</span>
-            </button>
-            <div className="ad-profile-wrapper">
-              <div className="ad-profile-button hod-profile">
-                <div className="ad-avatar">{getInitials(name)}</div>
-                <div className="ad-profile-text">
-                  <strong>{name}</strong>
-                  <span>Head of Department</span>
-                  <small>{employeeId}</small>
-                </div>
-              </div>
-            </div>
+            <span className="hod-top-role"><ShieldCheck size={16} /> HOD Workspace</span>
+            <div className="ad-avatar">{initials(name)}</div>
           </div>
         </header>
 
         <div className="ad-content hod-content">
           <section className="ad-page-header hod-page-header">
             <div>
-              <span className="ad-eyebrow">
-                Department Operations / {activeSection}
-              </span>
-              <h1>{activeSection === "Dashboard" ? "Department Overview" : activeSection}</h1>
+              <span className="ad-eyebrow">Department Operations / {selectedClaim ? "Claim Review" : activeSection}</span>
+              <h1>{selectedClaim ? "Review Claim" : activeSection === "Dashboard" ? "Department Overview" : activeSection}</h1>
               <p className="hod-subtitle">
-                {activeSection === "Dashboard"
-                  ? "Department performance, pending approvals and budget health."
-                  : `Head of Department workspace for ${activeSection.toLowerCase()}.`}
+                {selectedClaim ? `Reference ${claimId(selectedClaim)}` : "Review department activity and manage claims assigned to your approval stage."}
               </p>
             </div>
-
-            <label className="hod-year-select">
-              <span>Financial Year</span>
-              <select defaultValue="2026–2027" aria-label="Financial year">
-                <option value="2026–2027">2026–2027</option>
-                <option value="2025–2026">2025–2026</option>
-                <option value="2024–2025">2024–2025</option>
-              </select>
-            </label>
+            <label className="hod-year-select"><span>Financial Year</span><select defaultValue="2026–2027"><option>2026–2027</option><option>2025–2026</option></select></label>
           </section>
 
-          {activeSection === "Dashboard" ? (
-            <>
-              <section className="hod-kpi-grid">
-                <article className="hod-kpi-card">
-                  <div className="hod-kpi-icon blue"><Users size={23} /></div>
-                  <div className="hod-kpi-copy">
-                    <span>Department Employees</span>
-                    <strong>32</strong>
-                    <small>Total employees in department</small>
-                  </div>
-                  <span className="hod-kpi-trend positive">↗ +6%</span>
-                </article>
+          {error && <div className="hod-alert" role="alert"><XCircle size={17} /> <span>{error}</span><button onClick={() => setError("")} aria-label="Dismiss error"><X size={15} /></button></div>}
+          {notice && <div className="hod-success" role="status"><CheckCircle2 size={17} /> <span>{notice}</span><button onClick={() => setNotice("")} aria-label="Dismiss message"><X size={15} /></button></div>}
 
-                <article className="hod-kpi-card">
-                  <div className="hod-kpi-icon amber"><ClipboardCheck size={23} /></div>
-                  <div className="hod-kpi-copy">
-                    <span>Pending Approvals</span>
-                    <strong>08</strong>
-                    <small>Leave, claims and other requests</small>
-                  </div>
-                  <span className="hod-kpi-trend warning">↗ +2</span>
-                </article>
+          {selectedClaim ? (
+            <section className="hod-review-page">
+              <button className="hod-back" onClick={() => { setSelectedId(""); setRemarks(""); }}><ChevronLeft size={17} /> Back to pending claims</button>
 
-                <article className="hod-kpi-card">
-                  <div className="hod-kpi-icon green"><Wallet size={23} /></div>
-                  <div className="hod-kpi-copy">
-                    <span>Budget Utilization</span>
-                    <strong>68%</strong>
-                    <small>₹4.8 Cr of ₹7.0 Cr utilized</small>
-                    <div className="hod-budget-track"><span /></div>
-                  </div>
-                  <span className="hod-budget-status"><i /> On track</span>
-                </article>
+              <div className="hod-review-hero">
+                <div className="hod-person-avatar">{initials(employeeName(selectedClaim))}</div>
+                <div className="hod-review-title">
+                  <span className="hod-kicker">HOD CLAIM REVIEW</span>
+                  <h2>{employeeName(selectedClaim)}</h2>
+                  <p>{claimId(selectedClaim)} · {pick(selectedClaim.claimType, selectedClaim.type, selectedClaim.category, "Travel claim")}</p>
+                </div>
+                <span className="hod-status pending"><i /> {statusLabel(selectedClaim.status)}</span>
+              </div>
 
-                <article className="hod-kpi-card">
-                  <div className="hod-kpi-icon purple"><FileText size={23} /></div>
-                  <div className="hod-kpi-copy">
-                    <span>Claims to Review</span>
-                    <strong>12</strong>
-                    <small>Department-level claims</small>
-                  </div>
-                  <span className="hod-kpi-trend danger">↗ +4</span>
-                </article>
-              </section>
+              <div className="hod-detail-metrics">
+                <div><span>Claim amount</span><strong>{formatAmount(amountValue(selectedClaim))}</strong></div>
+                <div><span>Submitted on</span><strong>{formatDate(pick(selectedClaim.submittedAt, selectedClaim.createdAt))}</strong></div>
+                <div><span>Approval stage</span><strong>{pick(selectedClaim.currentStage, "HOD")}</strong></div>
+              </div>
 
-              <section className="hod-main-grid">
-                <article className="ad-card hod-card hod-budget-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Financial Overview</span>
-                      <h2>Department Budget &amp; Expenditure</h2>
+              <div className="hod-tabs" role="tablist" aria-label="Claim information">
+                {[["claim", "Claim details"], ["employee", "Employee"], ["documents", "Documents"], ["history", "Approval history"]].map(([value, label]) => (
+                  <button key={value} role="tab" aria-selected={tab === value} className={tab === value ? "active" : ""} onClick={() => setTab(value)}>{label}</button>
+                ))}
+              </div>
+
+              <div className="hod-detail-panel">
+                {tab === "claim" && <>
+                  <h3><FileText size={18} /> Claim information</h3>
+                  <div className="hod-detail-grid">
+                    <DetailField label="Claim reference" value={claimId(selectedClaim)} />
+                    <DetailField label="Claim type" value={pick(selectedClaim.claimType, selectedClaim.type)} />
+                    <DetailField label="Category" value={selectedClaim.category} />
+                    <DetailField label="Purpose" value={pick(selectedClaim.purpose, selectedClaim.purposeOfJourney, selectedClaim.travelPurpose, selectedClaim.projectName)} />
+                    <DetailField label="Journey" value={journey(selectedClaim)} />
+                    <DetailField label="From date" value={formatDate(pick(selectedClaim.fromDate, selectedClaim.travelStartDate, selectedClaim.startDate))} />
+                    <DetailField label="To date" value={formatDate(pick(selectedClaim.toDate, selectedClaim.travelEndDate, selectedClaim.endDate))} />
+                    <DetailField label="Financial year" value={selectedClaim.financialYear} />
+                    <DetailField label="Claimed amount" value={formatAmount(amountValue(selectedClaim))} />
+                    <DetailField label="Employee remarks" value={pick(selectedClaim.employeeRemarks, selectedClaim.remarks, selectedClaim.justification)} />
+                  </div>
+
+                  <h3 className="hod-subsection-title"><Wallet size={18} /> Financial breakdown</h3>
+                  <div className="hod-detail-grid">
+                    <DetailField label="Travel expenses" value={formatAmount(selectedClaim.travelExpenses)} />
+                    <DetailField label="Daily allowance" value={formatAmount(selectedClaim.dailyAllowance)} />
+                    <DetailField label="Accommodation" value={formatAmount(selectedClaim.accommodation)} />
+                    <DetailField label="Other expenses" value={formatAmount(selectedClaim.otherExpenses)} />
+                    <DetailField label="Deductions" value={formatAmount(selectedClaim.deductions)} />
+                  </div>
+                </>}
+
+                {tab === "employee" && <>
+                  <h3><Users size={18} /> Employee information</h3>
+                  <div className="hod-detail-grid">
+                    <DetailField label="Employee name" value={employeeName(selectedClaim)} />
+                    <DetailField label="Employee ID / code" value={employeeCode(selectedClaim)} />
+                    <DetailField label="Designation" value={pick(getEmployee(selectedClaim).designation, selectedClaim.designation)} />
+                    <DetailField label="Department" value={pick(getEmployee(selectedClaim).department, selectedClaim.departmentName, selectedClaim.department)} />
+                    <DetailField label="Office" value={pick(getEmployee(selectedClaim).office, selectedClaim.officeName, selectedClaim.office)} />
+                    <DetailField label="Email" value={pick(getEmployee(selectedClaim).email, selectedClaim.email)} />
+                    <DetailField label="Phone" value={pick(getEmployee(selectedClaim).phone, getEmployee(selectedClaim).mobile, selectedClaim.phone)} />
+                  </div>
+                </>}
+
+                {tab === "documents" && <>
+                  <h3><FolderOpen size={18} /> Supporting documents</h3>
+                  {getDocuments(selectedClaim).length ? (
+                    <div className="hod-document-list">
+                      {getDocuments(selectedClaim).map((doc, index) => {
+                        const url = typeof doc === "string" ? doc : pick(doc.url, doc.fileUrl, doc.path, doc.downloadUrl);
+                        const title = typeof doc === "string" ? doc.split("/").pop() : pick(doc.name, doc.fileName, doc.originalName, `Document ${index + 1}`);
+                        return <div className="hod-document" key={`${title}-${index}`}>
+                          <FileText size={21} />
+                          <div><strong>{title}</strong><span>{typeof doc === "object" ? pick(doc.type, doc.mimeType, "Supporting document") : "Supporting document"}{typeof doc === "object" && doc.uploadedAt ? ` · ${formatDate(doc.uploadedAt)}` : ""}</span></div>
+                          {url && <a href={url} target="_blank" rel="noreferrer" aria-label={`Open ${title}`}><ExternalLink size={16} /></a>}
+                        </div>;
+                      })}
                     </div>
-                    <select
-                      value={period}
-                      onChange={(event) => setPeriod(event.target.value)}
-                      className="hod-period-select"
-                      aria-label="Chart period"
-                    >
-                      <option>Monthly</option>
-                      <option>Quarterly</option>
-                      <option>Yearly</option>
-                    </select>
-                  </div>
+                  ) : <div className="hod-empty"><FolderOpen size={27} /><strong>No supporting documents</strong><span>No documents were returned with this claim.</span></div>}
+                </>}
 
-                  <div className="hod-chart">
-                    <div className="hod-chart-axis">
-                      <span>120</span><span>90</span><span>60</span><span>30</span><span>0</span>
-                    </div>
-                    <div className="hod-chart-plot">
-                      {[...monthlyBudget].map((item) => (
-                        <div className="hod-chart-column" key={item.month}>
-                          <div className="hod-chart-bars">
-                            <span className="hod-chart-bar budget" style={{ height: `${item.budget / 120 * 100}%` }} />
-                            <span className="hod-chart-bar expenditure" style={{ height: `${item.expenditure / 120 * 100}%` }} />
-                          </div>
-                          <span className="hod-chart-month">{item.month}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
+                {tab === "history" && <>
+                  <h3><Clock size={18} /> Approval history</h3>
+                  {getHistory(selectedClaim).length ? <div className="hod-history-list">
+                    {getHistory(selectedClaim).map((entry, index) => <div className="hod-history-item" key={index}>
+                      <span className="hod-history-marker" />
+                      <div><strong>{pick(entry.role, entry.stage, entry.approverRole, "Workflow action")}</strong><span>{pick(entry.action, entry.decision, entry.status, "Update")}</span><p>{pick(entry.remarks, entry.comments, entry.note, "")}</p><small>{pick(entry.reviewerName, entry.approverName, entry.name, "")} {formatDate(pick(entry.timestamp, entry.createdAt, entry.date))}</small></div>
+                    </div>)}
+                  </div> : <div className="hod-empty"><Clock size={27} /><strong>No approval history available</strong><span>The API did not return history entries for this claim.</span></div>}
+                </>}
+              </div>
 
-                  <div className="hod-chart-legend">
-                    <span><i className="budget" /> Budgeted Amount</span>
-                    <span><i className="expenditure" /> Expenditure</span>
-                  </div>
-                  <p className="hod-demo-note">
-                    Illustrative figures only. Actual budget and expenditure data will require API integration.
-                  </p>
-                </article>
+              <div className="hod-decision-panel">
+                <label htmlFor="hod-review-remarks">Review remarks <span>Required for send back or rejection</span></label>
+                <textarea id="hod-review-remarks" value={remarks} onChange={(event) => setRemarks(event.target.value)} placeholder="Enter your review notes or reason for returning the claim..." rows={3} />
+                <div className="hod-decision-actions">
+                  <button className="hod-approve" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "APPROVED")}><Check size={16} /> {busyId ? "Saving..." : "Approve claim"}</button>
+                  <button className="hod-return" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "SENT_BACK")}>Send back for correction</button>
+                  <button className="hod-reject" disabled={Boolean(busyId)} onClick={() => submitDecision(selectedClaim, "REJECTED")}><XCircle size={16} /> Reject claim</button>
+                </div>
+              </div>
+            </section>
+          ) : activeSection === "Claims Approval" ? (
+            <section className="hod-claims-page">
+              <div className="hod-claims-heading">
+                <div><span className="hod-kicker">DEPARTMENT FINANCIAL CONTROL</span><h2>Claims requiring your attention</h2><p>Open a claim to inspect the submitted information and record your decision.</p></div>
+                <button className="hod-refresh" onClick={fetchClaims} disabled={loading}><RefreshCw size={16} /> {loading ? "Refreshing..." : "Refresh"}</button>
+              </div>
 
-                <article className="ad-card hod-card hod-approval-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Action Required</span>
-                      <h2>Approval Summary</h2>
-                    </div>
-                    <ShieldCheck size={20} />
-                  </div>
+              <button className="hod-clickable-summary" onClick={() => { setStatusFilter("ALL"); setSearch(""); }}>
+                <span className="hod-summary-icon"><ClipboardCheck size={23} /></span>
+                <span><small>Claims awaiting your review</small><strong>{loading ? "…" : claims.length}</strong></span>
+                <span className="hod-queue-pill"><i /> HOD approval queue</span>
+              </button>
 
-                  <div className="hod-approval-list">
-                    {approvalItems.map(({ label, detail, count, section, icon: Icon, tone }) => (
-                      <div className="hod-approval-row" key={label}>
-                        <span className={`hod-approval-icon ${tone}`}><Icon size={20} /></span>
-                        <div className="hod-approval-copy">
-                          <strong>{label}</strong>
-                          <small>{detail}</small>
-                        </div>
-                        <b>{count}</b>
-                        <button type="button" onClick={() => openSection(section)}>Review</button>
-                      </div>
-                    ))}
-                  </div>
-                </article>
-              </section>
+              <div className="hod-list-toolbar">
+                <label><Search size={16} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by employee, code, route or claim reference" /></label>
+                <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter claim status"><option value="ALL">All statuses</option><option value="PENDING_HOD">Pending HOD</option></select>
+              </div>
 
-              <section className="hod-lower-grid">
-                <article className="ad-card hod-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Recent Department Requests</span>
-                      <h2>Requests &amp; Claims</h2>
-                    </div>
-                    <button type="button" className="hod-link-button" onClick={() => openSection("Leave & Requests")}>
-                      View all <ChevronRight size={15} />
-                    </button>
-                  </div>
+              {loading ? <div className="hod-empty"><span className="hod-spinner" /><strong>Loading claims</strong><span>Retrieving claims from the HOD queue…</span></div> :
+                filteredClaims.length === 0 ? <div className="hod-empty"><ClipboardCheck size={29} /><strong>{error ? "Unable to load claims" : "No pending claims found"}</strong><span>{error || "There are no claims matching your search in the HOD queue."}</span>{error && <button className="hod-refresh" onClick={fetchClaims}>Try again</button>}</div> :
+                <div className="hod-claim-list">{filteredClaims.map((claim) => <button className="hod-claim-row" key={claimId(claim)} onClick={() => { setSelectedId(claimId(claim)); setTab("claim"); setRemarks(""); setError(""); }}>
+                  <span className="hod-person-avatar">{initials(employeeName(claim))}</span>
+                  <span className="hod-claim-main"><strong>{employeeName(claim)}</strong><small>{employeeCode(claim)} · {claimId(claim)}</small><span>{journey(claim)}</span></span>
+                  <span className="hod-claim-route"><small>CLAIM TYPE</small><strong>{pick(claim.claimType, claim.type, claim.category, "Travel claim")}</strong><small>Submitted {formatDate(pick(claim.submittedAt, claim.createdAt))}</small></span>
+                  <span className="hod-claim-money"><small>CLAIM AMOUNT</small><strong>{formatAmount(amountValue(claim))}</strong><span className="hod-status pending">{statusLabel(claim.status)}</span></span>
+                  <ChevronRight size={18} />
+                </button>)}</div>
+              }
+            </section>
+          ) : (
+            <section className="hod-dashboard-placeholder">
+              <div className="hod-summary-icon"><ShieldCheck size={25} /></div>
+              <h2>{activeSection}</h2>
+              <p>This workspace remains available in your existing application. Claim approval is managed in the dedicated HOD queue.</p>
+              <button className="hod-refresh" onClick={openClaims}>Open claim approvals <ChevronRight size={16} /></button>
+            </section>
+          )}
 
-                  <div className="hod-table-wrap">
-                    <table className="hod-table">
-                      <thead>
-                        <tr>
-                          <th>Request ID</th><th>Employee</th><th>Type</th><th>Date</th><th>Status</th><th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {filteredRequests.map((item) => (
-                          <tr key={item.id}>
-                            <td>{item.id}</td>
-                            <td>{item.employee}</td>
-                            <td>{item.type}</td>
-                            <td>{item.date}</td>
-                            <td><span className={`hod-status ${item.status.toLowerCase()}`}>{item.status}</span></td>
-                            <td>
-                              <button type="button" className="hod-table-action" onClick={() => openSection(item.section)}>
-                                {item.status === "Approved" ? "View" : "Review"}
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                        {filteredRequests.length === 0 && (
-                          <tr><td colSpan={6} className="hod-empty">No matching requests found.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
-                  </div>
-                </article>
-
-                <article className="ad-card hod-card">
-                  <div className="ad-card-header">
-                    <div>
-                      <span className="ad-card-eyebrow">Department Highlights</span>
-                      <h2>At a Glance</h2>
-                    </div>
-                  </div>
-
-                  <div className="hod-highlight-grid">
-                    <button type="button" onClick={() => openSection("Department Management")}>
-                      <span className="hod-highlight-icon amber"><Building2 size={22} /></span>
-                      <span><strong>02</strong><small>Offices under department</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" onClick={() => openSection("Department Management")}>
-                      <span className="hod-highlight-icon blue"><Users size={22} /></span>
-                      <span><strong>32</strong><small>Total department employees</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" onClick={() => openSection("Budget & Financial Oversight")}>
-                      <span className="hod-highlight-icon green"><ChartColumnIncreasing size={22} /></span>
-                      <span><strong>₹4.8 Cr</strong><small>Total expenditure (YTD)</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                    <button type="button" onClick={() => openSection("Reports")}>
-                      <span className="hod-highlight-icon purple"><FileText size={22} /></span>
-                      <span><strong>25</strong><small>Reports generated</small></span>
-                      <ChevronRight size={16} />
-                    </button>
-                  </div>
-                </article>
-              </section>
-            </>
-          
-) : activeSection === "Claims Approval" ? (
-  <section className="ad-card hod-card" style={{ padding: 24 }}>
-    <div
-      className="ad-card-header"
-      style={{ marginBottom: 20, gap: 12, flexWrap: "wrap" }}
-    >
-      <div>
-        <span className="ad-card-eyebrow">Employee Travel Claims</span>
-        <h2>Pending TA Approvals</h2>
-        <p>
-          Review travel allowance claims submitted to the Head of Department.
-        </p>
-      </div>
-
-      <button
-        type="button"
-        className="hod-back-button"
-        onClick={fetchPendingTAClaims}
-        disabled={claimsLoading}
-      >
-        {claimsLoading ? "Refreshing..." : "Refresh claims"}
-      </button>
-    </div>
-
-    {claimsError && (
-      <div role="alert" style={{ color: "#b42318", marginBottom: 16 }}>
-        {claimsError}
-      </div>
-    )}
-
-    {claimActionError && (
-      <div role="alert" style={{ color: "#b42318", marginBottom: 16 }}>
-        {claimActionError}
-      </div>
-    )}
-
-    {claimsLoading ? (
-      <p>Loading pending TA claims...</p>
-    ) : claimsError ? (
-      <p>Unable to load claims. Check the server and try again.</p>
-    ) : taClaims.length === 0 ? (
-      <div className="hod-placeholder">
-        <div className="hod-placeholder-icon">
-          <ClipboardCheck size={26} />
-        </div>
-        <h2>No pending TA claims</h2>
-        <p>
-          There are currently no claims awaiting HOD approval.
-          Newly submitted claims will appear here when their status is
-          PENDING_HOD.
-        </p>
-      </div>
-    ) : (
-      <div className="hod-table-wrap">
-        <table className="hod-table">
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Employee Code</th>
-              <th>Journey</th>
-              <th>Travel Dates</th>
-              <th>Amount</th>
-              <th>Submitted</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-
-          <tbody>
-            {taClaims.map((claim) => {
-              const employee =
-                claim.employeeId && typeof claim.employeeId === "object"
-                  ? claim.employeeId
-                  : {};
-
-              const employeeName =
-                claim.employeeName || employee.name || "Unknown employee";
-
-              const total =
-                claim.netAmount ?? claim.grossAmount ?? claim.fare ?? 0;
-
-              return (
-                <tr key={claim._id}>
-                  <td>{employeeName}</td>
-                  <td>
-                    {claim.employeeCode ||
-                      claim.employeeNumber ||
-                      employee.employeeCode ||
-                      "—"}
-                  </td>
-                  <td>
-                    <strong>{claim.fromPlace || "—"}</strong>
-                    {" → "}
-                    <strong>{claim.toPlace || "—"}</strong>
-                    <div>{claim.projectName || claim.purposeOfJourney || "TA Claim"}</div>
-                  </td>
-                  <td>
-                    {claim.fromDate
-                      ? new Date(claim.fromDate).toLocaleDateString()
-                      : "—"}
-                    {" – "}
-                    {claim.toDate
-                      ? new Date(claim.toDate).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td>
-                    {Number(total).toLocaleString("en-IN", {
-                      style: "currency",
-                      currency: "INR",
-                      maximumFractionDigits: 2,
-                    })}
-                  </td>
-                  <td>
-                    {claim.submittedAt
-                      ? new Date(claim.submittedAt).toLocaleDateString()
-                      : "—"}
-                  </td>
-                  <td>
-                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        className="hod-table-action"
-                        disabled={processingClaimId === claim._id}
-                        onClick={() =>
-                          handleTAClaimAction(claim, "APPROVED")
-                        }
-                      >
-                        {processingClaimId === claim._id
-                          ? "Processing..."
-                          : "Approve"}
-                      </button>
-
-                      <button
-                        type="button"
-                        className="hod-table-action"
-                        disabled={Boolean(processingClaimId)}
-                        onClick={() =>
-                          handleTAClaimAction(claim, "SENT_BACK")
-                        }
-                      >
-                        Send back
-                      </button>
-
-                      <button
-                        type="button"
-                        className="hod-table-action"
-                        disabled={Boolean(processingClaimId)}
-                        onClick={() =>
-                          handleTAClaimAction(claim, "REJECTED")
-                        }
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    )}
-  </section>
-) : (
-  <section className="ad-card hod-card hod-placeholder">
-    <div className="hod-placeholder-icon">
-      <FolderOpen size={26} />
-    </div>
-    <h2>{activeSection}</h2>
-    <p>
-      This workspace is prepared for the Head of Department role.
-      Detailed workflows and live records will be connected in a later
-      integration step.
-    </p>
-    <p className="hod-demo-note">
-      Preview only — no financial records or approval decisions are changed by this screen.
-    </p>
-    <button
-      type="button"
-      className="hod-back-button"
-      onClick={() => openSection("Dashboard")}
-    >
-      Back to dashboard
-    </button>
-  </section>
-)}
-
-            
-          
-
-          <footer className="hod-footer">
-            <span>Government Finance Management System</span>
-            <span>Head of Department Workspace · UI preview</span>
-          </footer>
+          <footer className="hod-footer"><span>Government Finance Management System</span><span>Head of Department Workspace</span></footer>
         </div>
       </main>
     </div>

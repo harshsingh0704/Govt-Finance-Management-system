@@ -24,6 +24,14 @@ userId: {
       trim: true,
     },
 
+    // Mass Entry profile fields. Login accounts remain separate.
+    name: { type: String, trim: true },
+    email: { type: String, trim: true, lowercase: true },
+    payband: { type: String, trim: true },
+    isSupervisor: { type: Boolean, default: false },
+    supervisorPosition: { type: String, trim: true },
+    reportingSupervisor: { type: String, trim: true },
+
     // 1. Personal Profile Fields
     dob: {
       type: Date,
@@ -92,19 +100,7 @@ userId: {
 
     // Functional responsibility within the department.
     // Separate from User.role, which controls system access.
-    functionalAssignment: {
-      type: String,
-      enum: [
-        "Employee",
-        "Head of Office",
-        "Head of Department",
-        "Finance Officer",
-        "Finance Clerk",
-        "IT Cell In-charge",
-      ],
-      default: "Employee",
-      trim: true,
-    },
+    functionalAssignment: { type: String, default: "Employee", trim: true },
 
     cadreCategory: {
       type: String,

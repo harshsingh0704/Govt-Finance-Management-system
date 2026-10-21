@@ -425,8 +425,7 @@ setErrors(nextErrors);
   };
 
   const handleBulkImport = async () => {
-    setExcelError("The current /api/employees/bulk-import endpoint does not save all 16 Individual Entry fields. The sheet is validated and previewed, but import is paused to prevent reporting, role, payband, lab, or deputation data from being silently discarded. The backend import contract must support these fields before full import can be enabled.");
-    return;
+
 
     if (!excelFile || !excelRows.length) {
       setExcelError("Choose a valid Excel file before importing.");

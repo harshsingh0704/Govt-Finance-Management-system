@@ -1,2 +1,24 @@
 
 *.pdf
+
+# Local dependencies and generated build output
+node_modules/
+client/node_modules/
+client/dist/
+client/dist-ssr/
+# Local backup snapshots and temporary patch helpers
+backups/
+*.backup-*
+*.backup
+*.bak
+*.old
+*.tmp
+*.backup-css-import
+connect_employee_*.py
+create_employee_*.py
+patch_employee_*.py
+patch_finance_sidebar*.py
+patch_ta_*.py
+fix_finance_sidebar*.py
+fix_ta_*.py
+verify_ta_advance.py

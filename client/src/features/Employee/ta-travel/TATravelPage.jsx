@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from "react";
-import taTravelService from "./services/taTravelService.js";
 import {
   CalendarDays,
   CheckCircle2,
@@ -51,9 +50,6 @@ const INITIAL_FORM = {
   otherExpenses: "",
   advanceAmountRequested: "",
   remarks: "",
-  fromPlace: "",
-toPlace: "",
-declaration: false,
 };
 
 const INITIAL_DOCUMENTS = {
@@ -68,9 +64,6 @@ function TATravelPage() {
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-const [submitMessage, setSubmitMessage] = useState("");
-const [submitError, setSubmitError] = useState("");
 
   const today = useMemo(() => getToday(), []);
 
@@ -156,8 +149,6 @@ const [submitError, setSubmitError] = useState("");
       advanceAmountRequested: "Advance Amount Requested",
 
       remarks: "Remarks",
-      fromPlace: "From Place",
-toPlace: "To Place",
     };
 
     Object.entries(requiredFields).forEach(([field, label]) => {
@@ -204,76 +195,35 @@ toPlace: "To Place",
     return nextErrors;
   };
 
+  const handleSubmit = (event) => {
+    event.preventDefault();
 
+    const validationErrors = validate();
 
-const handleSubmit = async (event) => {
-  event.preventDefault();
-
-  setSubmitMessage("");
-  setSubmitError("");
-
-  const validationErrors = validate();
-
-  if (!form.declaration) {
-    validationErrors.declaration = "Please accept the declaration";
-  }
-
-  if (Object.keys(validationErrors).length > 0) {
-    setErrors(validationErrors);
-    return;
-  }
-
-  setIsSubmitting(true);
-
-  try {
-    const payload = {
-      ...form,
-      pay: Number(form.pay),
-      travelFare: Number(form.travelFare),
-      dailyAllowance: Number(form.dailyAllowance),
-      accommodation: Number(form.accommodation),
-      otherExpenses: Number(form.otherExpenses),
-      advanceAmountRequested: Number(form.advanceAmountRequested),
-      declaration: true,
-    };
-
-    const response = await taTravelService.submitClaim(payload);
-    const savedClaim = response.claim;
-
-    if (!savedClaim) {
-      throw new Error("The server did not return the saved claim.");
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
     }
 
-    setRecords((previous) => [
-      {
-        ...form,
-        ...savedClaim,
-        id: savedClaim._id,
-        totalClaimAmount:
-          Number(savedClaim.grossAmount ?? totalClaimAmount),
-        createdDate: today,
+    const newRecord = {
+      ...form,
+      id: `${Date.now()}`,
+      createdDate: today,
+      totalClaimAmount,
+      documents: {
+        approvalDocument: documents.approvalDocument?.name || "",
+        ticket: documents.ticket?.name || "",
+        hotelReceipt: documents.hotelReceipt?.name || "",
+        otherDocuments: documents.otherDocuments?.name || "",
       },
-      ...previous,
-    ]);
+    };
 
-    setSubmitMessage(
-      response.message || "TA claim submitted successfully."
-    );
+    setRecords((previous) => [newRecord, ...previous]);
 
     setForm(INITIAL_FORM);
     setDocuments(INITIAL_DOCUMENTS);
     setErrors({});
-  } catch (error) {
-    setSubmitError(error.message || "Failed to submit TA claim.");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
-
-   
-
-
+  };
 
   const handleReset = () => {
     setForm(INITIAL_FORM);
@@ -282,13 +232,18 @@ const handleSubmit = async (event) => {
   };
 
   return (
-    <div className="ta-page">
+    <div className="fms-ta-modal-backdrop">
+      <section className="fms-ta-modal" role="dialog" aria-modal="true" aria-label="TA and Travel form">
+        <div className="fms-ta-modal-topbar">
+          <span>Employee Services / TA &amp; Travel</span>
+          <button type="button" className="fms-ta-modal-close" aria-label="Close TA and Travel form" onClick={() => window.dispatchEvent(new Event("fms:close-ta-travel"))}>×</button>
+        </div>
+        <div className="ta-page">
       {/* PAGE HEADER */}
       <div className="ta-page-header">
         <div>
           <div className="ta-breadcrumb">
-            Admin <span>/</span> Services <span>/</span> TA{" "}
-            <span>/</span> TA Travel
+            Employee <span>/</span> Services <span>/</span> TA &amp; Travel
           </div>
 
           <div className="ta-title-row">
@@ -297,10 +252,9 @@ const handleSubmit = async (event) => {
             </div>
 
             <div>
-              <h1>TA Travel</h1>
+              <h1>TA &amp; Travel Claim</h1>
               <p>
-                Submit and manage employee travel allowance advance
-                requests.
+                Complete your official journey details and travel allowance claim.
               </p>
             </div>
           </div>
@@ -453,21 +407,6 @@ const handleSubmit = async (event) => {
               error={errors.projectName}
               placeholder="Enter project name"
             />
-            <Field
-  label="From Place"
-  value={form.fromPlace}
-  onChange={(value) => handleChange("fromPlace", value)}
-  error={errors.fromPlace}
-  placeholder="Enter journey origin"
-/>
-
-<Field
-  label="To Place"
-  value={form.toPlace}
-  onChange={(value) => handleChange("toPlace", value)}
-  error={errors.toPlace}
-  placeholder="Enter journey destination"
-/>
 
             <Field
               label="From Date"
@@ -752,21 +691,6 @@ const handleSubmit = async (event) => {
         {/* =====================================================
             7. DECLARATION
         ====================================================== */}
-        {submitMessage && (
-  <p role="status" className="ta-success-message">
-    {submitMessage}
-  </p>
-)}
-
-{submitError && (
-  <p role="alert" className="ta-error">
-    {submitError}
-  </p>
-)}
-
-<div className="ta-form-actions">
-  {/* Keep your existing Reset and Submit buttons here */}
-</div>
         <section className="ta-card">
           <SectionHeading
             icon={<CheckCircle2 size={18} />}
@@ -810,7 +734,6 @@ const handleSubmit = async (event) => {
             ACTIONS
         ====================================================== */}
         <div className="ta-form-actions">
-   
           <button
             type="button"
             className="ta-secondary-button"
@@ -820,14 +743,13 @@ const handleSubmit = async (event) => {
             Reset
           </button>
 
-       <button
-  type="submit"
-  className="ta-primary-button"
-  disabled={isSubmitting}
->
-  <Save size={17} />
-  {isSubmitting ? "Submitting..." : "Submit TA Advance"}
-</button>
+          <button
+            type="submit"
+            className="ta-primary-button"
+          >
+            <Save size={17} />
+            Submit TA Advance
+          </button>
         </div>
       </form>
 
@@ -947,6 +869,8 @@ const handleSubmit = async (event) => {
             </table>
           </div>
         )}
+      </section>
+    </div>
       </section>
     </div>
   );

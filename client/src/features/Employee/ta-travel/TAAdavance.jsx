@@ -1,52 +1,37 @@
+
 import React, { useMemo, useState } from "react";
 import {
-  X,
   Plane,
   ShieldCheck,
   User,
   CalendarDays,
-  FileText,
   IndianRupee,
   Upload,
   RotateCcw,
   Send,
+  X,
   ChevronRight,
 } from "lucide-react";
-import "./TAAdvanceModal.css";
+import "./TAAdavance.css";
 
-const employees = [
-  {
-    id: "EMP-001",
-    name: "Employee 001",
-    designation: "Accounts Officer",
-    department: "Finance",
-    office: "Finance Department",
-  },
-  {
-    id: "EMP-002",
-    name: "Employee 002",
-    designation: "Senior Accountant",
-    department: "Accounts",
-    office: "Accounts Department",
-  },
-  {
-    id: "EMP-003",
-    name: "Employee 003",
-    designation: "Finance Assistant",
-    department: "Finance",
-    office: "Finance Department",
-  },
-];
+const INITIAL_FORM = {
+  employeeId: "",
+  employeeName: "",
+  designation: "",
+  department: "",
+  purpose: "",
+  destination: "",
+  travelMode: "",
+  fromDate: "",
+  toDate: "",
+  estimatedTravelExpense: "",
+  dailyAllowance: "",
+  otherExpenses: "",
+  advanceRequested: "",
+  declaration: false,
+};
 
-const steps = [
-  "Employee Information",
-  "TA Advance Details",
-  "Financial Details",
-  "Documents",
-  "Review",
-];
-
-const travelModes = [
+const TRAVEL_MODES = [
   "Air",
   "Train",
   "Bus",
@@ -55,136 +40,134 @@ const travelModes = [
   "Other",
 ];
 
-function TAAdvanceModal({ isOpen, onClose }) {
-  const [selectedEmployeeId, setSelectedEmployeeId] = useState("");
-  const [formData, setFormData] = useState({
-    purpose: "",
-    destination: "",
-    travelMode: "",
-    fromDate: "",
-    toDate: "",
-    estimatedTravelExpense: "",
-    dailyAllowance: "",
-    otherExpenses: "",
-    advanceRequested: "",
-    supportingDocument: null,
-    declaration: false,
-  });
-
-  const selectedEmployee = useMemo(
-    () =>
-      employees.find(
-        (employee) => employee.id === selectedEmployeeId
-      ) || null,
-    [selectedEmployeeId]
-  );
+function TAAdvance({ onClose = () => {} }) {
+  const [form, setForm] = useState(INITIAL_FORM);
+  const [document, setDocument] = useState(null);
+  const [errors, setErrors] = useState({});
+  const [submitted, setSubmitted] = useState(false);
 
   const totalAmount = useMemo(() => {
-    const values = [
-      formData.estimatedTravelExpense,
-      formData.dailyAllowance,
-      formData.otherExpenses,
-    ];
-
-    return values.reduce((total, value) => {
+    return [
+      form.estimatedTravelExpense,
+      form.dailyAllowance,
+      form.otherExpenses,
+    ].reduce((total, value) => {
       const amount = Number(value);
       return total + (Number.isFinite(amount) ? amount : 0);
     }, 0);
   }, [
-    formData.estimatedTravelExpense,
-    formData.dailyAllowance,
-    formData.otherExpenses,
+    form.estimatedTravelExpense,
+    form.dailyAllowance,
+    form.otherExpenses,
   ]);
 
-  if (!isOpen) {
-    return null;
-  }
+  const updateField = (event) => {
+    const { name, value, checked, type } = event.target;
 
-  const handleChange = (event) => {
-    const { name, value, type, checked } = event.target;
-
-    setFormData((previous) => ({
+    setForm((previous) => ({
       ...previous,
       [name]: type === "checkbox" ? checked : value,
     }));
-  };
 
-  const handleEmployeeChange = (event) => {
-    setSelectedEmployeeId(event.target.value);
-  };
-
-  const handleDocumentChange = (event) => {
-    const file = event.target.files?.[0] || null;
-
-    setFormData((previous) => ({
+    setErrors((previous) => ({
       ...previous,
-      supportingDocument: file,
+      [name]: "",
     }));
   };
 
   const handleReset = () => {
-    setSelectedEmployeeId("");
+    setForm(INITIAL_FORM);
+    setDocument(null);
+    setErrors({});
+    setSubmitted(false);
+  };
 
-    setFormData({
-      purpose: "",
-      destination: "",
-      travelMode: "",
-      fromDate: "",
-      toDate: "",
-      estimatedTravelExpense: "",
-      dailyAllowance: "",
-      otherExpenses: "",
-      advanceRequested: "",
-      supportingDocument: null,
-      declaration: false,
-    });
+  const validateForm = () => {
+    const nextErrors = {};
+
+    if (!form.employeeId.trim()) {
+      nextErrors.employeeId = "Employee ID is required.";
+    }
+
+    if (!form.employeeName.trim()) {
+      nextErrors.employeeName = "Employee name is required.";
+    }
+
+    if (!form.purpose.trim()) {
+      nextErrors.purpose = "Purpose of travel is required.";
+    }
+
+    if (!form.destination.trim()) {
+      nextErrors.destination = "Destination is required.";
+    }
+
+    if (!form.travelMode) {
+      nextErrors.travelMode = "Select a travel mode.";
+    }
+
+    if (!form.fromDate) {
+      nextErrors.fromDate = "Select the travel start date.";
+    }
+
+    if (!form.toDate) {
+      nextErrors.toDate = "Select the travel end date.";
+    }
+
+    if (
+      form.fromDate &&
+      form.toDate &&
+      form.toDate < form.fromDate
+    ) {
+      nextErrors.toDate = "End date cannot be before start date.";
+    }
+
+    if (
+      form.advanceRequested !== "" &&
+      Number(form.advanceRequested) < 0
+    ) {
+      nextErrors.advanceRequested = "Amount cannot be negative.";
+    }
+
+    if (!form.declaration) {
+      nextErrors.declaration =
+        "Please accept the declaration before submitting.";
+    }
+
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
-    if (!selectedEmployee) {
-      window.alert("Please select an employee.");
+    if (!validateForm()) {
       return;
     }
 
-    if (!formData.declaration) {
-      window.alert(
-        "Please confirm the declaration before submitting the application."
-      );
-      return;
-    }
-
-    console.log("TA Advance Application:", {
-      employee: selectedEmployee,
-      ...formData,
+    const application = {
+      ...form,
       totalAmount,
-    });
+      supportingDocument: document,
+      submittedAt: new Date().toISOString(),
+    };
 
-    window.alert("TA Advance application submitted successfully.");
-    onClose();
+    console.log("TA Advance Application:", application);
+    setSubmitted(true);
   };
 
   return (
-    <div className="ta-advance-overlay" onMouseDown={onClose}>
-      <div
-        className="ta-advance-modal"
-        onMouseDown={(event) => event.stopPropagation()}
-      >
-        {/* =====================================================
-            HEADER
-        ====================================================== */}
-        <div className="ta-advance-header">
+    <div className="employee-ta-advance-page">
+      <div className="ta-advance-modal">
+        <header className="ta-advance-header">
           <div className="ta-advance-header-left">
             <div className="ta-advance-header-icon">
-              <Plane size={21} strokeWidth={2.2} />
+              <Plane size={22} />
             </div>
 
             <div>
               <div className="ta-advance-eyebrow">
                 TA &amp; TRAVEL
               </div>
-
               <h2>TA Advance Application</h2>
             </div>
           </div>
@@ -193,513 +176,485 @@ function TAAdvanceModal({ isOpen, onClose }) {
             type="button"
             className="ta-advance-close"
             onClick={onClose}
-            aria-label="Close TA Advance form"
+            aria-label="Close form"
           >
-            <X size={21} />
+            <X size={20} />
           </button>
-        </div>
+        </header>
 
-        {/* =====================================================
-            STEPPER
-        ====================================================== */}
         <div className="ta-advance-stepper">
-          {steps.map((step, index) => {
-            const stepNumber = index + 1;
-
-            return (
-              <React.Fragment key={step}>
-                <div
-                  className={`ta-advance-step ${
-                    index === 0 ? "active" : ""
-                  }`}
-                >
-                  <span className="ta-advance-step-number">
-                    {stepNumber}
-                  </span>
-
-                  <span className="ta-advance-step-label">
-                    {step}
-                  </span>
-                </div>
-
-                {index < steps.length - 1 && (
-                  <div className="ta-advance-step-line" />
-                )}
-              </React.Fragment>
-            );
-          })}
-        </div>
-
-        {/* =====================================================
-            FORM
-        ====================================================== */}
-        <form
-          className="ta-advance-form"
-          onSubmit={handleSubmit}
-        >
-          <div className="ta-advance-form-content">
-            {/* =================================================
-                FORM TITLE
-            ================================================== */}
-            <div className="ta-advance-intro">
-              <div className="ta-advance-step-caption">
-                TA ADVANCE
+          {[
+            "Employee Information",
+            "TA Advance Details",
+            "Financial Details",
+            "Documents",
+            "Review",
+          ].map((step, index) => (
+            <React.Fragment key={step}>
+              <div
+                className={`ta-advance-step ${
+                  index === 0 ? "active" : ""
+                }`}
+              >
+                <span className="ta-advance-step-number">
+                  {index + 1}
+                </span>
+                <span className="ta-advance-step-label">
+                  {step}
+                </span>
               </div>
 
-              <h1>Apply for advance related to official travel</h1>
+              {index < 4 && (
+                <div className="ta-advance-step-line" />
+              )}
+            </React.Fragment>
+          ))}
+        </div>
 
-              <p>
-                Provide the employee, travel and financial details
-                required for the TA advance request.
-              </p>
+        {submitted ? (
+          <div className="ta-advance-success">
+            <div className="ta-success-icon">
+              <ShieldCheck size={34} />
             </div>
 
-            {/* =================================================
-                EMPLOYEE INFORMATION
-            ================================================== */}
-            <section className="ta-form-section">
-              <div className="ta-form-section-heading">
-                <div className="ta-form-section-number">01</div>
+            <h2>Application Ready</h2>
+            <p>
+              Your TA Advance form has passed the local form
+              validation.
+            </p>
+            <p className="ta-success-note">
+              This screen does not save the application to the
+              server. Backend submission is not configured here.
+            </p>
 
-                <div>
-                  <h3>Employee Information</h3>
-                  <p>
-                    Select the employee and verify the official
-                    information for this application.
-                  </p>
+            <button
+              type="button"
+              className="ta-primary-button"
+              onClick={handleReset}
+            >
+              Submit Another Application
+            </button>
+          </div>
+        ) : (
+          <form
+            className="ta-advance-form"
+            onSubmit={handleSubmit}
+            noValidate
+          >
+            <div className="ta-advance-form-content">
+              <div className="ta-advance-intro">
+                <div className="ta-advance-step-caption">
+                  TA ADVANCE
                 </div>
+
+                <h1>Apply for advance related to official travel</h1>
+
+                <p>
+                  Provide your employee, travel and financial
+                  details for the TA advance request.
+                </p>
               </div>
 
-              <div className="ta-info-banner">
-                <div className="ta-info-banner-icon">
-                  <ShieldCheck size={19} />
+              <section className="ta-form-section">
+                <div className="ta-form-section-heading">
+                  <div className="ta-form-section-number">01</div>
+                  <div>
+                    <h3>Employee Information</h3>
+                    <p>
+                      Enter your official employee information.
+                    </p>
+                  </div>
                 </div>
 
-                <div>
-                  <strong>Organization-managed information</strong>
-                  <span>
-                    Employee details are populated from the official
-                    employee record.
-                  </span>
+                <div className="ta-info-banner">
+                  <ShieldCheck size={20} />
+                  <div>
+                    <strong>Employee information</strong>
+                    <span>
+                      Enter the details associated with your
+                      official employee record.
+                    </span>
+                  </div>
                 </div>
-              </div>
 
-              <div className="ta-form-grid ta-form-grid-two">
-                <div className="ta-field">
-                  <label htmlFor="ta-employee">
-                    Employee <span>*</span>
-                  </label>
+                <div className="ta-form-grid">
+                  <div className="ta-field">
+                    <label htmlFor="ta-employee-id">
+                      Employee ID <span>*</span>
+                    </label>
+                    <div className="ta-input-with-icon">
+                      <User size={18} />
+                      <input
+                        id="ta-employee-id"
+                        name="employeeId"
+                        value={form.employeeId}
+                        onChange={updateField}
+                        placeholder="Enter employee ID"
+                      />
+                    </div>
+                    {errors.employeeId && (
+                      <small className="ta-error">
+                        {errors.employeeId}
+                      </small>
+                    )}
+                  </div>
 
-                  <div className="ta-input-with-icon">
-                    <User size={18} />
+                  <div className="ta-field">
+                    <label htmlFor="ta-employee-name">
+                      Employee Name <span>*</span>
+                    </label>
+                    <input
+                      id="ta-employee-name"
+                      name="employeeName"
+                      value={form.employeeName}
+                      onChange={updateField}
+                      placeholder="Enter full name"
+                    />
+                    {errors.employeeName && (
+                      <small className="ta-error">
+                        {errors.employeeName}
+                      </small>
+                    )}
+                  </div>
 
+                  <div className="ta-field">
+                    <label htmlFor="ta-designation">
+                      Designation
+                    </label>
+                    <input
+                      id="ta-designation"
+                      name="designation"
+                      value={form.designation}
+                      onChange={updateField}
+                      placeholder="Enter designation"
+                    />
+                  </div>
+
+                  <div className="ta-field">
+                    <label htmlFor="ta-department">
+                      Department / Office
+                    </label>
+                    <input
+                      id="ta-department"
+                      name="department"
+                      value={form.department}
+                      onChange={updateField}
+                      placeholder="Enter department or office"
+                    />
+                  </div>
+                </div>
+              </section>
+
+              <section className="ta-form-section">
+                <div className="ta-form-section-heading">
+                  <div className="ta-form-section-number">02</div>
+                  <div>
+                    <h3>TA Advance Details</h3>
+                    <p>
+                      Provide the purpose and official travel
+                      schedule.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="ta-form-grid">
+                  <div className="ta-field ta-field-full">
+                    <label htmlFor="ta-purpose">
+                      Purpose / Reason <span>*</span>
+                    </label>
+                    <textarea
+                      id="ta-purpose"
+                      name="purpose"
+                      value={form.purpose}
+                      onChange={updateField}
+                      placeholder="Enter the purpose of official travel"
+                      rows={3}
+                    />
+                    {errors.purpose && (
+                      <small className="ta-error">
+                        {errors.purpose}
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="ta-field">
+                    <label htmlFor="ta-destination">
+                      Destination <span>*</span>
+                    </label>
+                    <input
+                      id="ta-destination"
+                      name="destination"
+                      value={form.destination}
+                      onChange={updateField}
+                      placeholder="Enter destination"
+                    />
+                    {errors.destination && (
+                      <small className="ta-error">
+                        {errors.destination}
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="ta-field">
+                    <label htmlFor="ta-travel-mode">
+                      Travel Mode <span>*</span>
+                    </label>
                     <select
-                      id="ta-employee"
-                      value={selectedEmployeeId}
-                      onChange={handleEmployeeChange}
-                      required
+                      id="ta-travel-mode"
+                      name="travelMode"
+                      value={form.travelMode}
+                      onChange={updateField}
                     >
-                      <option value="">Select Employee</option>
-
-                      {employees.map((employee) => (
-                        <option
-                          key={employee.id}
-                          value={employee.id}
-                        >
-                          {employee.id} — {employee.name}
+                      <option value="">Select travel mode</option>
+                      {TRAVEL_MODES.map((mode) => (
+                        <option key={mode} value={mode}>
+                          {mode}
                         </option>
                       ))}
                     </select>
+                    {errors.travelMode && (
+                      <small className="ta-error">
+                        {errors.travelMode}
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="ta-field">
+                    <label htmlFor="ta-from-date">
+                      From Date <span>*</span>
+                    </label>
+                    <div className="ta-input-with-icon">
+                      <CalendarDays size={18} />
+                      <input
+                        id="ta-from-date"
+                        name="fromDate"
+                        type="date"
+                        value={form.fromDate}
+                        onChange={updateField}
+                      />
+                    </div>
+                    {errors.fromDate && (
+                      <small className="ta-error">
+                        {errors.fromDate}
+                      </small>
+                    )}
+                  </div>
+
+                  <div className="ta-field">
+                    <label htmlFor="ta-to-date">
+                      To Date <span>*</span>
+                    </label>
+                    <div className="ta-input-with-icon">
+                      <CalendarDays size={18} />
+                      <input
+                        id="ta-to-date"
+                        name="toDate"
+                        type="date"
+                        value={form.toDate}
+                        onChange={updateField}
+                      />
+                    </div>
+                    {errors.toDate && (
+                      <small className="ta-error">
+                        {errors.toDate}
+                      </small>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              <section className="ta-form-section">
+                <div className="ta-form-section-heading">
+                  <div className="ta-form-section-number">03</div>
+                  <div>
+                    <h3>Financial Details</h3>
+                    <p>
+                      Enter estimated expenses and the advance
+                      amount requested.
+                    </p>
                   </div>
                 </div>
 
-                <div className="ta-field">
-                  <label htmlFor="ta-designation">
-                    Designation
-                  </label>
-
-                  <input
-                    id="ta-designation"
-                    type="text"
-                    value={selectedEmployee?.designation || ""}
-                    placeholder="Auto populated"
-                    readOnly
-                  />
+                <div className="ta-financial-grid">
+                  {[
+                    {
+                      label: "Estimated Travel Expense",
+                      name: "estimatedTravelExpense",
+                    },
+                    {
+                      label: "Daily Allowance",
+                      name: "dailyAllowance",
+                    },
+                    {
+                      label: "Other Expenses",
+                      name: "otherExpenses",
+                    },
+                    {
+                      label: "Advance Requested",
+                      name: "advanceRequested",
+                    },
+                  ].map((field) => (
+                    <div className="ta-field" key={field.name}>
+                      <label htmlFor={`ta-${field.name}`}>
+                        {field.label}
+                      </label>
+                      <div className="ta-money-input">
+                        <span>₹</span>
+                        <input
+                          id={`ta-${field.name}`}
+                          name={field.name}
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={form[field.name]}
+                          onChange={updateField}
+                          placeholder="0.00"
+                        />
+                      </div>
+                      {errors[field.name] && (
+                        <small className="ta-error">
+                          {errors[field.name]}
+                        </small>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
-                <div className="ta-field ta-field-full">
-                  <label htmlFor="ta-department">
-                    Department / Office
-                  </label>
-
-                  <input
-                    id="ta-department"
-                    type="text"
-                    value={
-                      selectedEmployee
-                        ? `${selectedEmployee.department} / ${selectedEmployee.office}`
-                        : ""
-                    }
-                    placeholder="Auto populated"
-                    readOnly
-                  />
+                <div className="ta-total-card">
+                  <div>
+                    <span className="ta-total-label">
+                      Total Estimated Expense
+                    </span>
+                    <span className="ta-total-description">
+                      Travel expense + daily allowance + other
+                      expenses
+                    </span>
+                  </div>
+                  <strong>
+                    <IndianRupee size={21} />
+                    {totalAmount.toLocaleString("en-IN", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </strong>
                 </div>
-              </div>
-            </section>
+              </section>
 
-            {/* =================================================
-                TA ADVANCE DETAILS
-            ================================================== */}
-            <section className="ta-form-section">
-              <div className="ta-form-section-heading">
-                <div className="ta-form-section-number">02</div>
-
-                <div>
-                  <h3>TA Advance Details</h3>
-                  <p>
-                    Provide the purpose, destination and official
-                    travel schedule.
-                  </p>
-                </div>
-              </div>
-
-              <div className="ta-form-grid">
-                <div className="ta-field ta-field-full">
-                  <label htmlFor="ta-purpose">
-                    Purpose / Reason <span>*</span>
-                  </label>
-
-                  <textarea
-                    id="ta-purpose"
-                    name="purpose"
-                    value={formData.purpose}
-                    onChange={handleChange}
-                    placeholder="Enter the purpose or reason for official travel"
-                    rows={3}
-                    required
-                  />
+              <section className="ta-form-section">
+                <div className="ta-form-section-heading">
+                  <div className="ta-form-section-number">04</div>
+                  <div>
+                    <h3>Supporting Documents</h3>
+                    <p>
+                      Attach a relevant approval or travel document.
+                    </p>
+                  </div>
                 </div>
 
-                <div className="ta-field">
-                  <label htmlFor="ta-destination">
-                    Destination <span>*</span>
-                  </label>
+                <div className="ta-upload-area">
+                  <div className="ta-upload-icon">
+                    <Upload size={21} />
+                  </div>
 
-                  <input
-                    id="ta-destination"
-                    name="destination"
-                    type="text"
-                    value={formData.destination}
-                    onChange={handleChange}
-                    placeholder="Enter travel destination"
-                    required
-                  />
-                </div>
+                  <div className="ta-upload-content">
+                    <strong>Supporting Document</strong>
+                    <span>
+                      Choose a supporting document from your device.
+                    </span>
+                    {document && (
+                      <small>Selected: {document.name}</small>
+                    )}
+                  </div>
 
-                <div className="ta-field">
-                  <label htmlFor="ta-travel-mode">
-                    Travel Mode <span>*</span>
-                  </label>
-
-                  <select
-                    id="ta-travel-mode"
-                    name="travelMode"
-                    value={formData.travelMode}
-                    onChange={handleChange}
-                    required
+                  <label
+                    htmlFor="ta-supporting-document"
+                    className="ta-upload-button"
                   >
-                    <option value="">Select Travel Mode</option>
-
-                    {travelModes.map((mode) => (
-                      <option key={mode} value={mode}>
-                        {mode}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="ta-field">
-                  <label htmlFor="ta-from-date">
-                    From Date <span>*</span>
+                    Choose Document
                   </label>
 
-                  <div className="ta-input-with-icon">
-                    <CalendarDays size={18} />
+                  <input
+                    id="ta-supporting-document"
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png"
+                    onChange={(event) =>
+                      setDocument(event.target.files?.[0] || null)
+                    }
+                    hidden
+                  />
+                </div>
+              </section>
 
-                    <input
-                      id="ta-from-date"
-                      name="fromDate"
-                      type="date"
-                      value={formData.fromDate}
-                      onChange={handleChange}
-                      required
-                    />
+              <section className="ta-form-section ta-declaration-section">
+                <div className="ta-form-section-heading">
+                  <div className="ta-form-section-number">05</div>
+                  <div>
+                    <h3>Declaration &amp; Consent</h3>
+                    <p>
+                      Review and confirm the information provided.
+                    </p>
                   </div>
                 </div>
 
-                <div className="ta-field">
-                  <label htmlFor="ta-to-date">
-                    To Date <span>*</span>
-                  </label>
-
-                  <div className="ta-input-with-icon">
-                    <CalendarDays size={18} />
-
-                    <input
-                      id="ta-to-date"
-                      name="toDate"
-                      type="date"
-                      value={formData.toDate}
-                      onChange={handleChange}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-            </section>
-
-            {/* =================================================
-                FINANCIAL DETAILS
-            ================================================== */}
-            <section className="ta-form-section">
-              <div className="ta-form-section-heading">
-                <div className="ta-form-section-number">03</div>
-
-                <div>
-                  <h3>Financial Details</h3>
-                  <p>
-                    Enter the estimated travel expenses and
-                    advance amount requested.
-                  </p>
-                </div>
-              </div>
-
-              <div className="ta-financial-grid">
-                <div className="ta-field">
-                  <label htmlFor="ta-travel-expense">
-                    Estimated Travel Expense
-                  </label>
-
-                  <div className="ta-money-input">
-                    <span>₹</span>
-
-                    <input
-                      id="ta-travel-expense"
-                      name="estimatedTravelExpense"
-                      type="number"
-                      min="0"
-                      value={formData.estimatedTravelExpense}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div className="ta-field">
-                  <label htmlFor="ta-daily-allowance">
-                    Daily Allowance
-                  </label>
-
-                  <div className="ta-money-input">
-                    <span>₹</span>
-
-                    <input
-                      id="ta-daily-allowance"
-                      name="dailyAllowance"
-                      type="number"
-                      min="0"
-                      value={formData.dailyAllowance}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div className="ta-field">
-                  <label htmlFor="ta-other-expenses">
-                    Other Expenses
-                  </label>
-
-                  <div className="ta-money-input">
-                    <span>₹</span>
-
-                    <input
-                      id="ta-other-expenses"
-                      name="otherExpenses"
-                      type="number"
-                      min="0"
-                      value={formData.otherExpenses}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-
-                <div className="ta-field">
-                  <label htmlFor="ta-advance-requested">
-                    Advance Requested
-                  </label>
-
-                  <div className="ta-money-input">
-                    <span>₹</span>
-
-                    <input
-                      id="ta-advance-requested"
-                      name="advanceRequested"
-                      type="number"
-                      min="0"
-                      value={formData.advanceRequested}
-                      onChange={handleChange}
-                      placeholder="0.00"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="ta-total-card">
-                <div>
-                  <span className="ta-total-label">Total</span>
-                  <span className="ta-total-description">
-                    Estimated total travel-related expense
+                <label className="ta-declaration">
+                  <input
+                    type="checkbox"
+                    name="declaration"
+                    checked={form.declaration}
+                    onChange={updateField}
+                  />
+                  <span className="ta-custom-checkbox">
+                    {form.declaration ? "✓" : ""}
                   </span>
-                </div>
-
-                <strong>
-                  <IndianRupee size={22} />
-                  {totalAmount.toLocaleString("en-IN", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </strong>
-              </div>
-            </section>
-
-            {/* =================================================
-                SUPPORTING DOCUMENTS
-            ================================================== */}
-            <section className="ta-form-section">
-              <div className="ta-form-section-heading">
-                <div className="ta-form-section-number">04</div>
-
-                <div>
-                  <h3>Supporting Documents</h3>
-                  <p>
-                    Attach the supporting document related to the
-                    official travel request.
-                  </p>
-                </div>
-              </div>
-
-              <div className="ta-upload-area">
-                <div className="ta-upload-icon">
-                  <Upload size={20} />
-                </div>
-
-                <div className="ta-upload-content">
-                  <strong>Supporting Document</strong>
-
-                  <span>
-                    Upload a relevant travel document, approval
-                    or supporting record.
+                  <span className="ta-declaration-text">
+                    I confirm that the information provided is true
+                    and correct and that the requested advance is
+                    related to official travel.
                   </span>
-
-                  {formData.supportingDocument && (
-                    <small>
-                      Selected:{" "}
-                      {formData.supportingDocument.name}
-                    </small>
-                  )}
-                </div>
-
-                <label
-                  htmlFor="ta-supporting-document"
-                  className="ta-upload-button"
-                >
-                  Choose Document
                 </label>
 
-                <input
-                  id="ta-supporting-document"
-                  type="file"
-                  onChange={handleDocumentChange}
-                  hidden
-                />
-              </div>
-            </section>
+                {errors.declaration && (
+                  <small className="ta-error">
+                    {errors.declaration}
+                  </small>
+                )}
+              </section>
+            </div>
 
-            {/* =================================================
-                DECLARATION
-            ================================================== */}
-            <section className="ta-form-section ta-declaration-section">
-              <div className="ta-form-section-heading">
-                <div className="ta-form-section-number">05</div>
-
-                <div>
-                  <h3>Declaration &amp; Consent</h3>
-                  <p>
-                    Confirm that the information provided is true
-                    and correct.
-                  </p>
-                </div>
-              </div>
-
-              <label className="ta-declaration">
-                <input
-                  type="checkbox"
-                  name="declaration"
-                  checked={formData.declaration}
-                  onChange={handleChange}
-                />
-
-                <span className="ta-custom-checkbox">
-                  {formData.declaration ? "✓" : ""}
-                </span>
-
-                <span className="ta-declaration-text">
-                  I confirm that the information provided is true
-                  and correct and that the requested advance is
-                  related to official travel.
-                </span>
-              </label>
-            </section>
-          </div>
-
-          {/* ===================================================
-              FOOTER
-          ==================================================== */}
-          <div className="ta-advance-footer">
-            <button
-              type="button"
-              className="ta-secondary-button"
-              onClick={handleReset}
-            >
-              <RotateCcw size={17} />
-              Reset
-            </button>
-
-            <div className="ta-footer-right">
+            <footer className="ta-advance-footer">
               <button
                 type="button"
-                className="ta-cancel-button"
-                onClick={onClose}
+                className="ta-secondary-button"
+                onClick={handleReset}
               >
-                Cancel
+                <RotateCcw size={17} />
+                Reset
               </button>
 
-              <button
-                type="submit"
-                className="ta-primary-button"
-              >
-                <Send size={17} />
-                Submit Application
-                <ChevronRight size={17} />
-              </button>
-            </div>
-          </div>
-        </form>
+              <div className="ta-footer-right">
+                <button
+                  type="button"
+                  className="ta-cancel-button"
+                  onClick={onClose}
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  className="ta-primary-button"
+                >
+                  <Send size={17} />
+                  Submit Application
+                  <ChevronRight size={17} />
+                </button>
+              </div>
+            </footer>
+          </form>
+        )}
       </div>
     </div>
   );
 }
 
-export default TAAdvanceModal;
+export default TAAdvance;

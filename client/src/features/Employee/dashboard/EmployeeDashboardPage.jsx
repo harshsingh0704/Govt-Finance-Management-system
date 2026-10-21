@@ -2,7 +2,13 @@
 import { useState, useEffect } from "react";
 import CreateClaimModal from "../claims/EmployeeClaimsPage.jsx";
 import TATravelPage from "../ta-travel/TATravelPage.jsx";
+import TAAdvance from "../ta-travel/TAAdavance.jsx";
+import EmployeeLTCPage from "../ltc/EmployeeLTCPage.jsx";
+import EmployeeLTCAdvanceModal from "../ltc/EmployeeLTCAdvanceModal.jsx";
 import MedicalClaimPage from "../../medical/MedicalClaimPage";
+import EmployeeMedicalPage from "../medical/EmployeeMedicalPage.jsx";
+import EmployeeMedicalAdvancePage from "../medical/EmployeeMedicalAdvancePage.jsx";
+import EmployeeAccommodationPage from "../accommodation/EmployeeAccommodationPage.jsx";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
@@ -134,6 +140,26 @@ function App() {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const navigate = useNavigate();
   const [activeNav, setActiveNav] = useState("Dashboard");
+  const [expandedFinance, setExpandedFinance] = useState({
+    ta: false,
+    ltc: false,
+    medical: false,
+  });
+
+  const toggleFinanceGroup = (group) => {
+    setExpandedFinance((previous) => ({
+      ...previous,
+      [group]: !previous[group],
+    }));
+  };
+
+  // Close the TA & Travel modal and return to the dashboard.
+  useEffect(() => {
+    const closeTATravel = () => setActiveNav("Dashboard");
+    window.addEventListener("fms:close-ta-travel", closeTATravel);
+    return () => window.removeEventListener("fms:close-ta-travel", closeTATravel);
+  }, []);
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -220,24 +246,129 @@ function App() {
               onClick={handleNavigation}
               badge="3"
             />
-            <SidebarItem
-              icon={BriefcaseBusiness}
-              label="TA & Travel"
-              active={activeNav === "TA & Travel"}
-              onClick={handleNavigation}
-            />
-            <SidebarItem
-              icon={Building2}
-              label="LTC"
-              active={activeNav === "LTC"}
-              onClick={handleNavigation}
-            />
-            <SidebarItem
-              icon={HeartPulse}
-              label="Medical"
-              active={activeNav === "Medical"}
-              onClick={handleNavigation}
-            />
+
+            <button
+              type="button"
+              className="finance-sidebar-placeholder accommodation-sidebar-button"
+              onClick={() => handleNavigation("Accommodation Form")}
+            >
+              <FileText size={17} />
+              <span>Accommodation Form</span>
+            </button>
+
+            <div className="finance-sidebar-group">
+              <SidebarItem
+                icon={BriefcaseBusiness}
+                label="TA & Travel Form"
+                active={activeNav === "TA & Travel"}
+                onClick={() => toggleFinanceGroup("ta")}
+              />
+              <button
+                type="button"
+                className="finance-sidebar-expand"
+                aria-label={expandedFinance.ta ? "Collapse TA & Travel options" : "Expand TA & Travel options"}
+                aria-expanded={expandedFinance.ta}
+                onClick={() => toggleFinanceGroup("ta")}
+              >
+                <ChevronDown size={14} className={expandedFinance.ta ? "finance-chevron-open" : ""} />
+              </button>
+              {expandedFinance.ta && (
+                <div className="finance-sidebar-children">
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("TA & Travel")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>TA Claim</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("TA Advance Claim")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>TA Advance Claim</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="finance-sidebar-group">
+              <SidebarItem
+                icon={Building2}
+                label="LTC Form"
+                active={activeNav === "LTC"}
+                onClick={() => toggleFinanceGroup("ltc")}
+              />
+              <button
+                type="button"
+                className="finance-sidebar-expand"
+                aria-label={expandedFinance.ltc ? "Collapse LTC options" : "Expand LTC options"}
+                aria-expanded={expandedFinance.ltc}
+                onClick={() => toggleFinanceGroup("ltc")}
+              >
+                <ChevronDown size={14} className={expandedFinance.ltc ? "finance-chevron-open" : ""} />
+              </button>
+              {expandedFinance.ltc && (
+                <div className="finance-sidebar-children">
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("LTC Claim")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>LTC Claim</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("LTC Advance Claim")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>LTC Advance Claim</span>
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="finance-sidebar-group">
+              <SidebarItem
+                icon={HeartPulse}
+                label="Medical Form"
+                active={activeNav === "Medical"}
+                onClick={() => toggleFinanceGroup("medical")}
+              />
+              <button
+                type="button"
+                className="finance-sidebar-expand"
+                aria-label={expandedFinance.medical ? "Collapse Medical options" : "Expand Medical options"}
+                aria-expanded={expandedFinance.medical}
+                onClick={() => toggleFinanceGroup("medical")}
+              >
+                <ChevronDown size={14} className={expandedFinance.medical ? "finance-chevron-open" : ""} />
+              </button>
+              {expandedFinance.medical && (
+                <div className="finance-sidebar-children">
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("Medical Claim")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>Medical Claim</span>
+                  </button>
+                  <button
+                    type="button"
+                    className="finance-sidebar-child"
+                    onClick={() => handleNavigation("Medical Advance Claim")}
+                  >
+                    <span className="finance-child-branch">↳</span>
+                    <span>Medical Advance Claim</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </SidebarSection>
 
           <SidebarSection label="Records">
@@ -428,8 +559,23 @@ function App() {
   />
 ) : activeNav === "TA & Travel" ? (
   <TATravelPage currentUser={currentUser} />
+) : activeNav === "TA Advance Claim" ? (
+  <TAAdvance onClose={() => handleNavigation("Dashboard")} />
+) : activeNav === "LTC Advance Claim" ? (
+  <EmployeeLTCAdvanceModal
+    isOpen={true}
+    onClose={() => handleNavigation("Dashboard")}
+  />
+) : activeNav === "LTC Claim" ? (
+  <EmployeeLTCPage onClose={() => handleNavigation("Dashboard")} />
 ) : activeNav === "Pay Slips" ? (
   <PayslipsView />
+) : activeNav === "Accommodation Form" ? (
+  <EmployeeAccommodationPage onClose={() => handleNavigation("Dashboard")} />
+) : activeNav === "Medical Advance Claim" ? (
+  <EmployeeMedicalAdvancePage onClose={() => handleNavigation("Dashboard")} />
+) : activeNav === "Medical Claim" ? (
+  <EmployeeMedicalPage onClose={() => handleNavigation("Dashboard")} />
 ) : activeNav === "Medical" ? (
   <MedicalClaimPage />
 ) : (

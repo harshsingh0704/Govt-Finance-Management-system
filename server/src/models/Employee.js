@@ -11,7 +11,12 @@ userId: {
   default: null,
   required: false,
 },
-
+ employeeId: {
+  type: String,
+  unique: true,
+  sparse: true,
+  trim: true,
+},
     employeeCode: {
       type: String,
       unique: true,

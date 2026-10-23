@@ -1,4 +1,9 @@
-﻿const Employee = require("../models/Employee");
+﻿const {
+  notifyUser,
+  notifyRole,
+  notifyEmployee,
+} = require("../services/notificationService");
+const Employee = require("../models/Employee");
 const mongoose = require("mongoose");
 const TAClaim = require("../models/TAClaim");
 const TAAdvance = require("../models/TAAdvance");
@@ -330,6 +335,27 @@ exports.createClaim = async (req, res) => {
     // Save the claim in MongoDB.
     await claim.save();
 
+    // Notify HOD users about the new claim.
+    try {
+      await notifyRole("Head of Department", {
+        actor: req.user._id,
+        title: "New TA claim submitted",
+        message: `${employeeName || "An employee"} submitted a TA claim for approval.`,
+        type: "CLAIM_SUBMITTED",
+        claimId: claim._id,
+        claimType: "TAClaim",
+        metadata: {
+          currentStage: "HOD",
+          status: "PENDING_HOD",
+        },
+      });
+    } catch (notificationError) {
+      console.error(
+        "TA submission notification failed:",
+        notificationError.message
+      );
+    }
+
     let approvalId = null;
 
     // Create approval queue record.
@@ -646,6 +672,94 @@ exports.updateClaimStatus = async (req, res) => {
     }
 
     await claim.save();
+    
+   
+    // Persist notifications after a successful workflow transition.
+    try {
+      const claimLabel = claim.employeeName || "Employee";
+      const stageLabel = stage.replaceAll("_", " ");
+      const claimLink = `/claims/ta/${claim._id}`;
+
+      const notificationBase = {
+        actor: req.user._id,
+        claimId: claim._id,
+        claimType: "TAClaim",
+        link: claimLink,
+        metadata: {
+          previousStage: stage,
+          currentStage: claim.currentStage,
+          status: claim.status,
+          comments: comments || "",
+        },
+      };
+
+      // Notify the employee of the decision at this stage.
+      const employeeType =
+        finalAction === "REJECTED"
+          ? "CLAIM_REJECTED"
+          : finalAction === "SENT_BACK"
+            ? "CLAIM_RETURNED"
+            : "CLAIM_APPROVED";
+
+      const employeeTitle =
+        finalAction === "REJECTED"
+          ? "TA claim rejected"
+          : finalAction === "SENT_BACK"
+            ? "TA claim returned for correction"
+            : `TA claim approved by ${stageLabel}`;
+
+      await notifyEmployee(claim.employeeId, {
+        ...notificationBase,
+        title: employeeTitle,
+        message:
+          finalAction === "APPROVED"
+            ? `Your TA claim has been approved at the ${stageLabel} stage. Current stage: ${claim.currentStage}.`
+            : `Your TA claim was ${finalAction === "REJECTED" ? "rejected" : "returned for correction"} at the ${stageLabel} stage. Reason: ${comments}`,
+        type: employeeType,
+      });
+
+      // Notify the next responsible role after an approval.
+      if (finalAction === "APPROVED") {
+        const nextRoleByStage = {
+          HOD: "Head of Office",
+          HOA: "Finance Officer",
+          FINANCE_OFFICER: "Finance Clerk",
+          FINANCE_CLERK: "Finance Officer",
+        };
+
+        const nextRole = nextRoleByStage[stage];
+
+        if (nextRole) {
+          await notifyRole(
+            nextRole,
+            {
+              ...notificationBase,
+              title: "TA claim awaiting your action",
+              message: `${claimLabel}'s TA claim has passed the ${stageLabel} stage and is awaiting your review.`,
+              type: "CLAIM_SUBMITTED",
+            },
+            req.user._id
+          );
+        }
+
+        // Final sanction completes the workflow.
+        if (stage === "FINAL_SANCTION") {
+          await notifyEmployee(claim.employeeId, {
+            ...notificationBase,
+            title: "TA claim sanctioned",
+            message: "Your TA claim has received final sanction.",
+            type: "CLAIM_SANCTIONED",
+          });
+        }
+      }
+    } catch (notificationError) {
+      // Do not undo a successful approval if notification delivery fails.
+      console.error(
+        "TA workflow notification failed:",
+        notificationError.message
+      );
+    }
+
 
     try {
       await AuditLog.create({

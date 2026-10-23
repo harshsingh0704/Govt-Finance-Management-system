@@ -1,622 +1,668 @@
-import React, { useState } from "react";
-import { X, Send, Calculator, Plane, MapPin, Briefcase } from "lucide-react";
+
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  Clock3,
+  FileText,
+  RefreshCw,
+  Plus,
+  Search,
+  IndianRupee,
+  Plane,
+  CalendarDays,
+  X,
+} from "lucide-react";
 import { useSelector } from "react-redux";
 
-function getStoredAuthToken() {
-  try {
-    const raw = localStorage.getItem("fms_auth");
-    if (raw) {
+
+import { getTAClaims } from "../../claims/claims.api";
+import apiClient from "../../../services/api/axios";
+import "./EmployeeClaimsPage.css";
+
+function readStoredUser() {
+  if (typeof window === "undefined") return {};
+
+  for (const key of ["fms_auth", "user", "authUser", "currentUser"]) {
+    try {
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+
       const parsed = JSON.parse(raw);
-      if (parsed.token) return parsed.token;
-      if (typeof parsed === "string") return parsed;
+      if (parsed && typeof parsed === "object") {
+        return parsed.user || parsed.employee || parsed;
+      }
+    } catch {
+      // Try the next storage key.
     }
-    const direct = localStorage.getItem("token");
-    if (direct) return direct;
-  } catch (e) {}
+  }
+
+  return {};
+}
+
+function getId(value) {
+  if (!value) return "";
+  if (typeof value === "object") {
+    return String(value._id || value.id || value.employeeId || "");
+  }
+  return String(value).trim();
+}
+
+function getEmployeeId(user) {
+  if (!user) return "";
+
+  const candidates = [
+    user.employeeId,
+    user.employee?._id,
+    user.employee?.id,
+    user.employee?.employeeId,
+    user.employeeProfile?._id,
+    user.employeeProfile?.id,
+    user.employeeProfile?.employeeId,
+    user.profile?.employeeId,
+    user.profile?._id,
+  ];
+
+  for (const value of candidates) {
+    const id = getId(value);
+    if (id) return id;
+  }
+
   return "";
 }
 
-export default function CreateClaimModal({ isOpen, onClose, onSuccess, employeeId, initialType = "LTC" }) {
-  const reduxToken = useSelector((state) => state.auth?.token);
-  const [claimType, setClaimType] = useState(initialType);
-  React.useEffect(() => {
-    if (initialType) setClaimType(initialType);
-  }, [initialType, isOpen]);
+function unwrapClaims(response) {
+  const data = response?.data ?? response;
 
-  // LTC Form State
-  const [ltcData, setLtcData] = useState({
-    ltcType: "Home Town",
-    blockPeriod: "2026-2029",
-    homeTown: "",
-    graceYear: false,
-    publicTransportation: "Train",
-    destination: "",
-    fromDate: "",
-    toDate: "",
-    fareClaimed: 0,
-    advanceTaken: 0,
-    remarks: "",
-  });
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data?.claims)) return data.claims;
+  if (Array.isArray(data?.data)) return data.data;
+  if (Array.isArray(data?.results)) return data.results;
+  if (Array.isArray(data?.items)) return data.items;
 
-  // TA Form State
-  const [taData, setTaData] = useState({
-    projectName: "",
-    tourType: "Out-of-station",
-    officeTransportation: false,
-    publicTransportation: "Train",
-    fromPlace: "",
-    toPlace: "",
-    fromDate: "",
-    toDate: "",
-    fare: 0,
-    roadMileage: 0,
-    dailyAllowance: 0,
-    accommodationCharges: 0,
-    advanceAdjusted: 0,
-    remarks: "",
-  });
+  return [];
+}
 
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState("");
+function getStatus(claim) {
+  return String(
+    claim?.status ||
+      claim?.claimStatus ||
+      claim?.approvalStatus ||
+      claim?.workflowStatus ||
+      "Pending"
+  )
+    .trim()
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+}
 
-  if (!isOpen) return null;
+function isApproved(claim) {
+  return [
+    "approved",
+    "sanctioned",
+    "paid",
+    "completed",
+    "processed",
+    "payment_completed",
+    "payment_done",
+  ].includes(getStatus(claim));
+}
 
-  const handleLtcChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setLtcData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-  };
+function isRejected(claim) {
+  return ["rejected", "declined", "cancelled", "canceled"].includes(
+    getStatus(claim)
+  );
+}
 
-  const handleTaChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    setTaData((prev) => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
-  };
+function getType(claim, fallback = "TA") {
+  return String(
+    claim?.claimType ||
+      claim?.type ||
+      claim?.claimCategory ||
+      claim?.category ||
+      fallback
+  ).toUpperCase();
+}
 
-  // Calculations
-  const ltcGross = Number(ltcData.fareClaimed) || 0;
-  const ltcNet = Math.max(0, ltcGross - (Number(ltcData.advanceTaken) || 0));
+function getAmount(claim) {
+  const values = [
+    claim?.netAmount,
+    claim?.amount,
+    claim?.claimAmount,
+    claim?.fareClaimed,
+    claim?.grossAmount,
+    claim?.totalAmount,
+    claim?.fare,
+  ];
 
-  const taGross =
-    (Number(taData.fare) || 0) +
-    (Number(taData.roadMileage) || 0) +
-    (Number(taData.dailyAllowance) || 0) +
-    (Number(taData.accommodationCharges) || 0);
-  const taNet = Math.max(0, taGross - (Number(taData.advanceAdjusted) || 0));
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError("");
-
-    const token = reduxToken || getStoredAuthToken();
-    const endpoint =
-      claimType === "LTC"
-        ? "http://localhost:5000/api/ltc/claim"
-        : "http://localhost:5000/api/ta/claim";
-
-    const payload =
-      claimType === "LTC"
-        ? {
-            ...ltcData,
-            employeeId,
-            fareClaimed: Number(ltcData.fareClaimed) || 0,
-            advanceTaken: Number(ltcData.advanceTaken) || 0,
-            grossAmount: ltcGross,
-            netAmount: ltcNet,
-          }
-        : {
-            ...taData,
-            employeeId,
-            fare: Number(taData.fare) || 0,
-            roadMileage: Number(taData.roadMileage) || 0,
-            dailyAllowance: Number(taData.dailyAllowance) || 0,
-            accommodationCharges: Number(taData.accommodationCharges) || 0,
-            advanceAdjusted: Number(taData.advanceAdjusted) || 0,
-            grossAmount: taGross,
-            netAmount: taNet,
-          };
-
-    try {
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(payload),
-      });
-
-      const data = await res.json();
-      if (res.ok) {
-        if (onSuccess) onSuccess(data);
-        onClose();
-      } else {
-        setError(data.error || data.message || "Submission failed.");
-      }
-    } catch (err) {
-      setError("Network or server connection failed.");
-    } finally {
-      setSubmitting(false);
+  for (const value of values) {
+    if (
+      value !== undefined &&
+      value !== null &&
+      value !== "" &&
+      Number.isFinite(Number(value))
+    ) {
+      return Number(value);
     }
+  }
+
+  return 0;
+}
+
+function getDate(claim) {
+  const value =
+    claim?.createdAt ||
+    claim?.submittedAt ||
+    claim?.claimDate ||
+    claim?.fromDate ||
+    claim?.date;
+
+  if (!value) return "Date unavailable";
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date unavailable";
+
+  return date.toLocaleDateString("en-IN", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function getReference(claim) {
+  return (
+    claim?.claimNumber ||
+    claim?.referenceNumber ||
+    claim?.claimId ||
+    claim?._id ||
+    claim?.id ||
+    "Claim"
+  );
+}
+
+function getTitle(claim, type) {
+  return (
+    claim?.projectName ||
+    claim?.destination ||
+    claim?.toPlace ||
+    claim?.homeTown ||
+    claim?.purpose ||
+    `${type} Travel Claim`
+  );
+}
+
+function StatusBadge({ claim }) {
+  const approved = isApproved(claim);
+  const rejected = isRejected(claim);
+  const status = getStatus(claim);
+
+  const className = approved
+    ? "ec-status ec-status-approved"
+    : rejected
+      ? "ec-status ec-status-rejected"
+      : "ec-status ec-status-pending";
+
+  const label = status
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
+
+  return (
+    <span className={className}>
+      {approved ? (
+        <CheckCircle2 size={14} />
+      ) : (
+        <Clock3 size={14} />
+      )}
+      {label}
+    </span>
+  );
+}
+
+function ClaimSection({ title, claims, type, emptyText }) {
+  const approved = type === "approved";
+
+  return (
+    <section className="ec-section">
+      <div className="ec-section-header">
+        <h2 className="ec-section-title">
+          <span
+            className={`ec-section-icon ${
+              approved ? "ec-icon-approved" : "ec-icon-pending"
+            }`}
+          >
+            {approved ? (
+              <CheckCircle2 size={19} />
+            ) : (
+              <Clock3 size={19} />
+            )}
+          </span>
+          {title}
+          <span className="ec-count">{claims.length}</span>
+        </h2>
+      </div>
+
+      {claims.length === 0 ? (
+        <div className="ec-empty">
+          <div className="ec-empty-icon">
+            <FileText size={25} />
+          </div>
+          <h3>No claims found</h3>
+          <p>{emptyText}</p>
+        </div>
+      ) : (
+        <div className="ec-claim-list">
+          {claims.map((claim, index) => {
+            const claimType = getType(claim);
+            const amount = getAmount(claim);
+            const key = String(
+              claim?._id || claim?.id || `${claimType}-${index}`
+            );
+
+            return (
+              <article className="ec-claim-row" key={key}>
+                <div className="ec-claim-main">
+                  <div className="ec-claim-type-icon">
+                    {claimType === "LTC" ? (
+                      <Plane size={21} />
+                    ) : (
+                      <FileText size={21} />
+                    )}
+                  </div>
+
+                  <div className="ec-claim-info">
+                    <h3>{getTitle(claim, claimType)}</h3>
+
+                    <div className="ec-claim-meta">
+                      <span>{claimType} Claim</span>
+                      <span className="ec-meta-dot">•</span>
+                      <span>
+                        Ref: {String(getReference(claim)).slice(-12)}
+                      </span>
+                      <span className="ec-meta-dot">•</span>
+                      <span className="ec-date">
+                        <CalendarDays size={13} />
+                        {getDate(claim)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="ec-claim-right">
+                  <div className="ec-claim-amount">
+                    <strong>
+                      ₹
+                      {amount.toLocaleString("en-IN", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </strong>
+                    <span>Claim amount</span>
+                  </div>
+
+                  <StatusBadge claim={claim} />
+                </div>
+              </article>
+            );
+          })}
+        </div>
+      )}
+    </section>
+  );
+}
+
+export default function EmployeeClaimsPage() {
+  const auth = useSelector((state) => state.auth || {});
+  const reduxUser = useSelector(
+    (state) =>
+      state.auth?.user ||
+      state.auth?.currentUser ||
+      state.auth?.employee ||
+      state.user?.user ||
+      state.user?.currentUser ||
+      null
+  );
+
+  const [storedUser] = useState(readStoredUser);
+
+  const employeeId = useMemo(
+    () =>
+      getEmployeeId(reduxUser) ||
+      getEmployeeId(storedUser) ||
+      getEmployeeId(auth.user) ||
+      getEmployeeId(auth.currentUser) ||
+      getEmployeeId(auth.employee),
+    [reduxUser, storedUser, auth]
+  );
+
+  const [taClaims, setTaClaims] = useState([]);
+  const [ltcClaims, setLtcClaims] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState("");
+  const [warning, setWarning] = useState("");
+  const [search, setSearch] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+
+  const loadClaims = useCallback(
+    async (showLoader = true) => {
+      if (!employeeId) {
+        setLoading(false);
+        setRefreshing(false);
+        setError(
+          "Your employee profile identifier is not available. Sign in again or ask the administrator to link your login account to your employee profile."
+        );
+        return;
+      }
+
+      if (showLoader) setLoading(true);
+      else setRefreshing(true);
+
+      setError("");
+      setWarning("");
+
+      const results = await Promise.allSettled([
+        getTAClaims(employeeId),
+        apiClient.get(`/ltc/claims/${employeeId}`),
+      ]);
+
+      const errors = [];
+
+      if (results[0].status === "fulfilled") {
+        setTaClaims(unwrapClaims(results[0].value));
+      } else {
+        setTaClaims([]);
+        errors.push(
+          results[0].reason?.response?.data?.message ||
+            results[0].reason?.message ||
+            "TA claims could not be loaded."
+        );
+      }
+
+      if (results[1].status === "fulfilled") {
+        setLtcClaims(unwrapClaims(results[1].value));
+      } else {
+        setLtcClaims([]);
+        errors.push(
+          results[1].reason?.response?.data?.message ||
+            results[1].reason?.message ||
+            "LTC claims could not be loaded."
+        );
+      }
+
+      if (errors.length === 2) {
+        setError(
+          "Claims could not be loaded. Check that the TA and LTC GET routes exist on the server and that your login session is valid."
+        );
+      } else if (errors.length === 1) {
+        setWarning(errors[0]);
+      }
+
+      setLoading(false);
+      setRefreshing(false);
+    },
+    [employeeId]
+  );
+
+  useEffect(() => {
+    loadClaims(true);
+  }, [loadClaims]);
+
+  const allClaims = useMemo(() => {
+    const ta = taClaims.map((claim) => ({
+      ...claim,
+      claimType: getType(claim, "TA"),
+    }));
+
+    const ltc = ltcClaims.map((claim) => ({
+      ...claim,
+      claimType: getType(claim, "LTC"),
+    }));
+
+    const seen = new Set();
+
+    return [...ta, ...ltc].filter((claim) => {
+      const key = String(claim._id || claim.id || getReference(claim));
+
+      if (seen.has(key)) return false;
+
+      seen.add(key);
+      return true;
+    });
+  }, [taClaims, ltcClaims]);
+
+  const searchedClaims = useMemo(() => {
+    const query = search.trim().toLowerCase();
+    if (!query) return allClaims;
+
+    return allClaims.filter((claim) => {
+      const searchable = [
+        getReference(claim),
+        getTitle(claim, getType(claim)),
+        getType(claim),
+        claim.status,
+        claim.claimStatus,
+        claim.destination,
+        claim.toPlace,
+        claim.projectName,
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      return searchable.includes(query);
+    });
+  }, [allClaims, search]);
+
+  const pendingClaims = searchedClaims.filter(
+    (claim) => !isApproved(claim) && !isRejected(claim)
+  );
+
+  const approvedClaims = searchedClaims.filter(isApproved);
+  const rejectedClaims = searchedClaims.filter(isRejected);
+
+  const totalAmount = allClaims.reduce(
+    (sum, claim) => sum + getAmount(claim),
+    0
+  );
+
+  const approvedAmount = allClaims
+    .filter(isApproved)
+    .reduce((sum, claim) => sum + getAmount(claim), 0);
+
+  const handleClaimSubmitted = () => {
+    setShowCreateModal(false);
+    loadClaims(false);
   };
 
   return (
-    <div
-      style={{
-        position: "fixed",
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "rgba(15, 23, 42, 0.65)",
-        backdropFilter: "blur(4px)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 1100,
-        padding: "16px",
-      }}
-    >
-      <div
-        style={{
-          background: "#ffffff",
-          borderRadius: "16px",
-          width: "100%",
-          maxWidth: "680px",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 20px 25px -5px rgba(0, 0, 0, 0.2)",
-          padding: "24px",
-        }}
-      >
-        {/* Header */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "16px" }}>
+    <main className="ec-page">
+      <div className="ec-container">
+        <header className="ec-header">
           <div>
-            <h2 style={{ margin: 0, fontSize: "20px", fontWeight: "700", color: "#0f172a" }}>
-              Submit Official Claim (7th CPC)
-            </h2>
-            <p style={{ margin: "4px 0 0 0", fontSize: "12px", color: "#64748b" }}>
-              Compliant with IWST/ICFRE LTC & Tour Travel Regulations
+            <p className="ec-eyebrow">Employee Portal / Finance</p>
+            <h1>My Claims</h1>
+            <p className="ec-subtitle">
+              Track your travel and leave travel concession claims in one place.
             </p>
           </div>
-          <button
-            onClick={onClose}
-            style={{ background: "none", border: "none", cursor: "pointer", color: "#64748b" }}
-          >
-            <X size={20} />
-          </button>
-        </div>
 
-        {/* Claim Type Switcher */}
-        <div style={{ display: "flex", gap: "8px", marginBottom: "20px", background: "#f1f5f9", padding: "4px", borderRadius: "10px" }}>
-          <button
-            type="button"
-            onClick={() => setClaimType("LTC")}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              fontWeight: "600",
-              fontSize: "13px",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              background: claimType === "LTC" ? "#ffffff" : "transparent",
-              color: claimType === "LTC" ? "#0284c7" : "#64748b",
-              boxShadow: claimType === "LTC" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
-            }}
-          >
-            <Plane size={16} /> Leave Travel Concession (LTC)
-          </button>
-          <button
-            type="button"
-            onClick={() => setClaimType("TA")}
-            style={{
-              flex: 1,
-              padding: "10px",
-              borderRadius: "8px",
-              fontWeight: "600",
-              fontSize: "13px",
-              border: "none",
-              cursor: "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              background: claimType === "TA" ? "#ffffff" : "transparent",
-              color: claimType === "TA" ? "#0284c7" : "#64748b",
-              boxShadow: claimType === "TA" ? "0 2px 4px rgba(0,0,0,0.06)" : "none",
-            }}
-          >
-            <Briefcase size={16} /> Tour Travel Allowance (TA)
-          </button>
-        </div>
+          <div className="ec-header-actions">
+            <button
+              className="ec-button ec-button-secondary"
+              onClick={() => loadClaims(false)}
+              disabled={loading || refreshing}
+              type="button"
+            >
+              <RefreshCw
+                size={16}
+                className={refreshing ? "ec-spin" : ""}
+              />
+              {refreshing ? "Refreshing..." : "Refresh"}
+            </button>
+
+            <button
+              className="ec-button ec-button-primary"
+              onClick={() => setShowCreateModal(true)}
+              disabled={!employeeId}
+              title={!employeeId ? "Employee profile ID is required" : ""}
+              type="button"
+            >
+              <Plus size={17} />
+              Submit New Claim
+            </button>
+          </div>
+        </header>
 
         {error && (
-          <div
-            style={{
-              padding: "10px 14px",
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              borderRadius: "8px",
-              color: "#dc2626",
-              fontSize: "12.5px",
-              marginBottom: "16px",
-            }}
-          >
-            {error}
+          <div className="ec-alert ec-alert-error" role="alert">
+            <AlertCircle size={19} />
+            <div>
+              <strong>Unable to load your claims</strong>
+              <p>{error}</p>
+            </div>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-          {/* LTC Fields */}
-          {claimType === "LTC" ? (
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>LTC Type</label>
-                  <select
-                    name="ltcType"
-                    value={ltcData.ltcType}
-                    onChange={handleLtcChange}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  >
-                    <option value="Home Town">Home Town</option>
-                    <option value="Anywhere in India">Anywhere in India</option>
-                    <option value="Conversion to NER/J&K/A&N">Conversion to NER/J&K/A&N</option>
-                  </select>
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Block Period</label>
-                  <input
-                    type="text"
-                    name="blockPeriod"
-                    value={ltcData.blockPeriod}
-                    onChange={handleLtcChange}
-                    placeholder="e.g. 2026-2029"
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Home Town / Declared Place</label>
-                  <input
-                    type="text"
-                    name="homeTown"
-                    value={ltcData.homeTown}
-                    onChange={handleLtcChange}
-                    placeholder="e.g. Prayagraj / Varanasi"
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Public Transportation</label>
-                  <select
-                    name="publicTransportation"
-                    value={ltcData.publicTransportation}
-                    onChange={handleLtcChange}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  >
-                    <option value="Train">Train (AC-2/3 Tier)</option>
-                    <option value="Air">Air (Air India/Govt Route)</option>
-                    <option value="Bus">Bus (Govt/Deluxe)</option>
-                    <option value="Multiple">Multiple Modes</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0" }}>
-                <input
-                  type="checkbox"
-                  id="graceYear"
-                  name="graceYear"
-                  checked={ltcData.graceYear}
-                  onChange={handleLtcChange}
-                />
-                <label htmlFor="graceYear" style={{ fontSize: "12px", color: "#475569", cursor: "pointer" }}>
-                  Availed in Grace Year of the Block Period? (Yes/No)
-                </label>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Destination</label>
-                  <input
-                    type="text"
-                    name="destination"
-                    value={ltcData.destination}
-                    onChange={handleLtcChange}
-                    placeholder="Final Station"
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Journey Start</label>
-                  <input
-                    type="date"
-                    name="fromDate"
-                    value={ltcData.fromDate}
-                    onChange={handleLtcChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Journey End</label>
-                  <input
-                    type="date"
-                    name="toDate"
-                    value={ltcData.toDate}
-                    onChange={handleLtcChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Fare Claimed (₹)</label>
-                  <input
-                    type="number"
-                    name="fareClaimed"
-                    value={ltcData.fareClaimed}
-                    onChange={handleLtcChange}
-                    min="0"
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Advance Taken (₹)</label>
-                  <input
-                    type="number"
-                    name="advanceTaken"
-                    value={ltcData.advanceTaken}
-                    onChange={handleLtcChange}
-                    min="0"
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-              </div>
-            </>
-          ) : (
-            /* TA Fields */
-            <>
-              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Research Project / Admin Head</label>
-                  <input
-                    type="text"
-                    name="projectName"
-                    value={taData.projectName}
-                    onChange={handleTaChange}
-                    placeholder="e.g. ICFRE National Forestry Project / General"
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Tour Type</label>
-                  <select
-                    name="tourType"
-                    value={taData.tourType}
-                    onChange={handleTaChange}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  >
-                    <option value="Out-of-station">Out-of-station</option>
-                    <option value="Local">Local Tour</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "24px" }}>
-                  <input
-                    type="checkbox"
-                    id="officeTransportation"
-                    name="officeTransportation"
-                    checked={taData.officeTransportation}
-                    onChange={handleTaChange}
-                  />
-                  <label htmlFor="officeTransportation" style={{ fontSize: "12px", color: "#334155", fontWeight: "600" }}>
-                    Office Transport Provided? (Yes/No)
-                  </label>
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Public Transportation Mode</label>
-                  <select
-                    name="publicTransportation"
-                    value={taData.publicTransportation}
-                    onChange={handleTaChange}
-                    disabled={taData.officeTransportation}
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  >
-                    <option value="Train">Train</option>
-                    <option value="Air">Air</option>
-                    <option value="Bus">Bus</option>
-                    <option value="Taxi/Auto">Taxi / Auto</option>
-                    <option value="None">None</option>
-                  </select>
-                </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "12px" }}>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>From Place</label>
-                  <input
-                    type="text"
-                    name="fromPlace"
-                    value={taData.fromPlace}
-                    onChange={handleTaChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>To Place</label>
-                  <input
-                    type="text"
-                    name="toPlace"
-                    value={taData.toPlace}
-                    onChange={handleTaChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Start Date</label>
-                  <input
-                    type="date"
-                    name="fromDate"
-                    value={taData.fromDate}
-                    onChange={handleTaChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>End Date</label>
-                  <input
-                    type="date"
-                    name="toDate"
-                    value={taData.toDate}
-                    onChange={handleTaChange}
-                    required
-                    style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-                  />
-                </div>
-              </div>
-
-              {/* Financial Breakup */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: "10px" }}>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Fare (₹)</label>
-                  <input
-                    type="number"
-                    name="fare"
-                    value={taData.fare}
-                    onChange={handleTaChange}
-                    style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Daily Allow. (₹)</label>
-                  <input
-                    type="number"
-                    name="dailyAllowance"
-                    value={taData.dailyAllowance}
-                    onChange={handleTaChange}
-                    style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Hotel / Acc. (₹)</label>
-                  <input
-                    type="number"
-                    name="accommodationCharges"
-                    value={taData.accommodationCharges}
-                    onChange={handleTaChange}
-                    style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: "11px", fontWeight: "600", color: "#475569" }}>Adv. Adjusted (₹)</label>
-                  <input
-                    type="number"
-                    name="advanceAdjusted"
-                    value={taData.advanceAdjusted}
-                    onChange={handleTaChange}
-                    style={{ width: "100%", padding: "6px 10px", borderRadius: "6px", border: "1px solid #cbd5e1" }}
-                  />
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Net Amount Banner */}
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              background: "#f8fafc",
-              border: "1px solid #e2e8f0",
-              borderRadius: "10px",
-              padding: "12px 16px",
-              marginTop: "6px",
-            }}
-          >
+        {warning && !error && (
+          <div className="ec-alert ec-alert-warning" role="status">
+            <AlertCircle size={19} />
             <div>
-              <span style={{ fontSize: "12px", color: "#64748b", display: "block" }}>
-                Gross Total: ₹{(claimType === "LTC" ? ltcGross : taGross).toLocaleString("en-IN")}
-              </span>
-              <span style={{ fontSize: "14px", fontWeight: "700", color: "#0f172a" }}>Net Payable Claim:</span>
+              <strong>Some claims may be missing</strong>
+              <p>{warning}</p>
             </div>
-            <span style={{ fontSize: "18px", fontWeight: "800", color: "#0284c7" }}>
-              ₹{(claimType === "LTC" ? ltcNet : taNet).toLocaleString("en-IN")}
-            </span>
+          </div>
+        )}
+
+        <section className="ec-stats">
+          <div className="ec-stat-card">
+            <div className="ec-stat-top">
+              <span>Total Claims</span>
+              <div className="ec-stat-icon ec-blue">
+                <FileText size={21} />
+              </div>
+            </div>
+            <strong>{loading ? "—" : allClaims.length}</strong>
+            <p>All submitted claims</p>
           </div>
 
-          {/* Remarks */}
+          <div className="ec-stat-card">
+            <div className="ec-stat-top">
+              <span>Pending Review</span>
+              <div className="ec-stat-icon ec-orange">
+                <Clock3 size={21} />
+              </div>
+            </div>
+            <strong>
+              {loading
+                ? "—"
+                : allClaims.filter(
+                    (claim) => !isApproved(claim) && !isRejected(claim)
+                  ).length}
+            </strong>
+            <p>Awaiting a decision</p>
+          </div>
+
+          <div className="ec-stat-card">
+            <div className="ec-stat-top">
+              <span>Approved Claims</span>
+              <div className="ec-stat-icon ec-green">
+                <CheckCircle2 size={21} />
+              </div>
+            </div>
+            <strong>
+              {loading ? "—" : allClaims.filter(isApproved).length}
+            </strong>
+            <p>Approved, sanctioned or paid</p>
+          </div>
+
+          <div className="ec-stat-card">
+            <div className="ec-stat-top">
+              <span>Total Claim Value</span>
+              <div className="ec-stat-icon ec-purple">
+                <IndianRupee size={21} />
+              </div>
+            </div>
+            <strong className="ec-stat-money">
+              {loading
+                ? "—"
+                : `₹${totalAmount.toLocaleString("en-IN", {
+                    maximumFractionDigits: 0,
+                  })}`}
+            </strong>
+            <p>
+              Approved value: ₹
+              {approvedAmount.toLocaleString("en-IN", {
+                maximumFractionDigits: 0,
+              })}
+            </p>
+          </div>
+        </section>
+
+        <div className="ec-overview-header">
           <div>
-            <label style={{ fontSize: "12px", fontWeight: "600", color: "#334155" }}>Official Remarks</label>
-            <textarea
-              name="remarks"
-              value={claimType === "LTC" ? ltcData.remarks : taData.remarks}
-              onChange={claimType === "LTC" ? handleLtcChange : handleTaChange}
-              rows={2}
-              placeholder="Enter sanctioned reference order or tour reason..."
-              style={{ width: "100%", padding: "8px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", marginTop: "4px" }}
-            />
+            <h2>Claim Overview</h2>
+            <p>View the latest status of your submitted claims.</p>
           </div>
 
-          {/* Actions */}
-          <div style={{ display: "flex", justifyContent: "flex-end", gap: "10px", marginTop: "10px" }}>
-            <button
-              type="button"
-              onClick={onClose}
-              style={{
-                padding: "9px 18px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                background: "#ffffff",
-                color: "#475569",
-                cursor: "pointer",
-                fontWeight: "600",
-                fontSize: "13px",
-              }}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={submitting}
-              style={{
-                padding: "9px 20px",
-                borderRadius: "8px",
-                border: "none",
-                background: "#0284c7",
-                color: "#ffffff",
-                cursor: submitting ? "not-allowed" : "pointer",
-                fontWeight: "600",
-                fontSize: "13px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <Send size={15} /> {submitting ? "Submitting..." : "Submit Claim"}
-            </button>
+          <label className="ec-search">
+            <Search size={17} />
+            <input
+              type="search"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search claims..."
+              aria-label="Search claims"
+            />
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                aria-label="Clear search"
+              >
+                <X size={15} />
+              </button>
+            )}
+          </label>
+        </div>
+
+        {loading ? (
+          <div className="ec-loading">
+            <RefreshCw size={24} className="ec-spin" />
+            <p>Loading your claims...</p>
           </div>
-        </form>
+        ) : (
+          <>
+            <ClaimSection
+              title="Pending Claims"
+              claims={pendingClaims}
+              type="pending"
+              emptyText="Claims awaiting review will appear here."
+            />
+
+            <ClaimSection
+              title="Approved Claims"
+              claims={approvedClaims}
+              type="approved"
+              emptyText="Once your claims are approved, they will appear here."
+            />
+
+            {rejectedClaims.length > 0 && (
+              <ClaimSection
+                title="Rejected Claims"
+                claims={rejectedClaims}
+                type="pending"
+                emptyText="No rejected claims."
+              />
+            )}
+          </>
+        )}
+
+        <footer className="ec-footer">
+          <AlertCircle size={14} />
+          Claim statuses reflect the information returned by the FMS server.
+        </footer>
       </div>
-    </div>
+
+     
+    </main>
   );
 }

@@ -117,41 +117,80 @@ export default function HeadOfOfficePage() {
   );
   const selectedClaim = claims.find((claim) => idOf(claim) === selectedId) || null;
 
-  async function submitDecision(claim, decision) {
-    const id = idOf(claim);
-    const note = (remarks[id] || "").trim();
-    if ((decision === "send_back" || decision === "reject") && !note) {
-      setError("Enter remarks before sending back or rejecting a claim.");
-      return;
-    }
-    const verb = decision === "approve" ? "approve" : decision === "send_back" ? "send back" : "reject";
-    if (!window.confirm(`Are you sure you want to ${verb} this claim?`)) return;
+  
+async function submitDecision(claim, decision) {
+  const id = idOf(claim);
+  const note = (remarks[id] || "").trim();
 
-    setBusyId(id);
-    setError("");
-    setNotice("");
-    try {
-      const token = getToken();
-      await axios.patch(`http://localhost:5000/api/ta/claim/${id}/status`, {
-        decision,
-        remarks: note,
-      }, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setNotice("Claim decision submitted successfully.");
-      setSelectedId("");
-      setRemarks((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-      await fetchClaims();
-    } catch (err) {
-      setError(err.response?.data?.message || "Unable to save the decision. Check the backend route and request format.");
-    } finally {
-      setBusyId("");
-    }
+  if ((decision === "send_back" || decision === "reject") && !note) {
+    setError("Enter remarks before sending back or rejecting a claim.");
+    return;
   }
+
+  // Convert frontend decisions to the exact backend values
+  const actionMap = {
+    approve: "APPROVED",
+    reject: "REJECTED",
+    send_back: "SENT_BACK",
+  };
+
+  const action = actionMap[decision];
+
+  if (!action) {
+    setError("Invalid claim action.");
+    return;
+  }
+
+  const verb =
+    decision === "approve"
+      ? "approve"
+      : decision === "send_back"
+        ? "send back"
+        : "reject";
+
+  if (!window.confirm(`Are you sure you want to ${verb} this claim?`)) {
+    return;
+  }
+
+  setBusyId(id);
+  setError("");
+  setNotice("");
+
+  try {
+    const token = getToken();
+
+    await axios.patch(
+      `http://localhost:5000/api/ta/claim/${id}/status`,
+      {
+        action: action,
+        remarks: note,
+      },
+      {
+        headers: token
+          ? { Authorization: `Bearer ${token}` }
+          : {},
+      }
+    );
+
+    setNotice("Claim decision submitted successfully.");
+    setSelectedId("");
+
+    setRemarks((prev) => {
+      const next = { ...prev };
+      delete next[id];
+      return next;
+    });
+
+    await fetchClaims();
+  } catch (err) {
+    setError(
+      err.response?.data?.message ||
+        "Unable to save the decision. Check the backend route and request format."
+    );
+  } finally {
+    setBusyId("");
+  }
+}
 
   function signOut() {
     dispatch(logout());

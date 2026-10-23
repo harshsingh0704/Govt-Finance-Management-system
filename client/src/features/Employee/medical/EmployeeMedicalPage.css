@@ -792,3 +792,37 @@
     padding: 16px 13px 24px;
   }
 }
+
+
+/* Accessible medical claim submission feedback */
+.medical-success {
+  margin: 0 0 20px;
+  padding: 16px 20px;
+  border: 1px solid #86efac;
+  border-left: 5px solid #16a34a;
+  border-radius: 10px;
+  background: #f0fdf4;
+  color: #166534;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+  scroll-margin-top: 24px;
+}
+
+.medical-error {
+  margin: 0 0 20px;
+  padding: 14px 18px;
+  border: 1px solid #fca5a5;
+  border-left: 5px solid #dc2626;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 14px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.medical-form {
+  scroll-margin-top: 20px;
+}

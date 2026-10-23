@@ -27,6 +27,7 @@ const roleRoutes = require("./src/routes/roleRoutes");
 const permissionRoutes = require("./src/routes/permissionRoutes");
 
 const taRoutes = require("./src/routes/taRoutes");
+const accommodationRoutes = require("./src/routes/accommodationRoutes");
 const ltcRoutes = require("./src/routes/ltcRoutes");
 const medicalRoutes = require("./src/routes/medicalRoutes");
 
@@ -48,6 +49,7 @@ app.use("/api/roles", roleRoutes);
 app.use("/api/permissions", permissionRoutes);
 
 app.use("/api/ta", taRoutes);
+app.use("/api/accommodation", accommodationRoutes);
 app.use("/api/ltc", ltcRoutes);
 app.use("/api/medical", medicalRoutes);
 

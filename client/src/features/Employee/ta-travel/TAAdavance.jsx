@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from "lucide-react";
 import "./TAAdavance.css";
+import { taTravelService } from "./services/taTravelService.js";
 
 const INITIAL_FORM = {
   employeeId: "",
@@ -45,6 +46,8 @@ function TAAdvance({ onClose = () => {} }) {
   const [document, setDocument] = useState(null);
   const [errors, setErrors] = useState({});
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionReferenceId, setSubmissionReferenceId] = useState("");
 
   const totalAmount = useMemo(() => {
     return [
@@ -80,6 +83,8 @@ function TAAdvance({ onClose = () => {} }) {
     setDocument(null);
     setErrors({});
     setSubmitted(false);
+    setSubmissionReferenceId("");
+    setIsSubmitting(false);
   };
 
   const validateForm = () => {
@@ -137,22 +142,45 @@ function TAAdvance({ onClose = () => {} }) {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (!validateForm()) {
+    if (isSubmitting || !validateForm()) {
       return;
     }
 
-    const application = {
-      ...form,
-      totalAmount,
-      supportingDocument: document,
-      submittedAt: new Date().toISOString(),
-    };
+    setIsSubmitting(true);
 
-    console.log("TA Advance Application:", application);
-    setSubmitted(true);
+    try {
+      const payload = {
+        purposeOfJourney: form.purpose.trim(),
+        toPlace: form.destination.trim(),
+        fromDate: form.fromDate,
+        toDate: form.toDate,
+        modeOfTravel: form.travelMode,
+        advanceAmountRequested: Number(form.advanceRequested),
+        status: "submitted",
+      };
+
+      const result = await taTravelService.submitAdvance(payload);
+      const advance = result?.advance;
+
+      if (result?.success !== true || !advance?._id) {
+        throw new Error(
+          result?.message || "The server did not return a saved TA Advance reference ID."
+        );
+      }
+
+      setSubmissionReferenceId(advance._id);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("TA Advance submission failed:", error);
+      window.alert(
+        `TA Advance could not be saved: ${error.message || "Unexpected error"}`
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -219,12 +247,10 @@ function TAAdvance({ onClose = () => {} }) {
 
             <h2>Application Ready</h2>
             <p>
-              Your TA Advance form has passed the local form
-              validation.
+              Your TA Advance application has been saved successfully.
             </p>
             <p className="ta-success-note">
-              This screen does not save the application to the
-              server. Backend submission is not configured here.
+              MongoDB Reference ID: <strong>{submissionReferenceId}</strong>
             </p>
 
             <button
@@ -643,10 +669,11 @@ function TAAdvance({ onClose = () => {} }) {
                 <button
                   type="submit"
                   className="ta-primary-button"
+                  disabled={isSubmitting}
                 >
                   <Send size={17} />
-                  Submit Application
-                  <ChevronRight size={17} />
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
+                  {!isSubmitting && <ChevronRight size={17} />}
                 </button>
               </div>
             </footer>

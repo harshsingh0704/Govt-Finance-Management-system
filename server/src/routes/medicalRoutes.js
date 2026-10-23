@@ -11,6 +11,7 @@ router.post('/claim', authMiddleware, validateClaimInput, medicalController.crea
 router.get('/claim/:id', authMiddleware, medicalController.getClaimById);
 
 // GET /api/medical/claims/:employeeId - Fetch Medical claims history for an employee
+router.get('/claims/mine', authMiddleware, medicalController.getMyClaims);
 router.get('/claims/:employeeId', authMiddleware, medicalController.getClaimsByEmployee);
 
 // PATCH /api/medical/claim/:id/status - Approve / Reject Medical claim

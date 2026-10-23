@@ -54,6 +54,13 @@ export const taTravelService = {
       body: JSON.stringify(claimData),
     }),
 
+  // Submit a TA advance application
+  submitAdvance: (advanceData) =>
+    apiRequest("/ta/advance", {
+      method: "POST",
+      body: JSON.stringify(advanceData),
+    }),
+
   // Fetch claims using the existing backend /all route
   getClaims: () => apiRequest("/ta/all"),
 

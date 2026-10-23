@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CheckCircle2, Home, RotateCcw, Save } from "lucide-react";
 import "./EmployeeAccommodationPage.css";
+import accommodationService from "./services/accommodationService.js";
 
 const INITIAL_FORM = {
   employeeNumber: "",
@@ -25,7 +26,8 @@ function getToday() {
 function formatDate(value) {
   if (!value) return "—";
 
-  const [year, month, day] = value.split("-");
+  const dateOnly = String(value).slice(0, 10);
+  const [year, month, day] = dateOnly.split("-");
   return `${day}-${month}-${year}`;
 }
 
@@ -34,11 +36,32 @@ export default function EmployeeAccommodationPage({ onClose }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [records, setRecords] = useState([]);
   const [submitted, setSubmitted] = useState(false);
+  const [isLoadingRecords, setIsLoadingRecords] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [submissionReferenceId, setSubmissionReferenceId] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    accommodationService.getMine()
+      .then((response) => {
+        if (active) setRecords(Array.isArray(response.records) ? response.records : []);
+      })
+      .catch((error) => {
+        if (active) setErrorMessage(error.message || "Unable to load saved accommodation records.");
+      })
+      .finally(() => {
+        if (active) setIsLoadingRecords(false);
+      });
+    return () => { active = false; };
+  }, []);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
 
     setSubmitted(false);
+    setErrorMessage("");
+    setSubmissionReferenceId("");
 
     setForm((current) => {
       const next = {
@@ -72,32 +95,46 @@ export default function EmployeeAccommodationPage({ onClose }) {
   const resetForm = () => {
     setForm(INITIAL_FORM);
     setSubmitted(false);
+    setErrorMessage("");
+    setSubmissionReferenceId("");
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setErrorMessage("");
+    setSubmitted(false);
+    setSubmissionReferenceId("");
 
     if (form.requestDate < today) {
+      setErrorMessage("Request Date must be today or a future date.");
       return;
     }
-
     if (form.approvalDate < form.requestDate) {
+      setErrorMessage("Approval Date cannot be earlier than Request Date.");
       return;
     }
-
     if (form.occupancyDate < form.approvalDate) {
+      setErrorMessage("Occupancy Date cannot be earlier than Approval Date.");
       return;
     }
 
-    const newRecord = {
-      id: `${Date.now()}`,
-      slNo: records.length + 1,
-      ...form,
-    };
-
-    setRecords((current) => [...current, newRecord]);
-    setForm(INITIAL_FORM);
-    setSubmitted(true);
+    setIsSubmitting(true);
+    try {
+      const response = await accommodationService.submit(form);
+      const savedRecord = response.record;
+      if (!savedRecord?._id) {
+        throw new Error("The server did not return a saved record reference.");
+      }
+      const refreshed = await accommodationService.getMine();
+      setRecords(Array.isArray(refreshed.records) ? refreshed.records : [savedRecord]);
+      setSubmissionReferenceId(savedRecord._id);
+      setForm(INITIAL_FORM);
+      setSubmitted(true);
+    } catch (error) {
+      setErrorMessage(error.message || "Unable to save the accommodation application.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -157,13 +194,17 @@ export default function EmployeeAccommodationPage({ onClose }) {
         </div>
       </section>
 
+      {errorMessage && (
+        <div className="accommodation-error" role="alert">{errorMessage}</div>
+      )}
+
       {submitted && (
         <div className="accommodation-success" role="status">
           <CheckCircle2 size={19} />
           <div>
             <strong>Accommodation record saved</strong>
             <span>
-              The record has been added to the current frontend session.
+              Saved to the database. Reference: {submissionReferenceId}
             </span>
           </div>
         </div>
@@ -384,9 +425,10 @@ export default function EmployeeAccommodationPage({ onClose }) {
               <button
                 type="submit"
                 className="accommodation-primary-button"
+                disabled={isSubmitting}
               >
                 <Save size={17} />
-                Save Accommodation Record
+                {isSubmitting ? "Saving..." : "Save Accommodation Record"}
               </button>
             </div>
           </div>
@@ -399,7 +441,7 @@ export default function EmployeeAccommodationPage({ onClose }) {
             <span className="accommodation-eyebrow">Records</span>
             <h2>Accommodation Records</h2>
             <p>
-              Records created during the current frontend session appear here.
+              Saved applications linked to your employee account appear here.
             </p>
           </div>
 
@@ -408,7 +450,11 @@ export default function EmployeeAccommodationPage({ onClose }) {
           </span>
         </div>
 
-        {records.length === 0 ? (
+        {isLoadingRecords ? (
+          <div className="accommodation-empty-state">
+            <strong>Loading accommodation records...</strong>
+          </div>
+        ) : records.length === 0 ? (
           <div className="accommodation-empty-state">
             <Home size={25} />
             <strong>No accommodation records yet</strong>
@@ -434,9 +480,10 @@ export default function EmployeeAccommodationPage({ onClose }) {
               </thead>
 
               <tbody>
-                {records.map((record) => (
-                  <tr key={record.id}>
-                    <td>{record.slNo}</td>
+                {records.map((record, index) => (
+                  <tr key={record._id || `${record.employeeNumber}-${index}`}>
+
+                    <td>{index + 1}</td>
                     <td>
                       <strong>{record.employeeNumber}</strong>
                     </td>

@@ -1,10 +1,10 @@
-﻿const mongoose = require("mongoose");
+const mongoose = require("mongoose");
 
 const approvalSchema = new mongoose.Schema(
   {
     claimType: {
       type: String,
-      enum: ["TAClaim", "MedicalClaim", "LTCClaim"],
+      enum: ["TAClaim", "MedicalClaim", "LTCClaim", "LTCAdvance"],
       required: true,
     },
     claimId: {

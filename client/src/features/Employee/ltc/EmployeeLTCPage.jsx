@@ -94,6 +94,9 @@ function EmployeeLTCPage({ onClose }) {
   const [form, setForm] = useState(INITIAL_FORM);
   const [errors, setErrors] = useState({});
   const [records, setRecords] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState("");
 
   const totalFare = useMemo(() => {
     const fare = Number(form.fare) || 0;
@@ -303,52 +306,123 @@ function EmployeeLTCPage({ onClose }) {
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    setSubmitError("");
+    setSubmitSuccess("");
 
     const validationErrors = validate();
-
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth",
-      });
-
+      window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
 
-    const newRecord = {
-      ...form,
-      totalFare: totalFare.toFixed(2),
-      netClaimAmount: calculatedNetClaim.toFixed(2),
-      id: `${Date.now()}`,
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setSubmitError("Your session has expired. Please sign in again before submitting.");
+      return;
+    }
+
+    // Map the UI labels to the exact values accepted by the existing Mongo schema.
+    const ltcTypeMap = {
+      "Home Town LTC": "Home Town",
+      "Anywhere in India LTC": "Anywhere in India",
+      Other: "Conversion to NER/J&K/A&N",
+    };
+    const modeMap = {
+      Bus: "Bus",
+      Train: "Train",
+      Air: "Air",
+      Road: "Multiple",
+      Other: "Multiple",
     };
 
-    setRecords((current) => [
-      newRecord,
-      ...current,
-    ]);
+    const fareClaimed = Number(totalFare) || 0;
+    const advanceTaken =
+      form.advanceDrawn === "Yes" ? Number(form.advanceAmount) || 0 : 0;
 
-    setForm({
-      ...INITIAL_FORM,
-      familyMembers: [
-        {
-          id: Date.now(),
-          name: "",
-          age: "",
-          relationship: "",
+    const payload = {
+      employeeNumber: form.employeeNumber.trim(),
+      employeeName: form.employeeName.trim(),
+      employeeCode: form.employeeNumber.trim(),
+      designation: form.designation.trim(),
+      gradePay: form.pay.trim(),
+      headquarter: form.headquarter.trim(),
+      ltcType: ltcTypeMap[form.ltcType] || form.ltcType,
+      blockPeriod: form.blockPeriod.trim(),
+      homeTown: form.homeTownDestination.trim(),
+      graceYear: false,
+      publicTransportation: modeMap[form.modeOfTravel] || "Multiple",
+      familyMembers: form.familyMembers.map(({ name, age, relationship }) => ({
+        name: name.trim(),
+        relation: relationship.trim(),
+        age: Number(age),
+      })),
+      destination: form.journeyTo.trim() || form.homeTownDestination.trim(),
+      fromDate: form.departureDate,
+      toDate: form.arrivalDate,
+      fareClaimed,
+      advanceTaken,
+      documents: [
+        form.approvalDocument?.name,
+        form.ticketDocument?.name,
+        ...form.otherDocuments.map((file) => file.name),
+      ].filter(Boolean),
+      remarks: [
+        form.advanceDrawn === "Yes" && form.advanceReference
+          ? `Advance reference: ${form.advanceReference}`
+          : "",
+        form.higherClassTravel === "Yes"
+          ? `Higher class travel: ${form.higherClassDetails}`
+          : "",
+        form.roadJourney === "Yes"
+          ? `Road journey: ${form.roadJourneyDetails}`
+          : "",
+        `Travel class: ${form.travelClass}; distance: ${form.distance} km; departure: ${form.departureTime}; arrival: ${form.arrivalTime}`,
+      ].filter(Boolean).join("\\n"),
+    };
+
+    setIsSubmitting(true);
+    try {
+      const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:5000/api").replace(/\/$/, "");
+      const response = await fetch(`${apiBase}/ltc/claim`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
         },
-      ],
-    });
+        body: JSON.stringify(payload),
+      });
 
-    setErrors({});
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(result.message || result.error || `Submission failed (${response.status}).`);
+      }
 
-    window.scrollTo({
-      top: 0,
-      behavior: "smooth",
-    });
+      const savedClaim = result.data || result.claim || result;
+      setRecords((current) => [{
+        ...form,
+        id: savedClaim._id || savedClaim.id,
+        status: savedClaim.status || "submitted",
+        totalFare: fareClaimed.toFixed(2),
+        netClaimAmount: Number(savedClaim.netAmount ?? calculatedNetClaim).toFixed(2),
+      }, ...current]);
+
+      setSubmitSuccess(
+        `LTC claim saved successfully${savedClaim._id ? ` (ID: ${savedClaim._id})` : ""} and sent to the verification queue.`
+      );
+      setForm({
+        ...INITIAL_FORM,
+        familyMembers: [{ id: Date.now(), name: "", age: "", relationship: "" }],
+      });
+      setErrors({});
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      setSubmitError(error.message || "Could not save the LTC claim. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -445,6 +519,17 @@ function EmployeeLTCPage({ onClose }) {
           </div>
         </div>
       </div>
+
+      {submitError && (
+        <div role="alert" className="ltc-error" style={{ marginBottom: 12 }}>
+          {submitError}
+        </div>
+      )}
+      {submitSuccess && (
+        <div role="status" style={{ marginBottom: 12 }}>
+          {submitSuccess}
+        </div>
+      )}
 
       <form
         className="ltc-form"
@@ -1263,9 +1348,10 @@ function EmployeeLTCPage({ onClose }) {
           <button
             type="submit"
             className="ltc-primary-button"
+            disabled={isSubmitting}
           >
             <Save size={17} />
-            Submit LTC Claim
+            {isSubmitting ? "Saving Claim..." : "Submit LTC Claim"}
           </button>
 
         </div>
@@ -1378,7 +1464,7 @@ function EmployeeLTCPage({ onClose }) {
                     <td>
                       <span className="ltc-status-badge">
                         <CheckCircle2 size={14} />
-                        Submitted
+                        {record.status || "Submitted"}
                       </span>
                     </td>
 

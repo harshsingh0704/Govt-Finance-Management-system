@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import "./EmployeeMedicalPage.css";
+import medicalService from "./services/medicalService";
 
 const INITIAL_FORM = {
   employeeNumber: "",
@@ -108,41 +109,129 @@ function EmployeeMedicalPage({ onClose }) {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
-    event.preventDefault();
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitMessage, setSubmitMessage] = React.useState("");
+  const [submitError, setSubmitError] = React.useState("");
+  const [isLoadingRecords, setIsLoadingRecords] = React.useState(true);
 
-    if (!validate()) {
-      return;
-    }
+  const mapClaimRecord = (record) => ({
+    ...record,
+    id: record._id || record.id,
+    totalAmount:
+      record.totalAmountClaimed ??
+      record.totalAmount ??
+      Object.values(record.expenseBreakdown || {}).reduce(
+        (sum, value) => sum + (Number(value) || 0),
+        0
+      ),
+    status: record.status || "PENDING",
+    createdAt: record.createdAt || null,
+  });
 
-    const totalAmount = [
-      form.consultationAmount,
-      form.medicineAmount,
-      form.testAmount,
-      form.hospitalAmount,
-      form.surgeryAmount,
-      form.otherAmount,
-    ].reduce((total, value) => total + (Number(value) || 0), 0);
+  React.useEffect(() => {
+    let active = true;
 
-    const record = {
-      ...form,
-      id: Date.now(),
-      totalAmount,
-      status: "Recorded",
+    const loadClaims = async () => {
+      setIsLoadingRecords(true);
+      try {
+        const response = await medicalService.getMine();
+        if (active) {
+          const savedRecords = Array.isArray(response.records)
+            ? response.records
+            : [];
+          setRecords(savedRecords.map(mapClaimRecord));
+        }
+      } catch (error) {
+        if (active) {
+          setSubmitError(
+            error.message || "Unable to load your saved medical claims."
+          );
+        }
+      } finally {
+        if (active) setIsLoadingRecords(false);
+      }
     };
 
-    setRecords((current) => [...current, record]);
-    setForm(INITIAL_FORM);
-    setErrors({});
-    setDocuments({
-      medicalTest: null,
-      medicalPrescription: null,
-      surgeryProcedure: null,
-      medicalCertificate: null,
-    });
-    setConsentAccepted(false);
-  };
+    loadClaims();
 
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+    setSubmitMessage("");
+    setSubmitError("");
+
+    if (!validate()) return;
+
+    setIsSubmitting(true);
+
+    const payload = {
+      ...form,
+      consultationAmount: Number(form.consultationAmount) || 0,
+      medicineAmount: Number(form.medicineAmount) || 0,
+      testAmount: Number(form.testAmount) || 0,
+      hospitalAmount: Number(form.hospitalAmount) || 0,
+      surgeryAmount: Number(form.surgeryAmount) || 0,
+      otherAmount: Number(form.otherAmount) || 0,
+      advanceTaken: 0,
+    };
+
+    try {
+      const response = await medicalService.submit(payload);
+      const savedRecord = response.record;
+
+      if (!response.success || !savedRecord?._id) {
+        throw new Error(
+          response.message || "The server did not confirm that the claim was saved."
+        );
+      }
+
+      // Reload authoritative records from the backend after saving.
+      const refreshedResponse = await medicalService.getMine();
+      const refreshedRecords = Array.isArray(refreshedResponse.records)
+        ? refreshedResponse.records
+        : [savedRecord];
+
+      setRecords(refreshedRecords.map(mapClaimRecord));
+
+      setSubmitMessage(
+        `Medical claim submitted successfully! Reference: ${savedRecord._id} | Status: Pending Approval`
+      );
+      setSubmitError("");
+
+      // Scroll the form to its top so the success notification is visible.
+      requestAnimationFrame(() => {
+        const formElement = document.querySelector(".medical-form");
+        if (formElement) {
+          formElement.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        } else {
+          window.scrollTo({ top: 0, behavior: "smooth" });
+        }
+      });
+
+      setForm(INITIAL_FORM);
+      setErrors({});
+      setDocuments({
+        medicalTest: null,
+        medicalPrescription: null,
+        surgeryProcedure: null,
+        medicalCertificate: null,
+      });
+      setConsentAccepted(false);
+    } catch (error) {
+      setSubmitError(
+        error.message || "Unable to save the medical claim. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
   const handleReset = () => {
     setForm(INITIAL_FORM);
     setErrors({});
@@ -215,6 +304,13 @@ function EmployeeMedicalPage({ onClose }) {
 
       {showMedicalForm && (
   <form className="medical-form" onSubmit={handleSubmit}>
+        {submitMessage && (
+          <p role="status" className="medical-success">{submitMessage}</p>
+        )}
+        {submitError && (
+          <p role="alert" className="medical-error">{submitError}</p>
+        )}
+
         <SectionHeading
           title="Employee Details"
           description="Enter the employee information associated with the claim."
@@ -591,8 +687,8 @@ function EmployeeMedicalPage({ onClose }) {
           Close Form
         </button>
 
-          <button type="submit" className="medical-primary-button">
-            Save Medical Claim
+          <button type="submit" className="medical-primary-button" disabled={isSubmitting}>
+            {isSubmitting ? "Submitting Claim..." : "Save Medical Claim"}
           </button>
         </div>
             </form>

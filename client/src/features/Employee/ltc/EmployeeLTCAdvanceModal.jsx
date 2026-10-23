@@ -76,6 +76,7 @@ function EmployeeLTCAdvanceModal({ isOpen, onClose }) {
   const [form, setForm] = useState(initialForm);
   const [family, setFamily] = useState(initialFamily);
   const [documents, setDocuments] = useState([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const eligibleAmount = useMemo(() => {
     const fare = Number(form.estimatedFare || 0);
@@ -158,8 +159,10 @@ function EmployeeLTCAdvanceModal({ isOpen, onClose }) {
     setDocuments([]);
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
 
     if (!form.employeeNumber || !form.employeeName) {
       window.alert("Please enter the employee number and employee name.");
@@ -176,8 +179,18 @@ function EmployeeLTCAdvanceModal({ isOpen, onClose }) {
       return;
     }
 
+    if (new Date(form.leaveFrom) > new Date(form.leaveTo)) {
+      window.alert("The leave end date cannot be earlier than the start date.");
+      return;
+    }
+
     if (!form.journeyStart || !form.journeyEnd) {
       window.alert("Please enter the journey dates.");
+      return;
+    }
+
+    if (new Date(form.journeyStart) > new Date(form.journeyEnd)) {
+      window.alert("The journey end date cannot be earlier than the start date.");
       return;
     }
 
@@ -186,15 +199,74 @@ function EmployeeLTCAdvanceModal({ isOpen, onClose }) {
       return;
     }
 
-    console.log("LTC Advance Application:", {
-      ...form,
-      family,
-      documents,
-      eligibleAmount,
-    });
+    const requestedAmount = Number(form.advanceRequested || 0);
+    const estimatedFare = Number(form.estimatedFare || 0);
+    if (
+      !Number.isFinite(requestedAmount) ||
+      !Number.isFinite(estimatedFare) ||
+      requestedAmount < 0 ||
+      estimatedFare < 0
+    ) {
+      window.alert("Please enter valid non-negative travel and advance amounts.");
+      return;
+    }
 
-    window.alert("LTC Advance application submitted successfully.");
-    onClose();
+    const fmsAuth = (() => {
+      try {
+        return JSON.parse(localStorage.getItem("fms_auth") || "{}");
+      } catch {
+        return {};
+      }
+    })();
+    const token = localStorage.getItem("token") || fmsAuth?.token;
+
+    if (!token) {
+      window.alert("Your login session could not be found. Please sign in again.");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const payload = new FormData();
+      Object.entries(form).forEach(([key, value]) => {
+        payload.append(key, String(value));
+      });
+      payload.append("family", JSON.stringify(family));
+      payload.append("eligibleAmount", String(eligibleAmount));
+      documents.forEach((file) => payload.append("documents", file));
+
+      const apiBase = (
+        import.meta.env.VITE_API_URL || "http://localhost:5000/api"
+      ).replace(/\/$/, "");
+
+      const response = await fetch(`${apiBase}/ltc/advance`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: payload,
+      });
+
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok || result.success !== true) {
+        throw new Error(
+          result.message || "The LTC Advance application could not be saved."
+        );
+      }
+
+      const referenceId = result.advance?._id;
+      const successMessage = referenceId
+        ? `LTC Advance application submitted successfully (Reference ID: ${referenceId}).`
+        : (result.message || "LTC Advance application submitted successfully.");
+
+      window.alert(successMessage);
+      resetForm();
+      onClose();
+    } catch (error) {
+      window.alert(
+        error.message || "Unable to submit the LTC Advance application. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (!isOpen) {
@@ -884,10 +956,11 @@ function EmployeeLTCAdvanceModal({ isOpen, onClose }) {
               <button
                 type="submit"
                 className="ltc-footer-primary"
+                disabled={isSubmitting}
               >
                 <Send size={17} />
-                Submit Application
-                <ChevronRight size={18} />
+                {isSubmitting ? "Submitting..." : "Submit Application"}
+                {!isSubmitting && <ChevronRight size={18} />}
               </button>
             </div>
           </footer>

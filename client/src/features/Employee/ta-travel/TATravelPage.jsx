@@ -1,3 +1,4 @@
+import { taTravelService } from "./services/taTravelService.js";
 import React, { useMemo, useState } from "react";
 import {
   CalendarDays,
@@ -36,6 +37,9 @@ const INITIAL_FORM = {
 
   purposeOfJourney: "",
   projectName: "",
+  fromPlace: "",
+  toPlace: "",
+  declaration: false,
   fromDate: "",
   toDate: "",
   departureTime: "",
@@ -63,6 +67,7 @@ function TATravelPage() {
   const [form, setForm] = useState(INITIAL_FORM);
   const [documents, setDocuments] = useState(INITIAL_DOCUMENTS);
   const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [records, setRecords] = useState([]);
 
   const today = useMemo(() => getToday(), []);
@@ -84,6 +89,14 @@ function TATravelPage() {
     form.accommodation,
     form.otherExpenses,
   ]);
+
+  const handleReset = () => {
+    if (isSubmitting) return;
+
+    setForm(INITIAL_FORM);
+    setDocuments(INITIAL_DOCUMENTS);
+    setErrors({});
+  };
 
   const handleChange = (field, value) => {
     setForm((previous) => ({
@@ -192,43 +205,121 @@ function TATravelPage() {
         "Approval Document is required when TA Advance is approved";
     }
 
+    if (!form.fromPlace?.trim()) {
+      nextErrors.fromPlace = "From place is required.";
+    }
+
+    if (!form.toPlace?.trim()) {
+      nextErrors.toPlace = "To place is required.";
+    }
+
     return nextErrors;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
 
-    const validationErrors = validate();
+    if (isSubmitting) return;
 
+    // Require the employee to actively accept the declaration.
+    if (!form.declaration) {
+      window.alert("Please confirm the declaration before submitting.");
+      return;
+    }
+
+    const validationErrors = validate();
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors);
       return;
     }
 
-    const newRecord = {
-      ...form,
-      id: `${Date.now()}`,
-      createdDate: today,
-      totalClaimAmount,
-      documents: {
-        approvalDocument: documents.approvalDocument?.name || "",
-        ticket: documents.ticket?.name || "",
-        hotelReceipt: documents.hotelReceipt?.name || "",
-        otherDocuments: documents.otherDocuments?.name || "",
-      },
+    setErrors({});
+    setIsSubmitting(true);
+
+    const documentNames = [
+      documents.approvalDocument,
+      documents.ticket,
+      documents.hotelReceipt,
+      documents.otherDocuments,
+    ]
+      .filter(Boolean)
+      .map((file) => file.name);
+
+    const modeMap = {
+      Flight: "Air",
+      "Taxi / Cab": "Taxi/Auto",
+      "Personal Vehicle": "None",
+      "Office Vehicle": "None",
+      Other: "None",
     };
 
-    setRecords((previous) => [newRecord, ...previous]);
+    const payload = {
+      ...form,
+      employeeNumber: form.employeeNumber,
+      employeeName: form.employeeName,
+      fromPlace: form.fromPlace.trim(),
+      toPlace: form.toPlace.trim(),
+      declaration: Boolean(form.declaration),
+      pay: Number(form.pay) || 0,
+      travelFare: Number(form.travelFare) || 0,
+      fare: Number(form.travelFare) || 0,
+      roadMileage: 0,
+      dailyAllowance: Number(form.dailyAllowance) || 0,
+      accommodation: Number(form.accommodation) || 0,
+      accommodationCharges: Number(form.accommodation) || 0,
+      otherExpenses: Number(form.otherExpenses) || 0,
+      advanceAmountRequested: Number(form.advanceAmountRequested) || 0,
+      advanceAdjusted: 0,
+      tourType: form.claimType === "Outstation" ? "Out-of-station" : "Local",
+      publicTransportation:
+        modeMap[form.modeOfTravel] || form.modeOfTravel || "Train",
+      documents: documentNames,
+    };
 
-    setForm(INITIAL_FORM);
-    setDocuments(INITIAL_DOCUMENTS);
-    setErrors({});
-  };
+    try {
+      const result = await taTravelService.submitClaim(payload);
+      const claim = result?.claim;
 
-  const handleReset = () => {
-    setForm(INITIAL_FORM);
-    setDocuments(INITIAL_DOCUMENTS);
-    setErrors({});
+      if (result?.success !== true || !claim?._id) {
+        throw new Error(
+          result?.message || "The server did not return a saved claim reference."
+        );
+      }
+
+      const newRecord = {
+        ...payload,
+        ...claim,
+        id: claim._id,
+        _id: claim._id,
+        referenceId: claim._id,
+        createdDate:
+          claim.submittedAt || claim.createdAt || new Date().toISOString(),
+        totalClaimAmount:
+          claim.grossAmount ??
+          (
+            (Number(form.travelFare) || 0) +
+            (Number(form.dailyAllowance) || 0) +
+            (Number(form.accommodation) || 0) +
+            (Number(form.otherExpenses) || 0)
+          ),
+        documents: documentNames,
+      };
+
+      setRecords((previous) => [newRecord, ...previous]);
+      setForm(INITIAL_FORM);
+      setDocuments(INITIAL_DOCUMENTS);
+      setErrors({});
+
+      window.alert(
+        `TA claim saved successfully. Reference ID: ${claim._id}`
+      );
+    } catch (error) {
+      window.alert(
+        error?.message || "Unable to save TA claim. Please try again."
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -406,6 +497,22 @@ function TATravelPage() {
               }
               error={errors.projectName}
               placeholder="Enter project name"
+            />
+
+            <Field
+              label="From Place"
+              value={form.fromPlace}
+              onChange={(value) => handleChange("fromPlace", value)}
+              error={errors.fromPlace}
+              placeholder="Enter departure location"
+            />
+
+            <Field
+              label="To Place"
+              value={form.toPlace}
+              onChange={(value) => handleChange("toPlace", value)}
+              error={errors.toPlace}
+              placeholder="Enter destination"
             />
 
             <Field
@@ -746,9 +853,10 @@ function TATravelPage() {
           <button
             type="submit"
             className="ta-primary-button"
+            disabled={isSubmitting}
           >
             <Save size={17} />
-            Submit TA Advance
+            {isSubmitting ? "Submitting..." : "Submit TA Advance"}
           </button>
         </div>
       </form>
@@ -761,7 +869,7 @@ function TATravelPage() {
           <div>
             <h2>TA Advance Records</h2>
             <p>
-              Requests created during this frontend session.
+              Claims saved successfully to the database during this session.
             </p>
           </div>
 
@@ -787,6 +895,7 @@ function TATravelPage() {
             <table className="ta-table">
               <thead>
                 <tr>
+                  <th>Reference ID</th>
                   <th>Employee</th>
                   <th>Project</th>
                   <th>Travel Type</th>
@@ -801,6 +910,11 @@ function TATravelPage() {
               <tbody>
                 {records.map((record) => (
                   <tr key={record.id}>
+                    <td>
+                      <code title={record.referenceId || record._id || record.id}>
+                        {record.referenceId || record._id || record.id}
+                      </code>
+                    </td>
                     <td>
                       <div className="ta-employee-cell">
                         <strong>

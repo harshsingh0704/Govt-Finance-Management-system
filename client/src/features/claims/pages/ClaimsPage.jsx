@@ -1,10 +1,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import "../claims.css";
-
-import { useSelector } from "react-redux";
 import {
-  ArrowLeft,
   AlertCircle,
   FileText,
   Plus,
@@ -12,7 +9,9 @@ import {
   Clock3,
   CheckCircle2,
 } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+
+
 import { getTAClaims } from "../claims.api";
 import ClaimsSummary from "../components/ClaimsSummary";
 import ClaimFilters from "../components/ClaimFilters";

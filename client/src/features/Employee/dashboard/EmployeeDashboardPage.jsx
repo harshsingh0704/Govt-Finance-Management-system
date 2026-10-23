@@ -1,4 +1,4 @@
-
+﻿
 import { useState, useEffect } from "react";
 import CreateClaimModal from "../claims/EmployeeClaimsPage.jsx";
 import TATravelPage from "../ta-travel/TATravelPage.jsx";
@@ -9,8 +9,9 @@ import MedicalClaimPage from "../../medical/MedicalClaimPage";
 import EmployeeMedicalPage from "../medical/EmployeeMedicalPage.jsx";
 import EmployeeMedicalAdvancePage from "../medical/EmployeeMedicalAdvancePage.jsx";
 import EmployeeAccommodationPage from "../accommodation/EmployeeAccommodationPage.jsx";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
+import { logout } from "../../auth/authSlice";
 import axios from "axios";
 import {
   Activity,
@@ -50,7 +51,7 @@ const claims = [
     type: "TA Final",
     description: "Official travel reimbursement",
     date: "12 Sep 2026",
-    amount: "â‚¹18,450",
+    amount: "Ã¢â€šÂ¹18,450",
     status: "Under Review",
     statusType: "review",
   },
@@ -59,7 +60,7 @@ const claims = [
     type: "Medical",
     description: "Medical reimbursement claim",
     date: "08 Sep 2026",
-    amount: "â‚¹7,820",
+    amount: "Ã¢â€šÂ¹7,820",
     status: "Approved",
     statusType: "approved",
   },
@@ -68,7 +69,7 @@ const claims = [
     type: "LTC",
     description: "Leave travel concession",
     date: "04 Sep 2026",
-    amount: "â‚¹25,000",
+    amount: "Ã¢â€šÂ¹25,000",
     status: "Pending",
     statusType: "pending",
   },
@@ -77,7 +78,7 @@ const claims = [
     type: "TA Advance",
     description: "Advance for official tour",
     date: "28 Aug 2026",
-    amount: "â‚¹12,500",
+    amount: "Ã¢â€šÂ¹12,500",
     status: "Paid",
     statusType: "paid",
   },
@@ -101,7 +102,7 @@ const activities = [
   {
     icon: IndianRupee,
     title: "TA Advance processed",
-    description: "â‚¹12,500 has been credited.",
+    description: "Ã¢â€šÂ¹12,500 has been credited.",
     time: "Yesterday",
     type: "payment",
   },
@@ -137,8 +138,16 @@ const notifications = [
 
 function App() {
   const currentUser = useSelector((state) => state.auth.user);
+  const displayName = currentUser?.name || currentUser?.email || "Employee";
+  const displayInitials = displayName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
   const [showClaimModal, setShowClaimModal] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  const handleGlobalLogout = () => {
+    dispatch(logout());
+    navigate("/login", { replace: true });
+  };
   const [activeNav, setActiveNav] = useState("Dashboard");
   const [expandedFinance, setExpandedFinance] = useState({
     ta: false,
@@ -279,7 +288,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("TA & Travel")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>TA Claim</span>
                   </button>
                   <button
@@ -287,7 +296,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("TA Advance Claim")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>TA Advance Claim</span>
                   </button>
                 </div>
@@ -317,7 +326,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("LTC Claim")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>LTC Claim</span>
                   </button>
                   <button
@@ -325,7 +334,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("LTC Advance Claim")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>LTC Advance Claim</span>
                   </button>
                 </div>
@@ -355,7 +364,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("Medical Claim")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>Medical Claim</span>
                   </button>
                   <button
@@ -363,7 +372,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("Medical Advance Claim")}
                   >
-                    <span className="finance-child-branch">↳</span>
+                    <span className="finance-child-branch">â†³</span>
                     <span>Medical Advance Claim</span>
                   </button>
                 </div>
@@ -419,10 +428,10 @@ function App() {
           />
 
           <div className="sidebar-user">
-            <div className="avatar avatar-small">SD</div>
+            <div className="avatar avatar-small">{displayInitials}</div>
 
             <div className="sidebar-user-details">
-              <strong>Sahaj Dubey</strong>
+              <strong>{displayName}</strong>
               <span>Employee</span>
             </div>
 
@@ -471,7 +480,7 @@ function App() {
                 </button>
               )}
 
-              <span className="search-shortcut">âŒ˜ K</span>
+              <span className="search-shortcut">Ã¢Å’Ëœ K</span>
             </div>
           </div>
 
@@ -512,17 +521,17 @@ function App() {
                   setNotificationsOpen(false);
                 }}
               >
-                <div className="avatar">SD</div>
+                <div className="avatar">{displayInitials}</div>
 
                 <div className="profile-trigger-text">
-                  <strong>Sahaj Dubey</strong>
+                  <strong>{displayName}</strong>
                   <span>Employee</span>
                 </div>
 
                 <ChevronDown size={16} />
               </button>
 
-              {profileOpen && <ProfilePanel onNavigate={navigate} />}
+              {profileOpen && <ProfilePanel onNavigate={navigate} onLogout={handleGlobalLogout} displayName={displayName} displayInitials={displayInitials} />}
             </div>
           </div>
         </header>
@@ -602,7 +611,7 @@ function Dashboard({ onNavigate, onOpenClaim }) {
             Finance Management System
           </div>
 
-          <h2>Good morning, Sahaj ðŸ‘‹</h2>
+          <h2>Good morning, Sahaj Ã°Å¸â€˜â€¹</h2>
           <button type="button" onClick={onOpenClaim} style={{ marginTop: '12px', padding: '8px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>+ Submit New Claim</button>
 
           <p>
@@ -658,7 +667,7 @@ function Dashboard({ onNavigate, onOpenClaim }) {
         <StatCard
           icon={IndianRupee}
           label="Last Payslip"
-          value="â‚¹48,750"
+          value="Ã¢â€šÂ¹48,750"
           description="September 2026"
           trend="View"
           trendDirection="action"
@@ -992,12 +1001,12 @@ function FinancialOverview() {
       <div className="financial-summary">
         <div>
           <span>Total claimed</span>
-          <strong>â‚¹86,420</strong>
+          <strong>Ã¢â€šÂ¹86,420</strong>
         </div>
 
         <div className="financial-approved">
           <span>Approved</span>
-          <strong>â‚¹61,250</strong>
+          <strong>Ã¢â€šÂ¹61,250</strong>
         </div>
       </div>
 
@@ -1083,14 +1092,14 @@ function NotificationPanel({ onClose }) {
 /* Profile Panel                                                              */
 /* -------------------------------------------------------------------------- */
 
-function ProfilePanel({ onNavigate }) {
+function ProfilePanel({ onNavigate, onLogout, displayName, displayInitials }) {
   return (
     <div className="dropdown-panel profile-panel">
       <div className="profile-panel-header">
-        <div className="avatar avatar-medium">SD</div>
+        <div className="avatar avatar-medium">{displayInitials}</div>
 
         <div>
-          <strong>Sahaj Dubey</strong>
+          <strong>{displayName}</strong>
           <span>Employee</span>
         </div>
       </div>
@@ -1113,7 +1122,7 @@ function ProfilePanel({ onNavigate }) {
 
       <div className="profile-panel-divider" />
 
-      <button className="profile-menu-item danger" type="button">
+      <button className="profile-menu-item danger" type="button" onClick={onLogout}>
         <LogOut size={17} />
         Sign out
       </button>
@@ -1408,4 +1417,6 @@ function PlaceholderPage({ section }) {
 }
 
 export default App;
+
+
 

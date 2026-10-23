@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+﻿import { useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -184,16 +184,41 @@ export default function ProfilePage() {
 
   const employee = useMemo(
     () => ({
-      employeeId: authUser?.employeeId || authUser?.employeeID || "",
+      employeeId:
+        authUser?.employee?.employeeCode ||
+        authUser?.employeeNumber ||
+        authUser?.employee?.employeeId ||
+        authUser?.employeeId ||
+        authUser?.employeeID ||
+        "",
       name: authUser?.name || "",
-      officialEmail:
-        authUser?.officialEmail || authUser?.email || "",
-      department: authUser?.departmentName || authUser?.department || "",
-      designation: authUser?.designation || "",
-      payband: authUser?.payband || authUser?.payScale || "",
-      functionalRole: authUser?.functionalRole || "",
-      supervisor: authUser?.supervisor || "",
-      supervisorType: authUser?.supervisorType || "",
+      officialEmail: authUser?.email || authUser?.officialEmail || "",
+      department:
+        authUser?.employee?.department ||
+        authUser?.departmentName ||
+        authUser?.department ||
+        "",
+      designation:
+        authUser?.employee?.designation ||
+        authUser?.designation ||
+        "",
+      payband:
+        authUser?.employee?.payband ||
+        authUser?.payband ||
+        authUser?.payScale ||
+        "",
+      functionalRole:
+        authUser?.employee?.functionalRole ||
+        authUser?.functionalRole ||
+        "",
+      supervisor:
+        authUser?.employee?.supervisor ||
+        authUser?.supervisor ||
+        "",
+      supervisorType:
+        authUser?.employee?.supervisorType ||
+        authUser?.supervisorType ||
+        "",
     }),
     [authUser],
   );
@@ -362,7 +387,7 @@ useEffect(() => {
               <p>
                 {employee.designation || "Employee"}{" "}
                 {employee.department
-                  ? `• ${employee.department}`
+                  ? `â€¢ ${employee.department}`
                   : ""}
               </p>
             </div>

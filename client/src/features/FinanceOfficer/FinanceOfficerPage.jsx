@@ -18,6 +18,7 @@ const API_BASE = "http://localhost:5000/api/ta";
 const navigation = [
   { label: "Dashboard", icon: LayoutDashboard },
   { label: "Claims Approval", icon: ClipboardCheck },
+  { label: "Pending Sanction", icon: ShieldCheck },
   { label: "Financial Verification", icon: Wallet },
   { label: "Employees", icon: Users },
   { label: "Reports", icon: BarChart3 },
@@ -188,6 +189,9 @@ export default function FinanceOfficerPage() {
   const [selectedId, setSelectedId] = useState("");
   const [activeTab, setActiveTab] = useState("claim");
   const [remarks, setRemarks] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("NEFT");
+  const [paymentReference, setPaymentReference] = useState("");
+  const [paymentDate, setPaymentDate] = useState(new Date().toISOString().slice(0, 10));
   const [busyId, setBusyId] = useState("");
 
   const displayName = pick(
@@ -235,11 +239,17 @@ export default function FinanceOfficerPage() {
             ? payload.data
             : [];
 
+      // Claims returned by the pending endpoint may be waiting for review
+      // or may have returned from Finance Clerk for final sanction.
       setClaims(
-        list.filter(
-          (claim) =>
-            String(claim?.status || "").toUpperCase() ===
-            "PENDING_FINANCE_OFFICER"
+        list.filter((claim) =>
+          [
+            "PENDING_FINANCE_OFFICER",
+            "PENDING_FINANCE_OFFICER_SANCTION",
+            "PENDING_SANCTION",
+            "PENDING_FO_SANCTION",
+            "PENDING_FINAL_SANCTION",
+          ].includes(String(claim?.status || "").toUpperCase())
         )
       );
     } catch (err) {
@@ -254,12 +264,22 @@ export default function FinanceOfficerPage() {
   }, []);
 
   useEffect(() => {
-    if (activeSection === "Claims Approval") {
+    if (["Claims Approval", "Pending Sanction", "Financial Verification"].includes(activeSection)) {
       fetchClaims();
     }
   }, [activeSection, fetchClaims]);
 
-  const filteredClaims = claims.filter((claim) => {
+  const sanctionStatuses = [
+    "PENDING_FINANCE_OFFICER_SANCTION",
+    "PENDING_SANCTION",
+    "PENDING_FO_SANCTION",
+    "PENDING_FINAL_SANCTION",
+  ];
+  const queueClaims = activeSection === "Pending Sanction"
+    ? claims.filter((claim) => sanctionStatuses.includes(String(claim?.status || "").toUpperCase()))
+    : claims.filter((claim) => !sanctionStatuses.includes(String(claim?.status || "").toUpperCase()));
+
+  const filteredClaims = queueClaims.filter((claim) => {
     const text = [
       idOf(claim),
       employeeName(claim),
@@ -296,11 +316,18 @@ export default function FinanceOfficerPage() {
     }
 
     const actionText =
-      decision === "approve"
-        ? "approve"
-        : decision === "send_back"
-          ? "send back"
-          : "reject";
+  decision === "approve"
+    ? "approve"
+    : decision === "send_back"
+      ? "send back"
+      : "reject";
+
+const backendAction =
+  decision === "approve"
+    ? "APPROVED"
+    : decision === "send_back"
+      ? "SENT_BACK"
+      : "REJECTED";
 
     if (!window.confirm(`Are you sure you want to ${actionText} this claim?`)) {
       return;
@@ -321,12 +348,12 @@ export default function FinanceOfficerPage() {
        * Verify this request contract against the Finance Officer backend.
        * Do not use this payload until the controller supports decision/remarks.
        */
-      await axios.patch(
-        `${API_BASE}/claim/${id}/status`,
-        {
-          decision,
-          remarks: reason,
-        },
+    await axios.patch(
+  `${API_BASE}/claim/${id}/status`,
+  {
+    action: backendAction,
+    remarks: reason,
+  },
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -342,6 +369,67 @@ export default function FinanceOfficerPage() {
       setError(
         err.response?.data?.message ||
           "Unable to submit the decision. Check the Finance Officer endpoint and request format."
+      );
+    } finally {
+      setBusyId("");
+    }
+  }
+
+  async function submitSanction(claim) {
+    const id = idOf(claim);
+    const amount = Number(amountOf(claim));
+    if (!id) {
+      setError("This claim has no valid ID.");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0) {
+      setError("A valid claim amount is required before recording payment.");
+      return;
+    }
+    if (!paymentMethod) {
+      setError("Select a payment method.");
+      return;
+    }
+    if (!paymentReference.trim()) {
+      setError("Enter the payment transaction/reference number before sanctioning.");
+      return;
+    }
+    if (!window.confirm(`Confirm final sanction and record ${formatAmount(amount)} via ${paymentMethod}?`)) {
+      return;
+    }
+
+    setBusyId(id);
+    setError("");
+    setNotice("");
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Authentication token missing. Please log in again.");
+
+      await axios.patch(
+        `${API_BASE}/claim/${id}/status`,
+        {
+          action: "SANCTIONED",
+          remarks: remarks.trim(),
+          payment: {
+            method: paymentMethod,
+            reference: paymentReference.trim(),
+            paymentDate,
+            amount,
+            currency: "INR",
+          },
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      setNotice("Final sanction/payment record submitted successfully.");
+      setSelectedId("");
+      setRemarks("");
+      setPaymentReference("");
+      await fetchClaims();
+    } catch (err) {
+      setError(
+        err.response?.data?.message ||
+          "Unable to record final sanction. Ensure the backend supports action SANCTIONED and the payment object."
       );
     } finally {
       setBusyId("");
@@ -388,8 +476,10 @@ export default function FinanceOfficerPage() {
             >
               <Icon size={17} />
               <span>{label}</span>
-              {label === "Claims Approval" && claims.length > 0 && (
-                <small>{claims.length}</small>
+              {["Claims Approval", "Pending Sanction"].includes(label) && claims.length > 0 && (
+                <small>{label === "Pending Sanction"
+                  ? claims.filter((claim) => sanctionStatuses.includes(String(claim?.status || "").toUpperCase())).length
+                  : claims.filter((claim) => !sanctionStatuses.includes(String(claim?.status || "").toUpperCase())).length}</small>
               )}
             </button>
           ))}
@@ -467,7 +557,9 @@ export default function FinanceOfficerPage() {
               <p className="fo-subtitle">
                 {selectedClaim
                   ? `Claim reference ${idOf(selectedClaim)}`
-                  : "Verify financial claims forwarded for Finance Officer review."}
+                  : activeSection === "Pending Sanction"
+                    ? "Record payment details and complete final sanction for claims processed by Finance Clerk."
+                    : "Verify financial claims forwarded for Finance Officer review."}
               </p>
             </div>
 
@@ -852,7 +944,58 @@ export default function FinanceOfficerPage() {
                 )}
               </div>
 
-              <div className="fo-decision-panel">
+              {activeSection === "Pending Sanction" && (
+                <div className="fo-decision-panel">
+                  <h3><Wallet size={18} /> Payment details & final sanction</h3>
+                  <p>Enter the payment method and transaction reference after the payment is actually initiated through your authorised banking/payment system.</p>
+                  <label htmlFor="fo-payment-method">Payment method</label>
+                  <select
+                    id="fo-payment-method"
+                    value={paymentMethod}
+                    onChange={(event) => setPaymentMethod(event.target.value)}
+                  >
+                    <option value="NEFT">NEFT bank transfer</option>
+                    <option value="RTGS">RTGS bank transfer</option>
+                    <option value="IMPS">IMPS bank transfer</option>
+                    <option value="BANK_TRANSFER">Other bank transfer</option>
+                    <option value="CHEQUE">Cheque</option>
+                  </select>
+                  <label htmlFor="fo-payment-date">Payment date</label>
+                  <input
+                    id="fo-payment-date"
+                    type="date"
+                    value={paymentDate}
+                    onChange={(event) => setPaymentDate(event.target.value)}
+                  />
+                  <label htmlFor="fo-payment-reference">Transaction / cheque reference</label>
+                  <input
+                    id="fo-payment-reference"
+                    value={paymentReference}
+                    onChange={(event) => setPaymentReference(event.target.value)}
+                    placeholder="Enter bank UTR or cheque number"
+                  />
+                  <label htmlFor="fo-remarks">Sanction remarks</label>
+                  <textarea
+                    id="fo-remarks"
+                    value={remarks}
+                    onChange={(event) => setRemarks(event.target.value)}
+                    rows={3}
+                    placeholder="Enter final sanction remarks..."
+                  />
+                  <div className="fo-decision-actions">
+                    <button
+                      className="fo-approve"
+                      disabled={Boolean(busyId)}
+                      onClick={() => submitSanction(selectedClaim)}
+                    >
+                      <CheckCircle2 size={16} />
+                      {busyId === idOf(selectedClaim) ? "Submitting..." : "Record payment & sanction"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {activeSection !== "Pending Sanction" && <div className="fo-decision-panel">
                 <label htmlFor="fo-remarks">
                   Finance review remarks
                   <span>Required for send back or rejection</span>
@@ -891,17 +1034,18 @@ export default function FinanceOfficerPage() {
                     <XCircle size={16} /> Reject claim
                   </button>
                 </div>
-              </div>
+              </div>}
             </section>
-          ) : activeSection === "Claims Approval" ? (
+          ) : ["Claims Approval", "Pending Sanction", "Financial Verification"].includes(activeSection) ? (
             <section className="fo-claims-page">
               <div className="fo-claims-heading">
                 <div>
                   <span className="fo-kicker">FINANCIAL CONTROL</span>
-                  <h2>Claims awaiting financial review</h2>
+                  <h2>{activeSection === "Pending Sanction" ? "Claims awaiting final sanction" : "Claims awaiting financial review"}</h2>
                   <p>
-                    Inspect claims forwarded to Finance Officer before recording
-                    your decision.
+                    {activeSection === "Pending Sanction"
+                      ? "Review claims processed by Finance Clerk, enter payment details, and record final sanction."
+                      : "Inspect claims forwarded to Finance Officer before recording your decision."}
                   </p>
                 </div>
 
@@ -923,11 +1067,11 @@ export default function FinanceOfficerPage() {
                   <ClipboardCheck size={23} />
                 </span>
                 <span className="fo-summary-copy">
-                  <small>Claims awaiting your review</small>
+                  <small>{activeSection === "Pending Sanction" ? "Claims awaiting final sanction" : "Claims awaiting your review"}</small>
                   <strong>{loading ? "…" : claims.length}</strong>
                 </span>
                 <span className="fo-queue-badge">
-                  <i /> Finance Officer queue
+                  <i /> {activeSection === "Pending Sanction" ? "Pending sanction queue" : "Finance Officer queue"}
                 </span>
               </button>
 
@@ -974,6 +1118,8 @@ export default function FinanceOfficerPage() {
                         setSelectedId(idOf(claim));
                         setActiveTab("claim");
                         setRemarks("");
+                        setPaymentReference("");
+                        setPaymentDate(new Date().toISOString().slice(0, 10));
                         setError("");
                       }}
                     >

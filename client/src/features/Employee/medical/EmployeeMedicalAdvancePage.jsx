@@ -1,5 +1,6 @@
-import React, { useMemo, useState } from "react";
+﻿import React, { useMemo, useState } from "react";
 import "./EmployeeMedicalAdvancePage.css";
+import medicalService from "./services/medicalService";
 
 const initialForm = {
   // Employee Details
@@ -45,6 +46,8 @@ function EmployeeMedicalAdvancePage({ onClose }) {
   const [form, setForm] = useState(initialForm);
   const [errors, setErrors] = useState(initialErrors);
   const [consentAccepted, setConsentAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitMessage, setSubmitMessage] = useState(null);
 
   const totalEstimatedExpense = useMemo(() => {
     const treatment = Number(form.estimatedTreatmentExpense) || 0;
@@ -161,19 +164,59 @@ function EmployeeMedicalAdvancePage({ onClose }) {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+    const formElement = event.currentTarget;
+    setSubmitMessage(null);
 
     if (!validateForm()) {
       return;
     }
 
-    // Backend/API integration will be added later.
-    console.log("Medical Advance form submitted:", {
-      ...form,
-      totalEstimatedExpense,
-      consentAccepted,
+    const formData = new FormData();
+
+    Object.entries(form).forEach(([key, value]) => {
+      if (value instanceof File) {
+        formData.append(key, value);
+      } else if (value !== null && value !== undefined) {
+        formData.append(key, String(value));
+      }
     });
+
+    formData.append("totalEstimatedExpense", String(totalEstimatedExpense));
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await medicalService.submitAdvance(formData);
+
+      setSubmitMessage({
+        type: "success",
+        text: response.message || "Medical Advance request submitted successfully.",
+      });
+
+      setForm({ ...initialForm });
+      setErrors({});
+      setConsentAccepted(false);
+
+      formElement
+        .querySelectorAll('input[type="file"]')
+        .forEach((input) => {
+          input.value = "";
+        });
+
+      formElement.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    } catch (error) {
+      setSubmitMessage({
+        type: "error",
+        text: error.message || "Unable to submit the Medical Advance request.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleReset = () => {
@@ -214,7 +257,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
             onClick={() => onClose?.()}
             aria-label="Close Medical Advance Claim"
           >
-            ×
+            Ã—
           </button>
         </header>
         <div className="employee-medical-advance-content">
@@ -547,7 +590,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>₹</span>
+                <span>â‚¹</span>
                 <input
                   id="estimatedTreatmentExpense"
                   name="estimatedTreatmentExpense"
@@ -569,7 +612,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>₹</span>
+                <span>â‚¹</span>
                 <input
                   id="estimatedMedicineInvestigationExpense"
                   name="estimatedMedicineInvestigationExpense"
@@ -591,7 +634,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>₹</span>
+                <span>â‚¹</span>
                 <input
                   id="estimatedOtherExpense"
                   name="estimatedOtherExpense"
@@ -609,7 +652,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
           <div className="medical-advance-summary">
             <div>
               <span>Total Estimated Expense</span>
-              <strong>₹ {totalEstimatedExpense.toFixed(2)}</strong>
+              <strong>â‚¹ {totalEstimatedExpense.toFixed(2)}</strong>
             </div>
 
             <div className="medical-form-field">
@@ -618,7 +661,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>₹</span>
+                <span>â‚¹</span>
                 <input
                   id="advanceAmountRequested"
                   name="advanceAmountRequested"
@@ -707,7 +750,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
                 onChange={handleFileChange}
               />
 
-              <small>Optional • PDF, JPG, JPEG, PNG</small>
+              <small>Optional â€¢ PDF, JPG, JPEG, PNG</small>
 
               {form.otherSupportingDocuments && (
                 <span className="medical-selected-file">
@@ -775,6 +818,14 @@ function EmployeeMedicalAdvancePage({ onClose }) {
         {/* ============================================================
             8. ACTIONS
         ============================================================ */}
+        {submitMessage && (
+          <div
+            className={`medical-advance-submit-message ${submitMessage.type}`}
+            role={submitMessage.type === "error" ? "alert" : "status"}
+          >
+            {submitMessage.text}
+          </div>
+        )}
         <div className="medical-advance-actions">
           <button
             type="button"
@@ -794,8 +845,12 @@ function EmployeeMedicalAdvancePage({ onClose }) {
             Save Draft
           </button>
 
-          <button type="submit" className="medical-primary-button">
-            Submit Medical Advance
+          <button
+            type="submit"
+            className="medical-primary-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? "Submitting..." : "Submit Medical Advance"}
           </button>
         </div>
       </form>
@@ -807,3 +862,4 @@ function EmployeeMedicalAdvancePage({ onClose }) {
 }
 
 export default EmployeeMedicalAdvancePage;
+

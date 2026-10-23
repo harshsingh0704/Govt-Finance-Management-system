@@ -569,3 +569,29 @@
     padding: 12px 15px;
   }
 }
+
+/* Medical Advance submission feedback */
+.medical-advance-submit-message {
+  margin: 12px 0;
+  padding: 12px 14px;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.medical-advance-submit-message.success {
+  color: #166534;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+}
+
+.medical-advance-submit-message.error {
+  color: #991b1b;
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+}
+
+.medical-primary-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}

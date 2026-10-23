@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api";
+﻿const API_BASE_URL = "http://localhost:5000/api";
 
 function getAuthToken() {
   try {
@@ -52,6 +52,33 @@ export const medicalService = {
       body: JSON.stringify(payload),
     });
   },
-};
 
+  submitAdvance(formData) {
+    const token = getAuthToken();
+
+    return fetch(`${API_BASE_URL}/medical/advance`, {
+      method: "POST",
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: formData,
+    }).then(async (response) => {
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(
+          data.message || data.error || `Request failed (${response.status})`
+        );
+      }
+
+      return data;
+    });
+  },
+
+  getMyAdvances() {
+    return apiRequest("/medical/advances/mine");
+  },
+};
 export default medicalService;
+
+

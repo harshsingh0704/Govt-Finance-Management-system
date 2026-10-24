@@ -29,7 +29,7 @@ function getStoredAuthToken() {
   return "";
 
 }
-import CreateClaimModal from "../Employee/claims/EmployeeClaimsPage.jsx";
+
 
 import { useState, useEffect } from "react";
 
@@ -1446,9 +1446,7 @@ export default function AdminPage() {
 
   }, []);
 
-  const [showClaimModal, setShowClaimModal] = useState(false);
-
-  const [claimModalType, setClaimModalType] = useState("LTC");
+  
 
   const [payslips, setPayslips] = useState([]);
 
@@ -3024,21 +3022,7 @@ export default function AdminPage() {
 
       />
 
-            <CreateClaimModal initialType={claimModalType}
-
-        isOpen={showClaimModal}
-
-        onClose={() => setShowClaimModal(false)}
-
-        onSuccess={() => {
-
-          setShowClaimModal(false);
-
-          alert("Claim submitted successfully under 7th CPC guidelines!");
-
-        }}
-
-      />
+          
 
       <GeneratePayslipModal
 

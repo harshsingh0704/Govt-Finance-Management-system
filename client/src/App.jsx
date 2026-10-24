@@ -69,6 +69,7 @@ const claims = [
   },
 ];
 
+
 const activities = [
   {
     icon: FileCheck2,

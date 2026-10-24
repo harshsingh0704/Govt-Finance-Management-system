@@ -7,7 +7,7 @@ import {
   ChevronLeft, ChevronRight, ClipboardCheck, FileCheck2, FileText,
   FolderOpen, LayoutDashboard, LogOut, Menu, Search, Settings,
   ShieldCheck, Users, Wallet, X, XCircle, RefreshCw, Clock,
-  Download, ExternalLink,
+  Download, ExternalLink, CheckCheck, BellRing,
 } from "lucide-react";
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
@@ -169,6 +169,11 @@ export default function HeadOfDepartmentPage() {
   const [tab, setTab] = useState("claim");
   const [remarks, setRemarks] = useState("");
   const [busyId, setBusyId] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationBusyId, setNotificationBusyId] = useState("");
 
   const name = pick(user?.fullName, user?.name, user?.employeeName, user?.email?.split("@")[0], "Head of Department");
   const employeeId = pick(user?.employeeId, user?.employee_id, user?.empId, "Not available");
@@ -207,6 +212,109 @@ export default function HeadOfDepartmentPage() {
   useEffect(() => {
     if (activeSection === "Claims Approval") fetchClaims();
   }, [activeSection, fetchClaims]);
+
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    setNotificationsError("");
+
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch("http://localhost:5000/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to load notifications.");
+
+      const items = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.notifications)
+            ? payload.notifications
+            : [];
+
+      setNotifications(items);
+      setUnreadCount(
+        Number.isFinite(Number(payload?.unreadCount))
+          ? Number(payload.unreadCount)
+          : items.filter((item) => !item.readAt).length
+      );
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to load notifications.");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeSection === "Notifications") fetchNotifications();
+  }, [activeSection, fetchNotifications]);
+
+  async function markNotificationRead(notification) {
+    if (!notification?._id || notification.readAt) {
+      if (notification?.link) navigate(notification.link);
+      return;
+    }
+
+    setNotificationBusyId(notification._id);
+    setNotificationsError("");
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch(
+        `http://localhost:5000/api/notifications/${notification._id}/read`,
+        { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to mark notification as read.");
+
+      const readAt = payload?.data?.readAt || new Date().toISOString();
+      setNotifications((current) =>
+        current.map((item) => item._id === notification._id ? { ...item, readAt } : item)
+      );
+      setUnreadCount((count) => Math.max(0, count - 1));
+      if (notification.link) navigate(notification.link);
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to update notification.");
+    } finally {
+      setNotificationBusyId("");
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    setNotificationsError("");
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch("http://localhost:5000/api/notifications/read-all", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to mark all notifications as read.");
+
+      const readAt = new Date().toISOString();
+      setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt || readAt })));
+      setUnreadCount(0);
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to update notifications.");
+    }
+  }
+
+  const formatNotificationDate = (value) => {
+    if (!value) return "Date unavailable";
+    const date = new Date(value);
+    return Number.isNaN(date.getTime())
+      ? "Date unavailable"
+      : date.toLocaleString("en-IN", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        });
+  };
 
   const filteredClaims = claims.filter((claim) => {
     const text = [
@@ -312,6 +420,7 @@ export default function HeadOfDepartmentPage() {
               <Icon size={17} />
               <span>{label}</span>
               {label === "Claims Approval" && claims.length > 0 && <small>{claims.length}</small>}
+              {label === "Notifications" && unreadCount > 0 && <small>{unreadCount > 99 ? "99+" : unreadCount}</small>}
             </button>
           ))}
         </nav>
@@ -487,6 +596,92 @@ export default function HeadOfDepartmentPage() {
                   <ChevronRight size={18} />
                 </button>)}</div>
               }
+            </section>
+          ) : activeSection === "Notifications" ? (
+            <section className="hod-claims-page hod-notifications-page">
+              <div className="hod-claims-heading">
+                <div>
+                  <span className="hod-kicker">WORKFLOW UPDATES</span>
+                  <h2>Your notifications</h2>
+                  <p>Updates about submitted claims and approval actions relevant to your account.</p>
+                </div>
+                <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                  <button className="hod-refresh" onClick={fetchNotifications} disabled={notificationsLoading}>
+                    <RefreshCw size={16} /> {notificationsLoading ? "Refreshing..." : "Refresh"}
+                  </button>
+                  <button className="hod-refresh" onClick={markAllNotificationsRead} disabled={notificationsLoading || unreadCount === 0}>
+                    <CheckCheck size={16} /> Mark all read
+                  </button>
+                </div>
+              </div>
+
+              <div className="hod-clickable-summary">
+                <span className="hod-summary-icon"><BellRing size={23} /></span>
+                <span><small>Total notifications</small><strong>{notificationsLoading ? "…" : notifications.length}</strong></span>
+                <span className="hod-queue-pill"><i /> {unreadCount} unread</span>
+              </div>
+
+              {notificationsError && (
+                <div className="hod-alert" role="alert">
+                  <XCircle size={17} /><span>{notificationsError}</span>
+                  <button onClick={() => setNotificationsError("")} aria-label="Dismiss error"><X size={15} /></button>
+                </div>
+              )}
+
+              {notificationsLoading ? (
+                <div className="hod-empty"><span className="hod-spinner" /><strong>Loading notifications</strong><span>Retrieving updates from your account…</span></div>
+              ) : notifications.length === 0 ? (
+                <div className="hod-empty">
+                  <Bell size={29} />
+                  <strong>{notificationsError ? "Notifications could not be loaded" : "You're all caught up"}</strong>
+                  <span>{notificationsError || "New claim submissions and workflow decisions will appear here."}</span>
+                  {notificationsError && <button className="hod-refresh" onClick={fetchNotifications}>Try again</button>}
+                </div>
+              ) : (
+                <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+                  {notifications.map((notification) => {
+                    const unread = !notification.readAt;
+                    return (
+                      <article
+                        key={notification._id}
+                        style={{
+                          display: "flex", alignItems: "flex-start", gap: 14,
+                          padding: 18, border: "1px solid #dbe5f0", borderRadius: 14,
+                          background: unread ? "#f3f7ff" : "#ffffff",
+                          boxShadow: unread ? "inset 3px 0 0 #2563eb" : "none",
+                        }}
+                      >
+                        <span style={{
+                          width: 42, height: 42, flex: "0 0 42px", borderRadius: 12,
+                          display: "grid", placeItems: "center",
+                          color: unread ? "#1d4ed8" : "#64748b",
+                          background: unread ? "#dbeafe" : "#f1f5f9",
+                        }}><Bell size={19} /></span>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                            <strong style={{ color: "#102a43", fontSize: 15 }}>{notification.title || "FMS notification"}</strong>
+                            {unread && <span style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", borderRadius: 20, padding: "3px 8px" }}>UNREAD</span>}
+                          </div>
+                          <p style={{ margin: "7px 0", color: "#52677f", lineHeight: 1.6 }}>{notification.message || "There is an update to your workflow."}</p>
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", color: "#718096", fontSize: 12 }}>
+                            <span><Clock size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />{formatNotificationDate(notification.createdAt)}</span>
+                            {notification.actor?.name && <span>From: {notification.actor.name}</span>}
+                            {notification.metadata?.currentStage && <span>Stage: {statusLabel(notification.metadata.currentStage)}</span>}
+                          </div>
+                        </div>
+                        <button
+                          className="hod-refresh"
+                          onClick={() => markNotificationRead(notification)}
+                          disabled={notificationBusyId === notification._id}
+                          title={notification.link ? "Mark as read and open related item" : "Mark as read"}
+                        >
+                          {notificationBusyId === notification._id ? "Saving..." : unread ? <><Check size={15} /> Mark read</> : notification.link ? <><ExternalLink size={15} /> Open</> : <CheckCircle2 size={15} />}
+                        </button>
+                      </article>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           ) : (
             <section className="hod-dashboard-placeholder">

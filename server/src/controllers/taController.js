@@ -693,28 +693,43 @@ exports.updateClaimStatus = async (req, res) => {
         },
       };
 
-      // Notify the employee of the decision at this stage.
-      const employeeType =
-        finalAction === "REJECTED"
-          ? "CLAIM_REJECTED"
-          : finalAction === "SENT_BACK"
-            ? "CLAIM_RETURNED"
-            : "CLAIM_APPROVED";
+      // Format human-readable role labels
+      const readableRoles = {
+        HOD: "Head of Department (HOD)",
+        HOA: "Head of Office (HOA)",
+        FINANCE_OFFICER: "Finance Officer",
+        FINANCE_CLERK: "Finance Clerk",
+        FINAL_SANCTION: "Final Sanction Authority",
+      };
 
-      const employeeTitle =
-        finalAction === "REJECTED"
-          ? "TA claim rejected"
-          : finalAction === "SENT_BACK"
-            ? "TA claim returned for correction"
-            : `TA claim approved by ${stageLabel}`;
+      const approverRole = readableRoles[stage] || stage.replaceAll("_", " ");
+      const nextRoleLabel = claim.currentStage === "COMPLETED" 
+        ? "Payment Processing" 
+        : (readableRoles[claim.currentStage] || claim.currentStage.replaceAll("_", " "));
+
+      let employeeMessage = "";
+      let employeeTitle = "";
+
+      if (finalAction === "APPROVED") {
+        if (stage === "FINAL_SANCTION" || claim.currentStage === "COMPLETED") {
+          employeeTitle = "TA Claim Sanctioned";
+          employeeMessage = `Your TA claim has received final sanction and is approved for disbursement.`;
+        } else {
+          employeeTitle = `TA Claim Approved by ${stage}`;
+          employeeMessage = `Your TA claim has been approved by ${approverRole} and forwarded to ${nextRoleLabel} for further review.`;
+        }
+      } else if (finalAction === "REJECTED") {
+        employeeTitle = "TA Claim Rejected";
+        employeeMessage = `Your TA claim was rejected by ${approverRole}. Reason: ${comments || "No reason specified"}`;
+      } else {
+        employeeTitle = "TA Claim Returned";
+        employeeMessage = `Your TA claim was returned for correction by ${approverRole}. Remarks: ${comments || "Please review and resubmit."}`;
+      }
 
       await notifyEmployee(claim.employeeId, {
         ...notificationBase,
         title: employeeTitle,
-        message:
-          finalAction === "APPROVED"
-            ? `Your TA claim has been approved at the ${stageLabel} stage. Current stage: ${claim.currentStage}.`
-            : `Your TA claim was ${finalAction === "REJECTED" ? "rejected" : "returned for correction"} at the ${stageLabel} stage. Reason: ${comments}`,
+        message: employeeMessage,
         type: employeeType,
       });
 

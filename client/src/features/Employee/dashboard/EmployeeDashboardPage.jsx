@@ -1,6 +1,5 @@
 ﻿
 import { useState, useEffect } from "react";
-import CreateClaimModal from "../claims/EmployeeClaimsPage.jsx";
 import TATravelPage from "../ta-travel/TATravelPage.jsx";
 import TAAdvance from "../ta-travel/TAAdavance.jsx";
 import EmployeeLTCPage from "../ltc/EmployeeLTCPage.jsx";
@@ -13,10 +12,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import { logout } from "../../auth/authSlice";
 import axios from "axios";
+import apiClient from "../../../services/api/axios";
 import {
   Activity,
   ArrowUpRight,
   Bell,
+  CheckCheck,
   BriefcaseBusiness,
   Building2,
   ChevronDown,
@@ -140,7 +141,6 @@ function App() {
   const currentUser = useSelector((state) => state.auth.user);
   const displayName = currentUser?.name || currentUser?.email || "Employee";
   const displayInitials = displayName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-  const [showClaimModal, setShowClaimModal] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
@@ -171,6 +171,26 @@ function App() {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [liveNotifications, setLiveNotifications] = useState([]);
+  const [liveUnreadCount, setLiveUnreadCount] = useState(0);
+
+  const fetchLiveNotifications = async () => {
+    try {
+      const res = await apiClient.get('/notifications?limit=10');
+      if (res.data?.success) {
+        setLiveNotifications(res.data.data || []);
+        setLiveUnreadCount(res.data.unreadCount || 0);
+      }
+    } catch (err) {
+      // Fallback silently if offline or token refresh pending
+    }
+  };
+
+  useEffect(() => {
+    fetchLiveNotifications();
+    const interval = setInterval(fetchLiveNotifications, 15000);
+    return () => clearInterval(interval);
+  }, []);
   const [profileOpen, setProfileOpen] = useState(false);
   const [searchValue, setSearchValue] = useState("");
 
@@ -407,7 +427,7 @@ function App() {
               label="Notifications"
               active={activeNav === "Notifications"}
               onClick={handleNavigation}
-              badge="2"
+              badge={liveUnreadCount > 0 ? String(liveUnreadCount) : null}
             />
           </SidebarSection>
         </nav>
@@ -499,12 +519,16 @@ function App() {
                 }}
               >
                 <Bell size={19} />
-                <span className="notification-dot" />
+                {liveUnreadCount > 0 && <span className="notification-dot" />}
               </button>
 
               {notificationsOpen && (
                 <NotificationPanel
                   onClose={() => setNotificationsOpen(false)}
+                  notifications={liveNotifications}
+                  unreadCount={liveUnreadCount}
+                  onRefresh={fetchLiveNotifications}
+                  onNavigate={navigate}
                 />
               )}
             </div>
@@ -564,7 +588,7 @@ function App() {
          {activeNav === "Dashboard" ? (
   <Dashboard
     onNavigate={handleNavigation}
-    onOpenClaim={() => setShowClaimModal(true)}
+    onOpenClaim={() => navigate("/claims")}
   />
 ) : activeNav === "TA & Travel" ? (
   <TATravelPage currentUser={currentUser} />
@@ -587,10 +611,16 @@ function App() {
   <EmployeeMedicalPage onClose={() => handleNavigation("Dashboard")} />
 ) : activeNav === "Medical" ? (
   <MedicalClaimPage />
+) : activeNav === "Notifications" ? (
+  <NotificationsView
+    notifications={liveNotifications}
+    unreadCount={liveUnreadCount}
+    onRefresh={fetchLiveNotifications}
+    onNavigate={navigate}
+  />
 ) : (
   <PlaceholderPage section={activeNav} />
-)}
-      <CreateClaimModal isOpen={showClaimModal} onClose={() => setShowClaimModal(false)} employeeId={currentUser?.employeeId || currentUser?._id} onSuccess={() => alert('Claim submitted successfully! It is now in the Approval Queue.')} /></div>
+)}</div>
       </main>
     </div>
   );
@@ -1048,40 +1078,117 @@ function FinancialOverview() {
 /* Notification Panel                                                         */
 /* -------------------------------------------------------------------------- */
 
-function NotificationPanel({ onClose }) {
+function NotificationPanel({ onClose, notifications = [], unreadCount = 0, onRefresh, onNavigate }) {
+  const markAllAsRead = async () => {
+    try {
+      await apiClient.patch('/notifications/read-all');
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      console.error('Failed to mark all as read:', err);
+    }
+  };
+
+  const markSingleRead = async (id, link) => {
+    try {
+      await apiClient.patch(`/notifications/${id}/read`);
+      if (onRefresh) onRefresh();
+      if (link && onNavigate) {
+        onClose();
+        onNavigate(link);
+      }
+    } catch (err) {
+      console.error('Failed to mark notification read:', err);
+    }
+  };
+
+  const formatTimeAgo = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Math.floor((new Date() - new Date(dateStr)) / 1000);
+    if (diff < 60) return 'Just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
+    return new Date(dateStr).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+  };
+
   return (
-    <div className="dropdown-panel notification-panel">
-      <div className="dropdown-header">
+    <div className="dropdown-panel notification-panel" style={{ width: 360, maxHeight: 460, display: 'flex', flexDirection: 'column' }}>
+      <div className="dropdown-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <strong>Notifications</strong>
-          <span>2 unread notifications</span>
+          <span>{unreadCount} unread notification{unreadCount === 1 ? '' : 's'}</span>
         </div>
 
-        <button type="button" onClick={onClose}>
-          <X size={16} />
-        </button>
-      </div>
-
-      <div className="notification-list">
-        {notifications.map((notification) => (
-          <button className="notification-item" key={notification.title}>
-            <span
-              className={`notification-status ${
-                notification.unread ? "unread" : ""
-              }`}
-            />
-
-            <div>
-              <strong>{notification.title}</strong>
-              <span>{notification.description}</span>
-              <small>{notification.time}</small>
-            </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+          {unreadCount > 0 && (
+            <button
+              type="button"
+              onClick={markAllAsRead}
+              style={{ background: 'none', border: 'none', color: '#2563eb', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}
+              title="Mark all as read"
+            >
+              Mark read
+            </button>
+          )}
+          <button type="button" onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
+            <X size={16} />
           </button>
-        ))}
+        </div>
       </div>
 
-      <button className="dropdown-footer-button" type="button">
-        View all notifications
+      <div className="notification-list" style={{ overflowY: 'auto', flex: 1, padding: '4px 0' }}>
+        {notifications.length === 0 ? (
+          <div style={{ padding: '36px 16px', textAlign: 'center', color: '#94a3b8', fontSize: 13 }}>
+            No notifications available.
+          </div>
+        ) : (
+          notifications.map((notification) => (
+            <button
+              className="notification-item"
+              key={notification._id}
+              onClick={() => markSingleRead(notification._id, notification.link)}
+              style={{
+                display: 'flex',
+                alignItems: 'flex-start',
+                gap: 12,
+                padding: '12px 16px',
+                textAlign: 'left',
+                width: '100%',
+                background: notification.readAt ? 'transparent' : '#f0f7ff',
+                border: 'none',
+                borderBottom: '1px solid #f1f5f9',
+                cursor: 'pointer',
+              }}
+            >
+              <span
+                className={`notification-status ${!notification.readAt ? 'unread' : ''}`}
+                style={{ marginTop: 6 }}
+              />
+
+              <div style={{ flex: 1 }}>
+                <strong style={{ fontSize: 13, color: '#0f172a', display: 'block', marginBottom: 2 }}>
+                  {notification.title}
+                </strong>
+                <span style={{ fontSize: 12, color: '#475569', display: 'block', lineHeight: 1.4 }}>
+                  {notification.message}
+                </span>
+                <small style={{ fontSize: 11, color: '#94a3b8', marginTop: 4, display: 'block' }}>
+                  {formatTimeAgo(notification.createdAt)}
+                </small>
+              </div>
+            </button>
+          ))
+        )}
+      </div>
+
+      <button
+        className="dropdown-footer-button"
+        type="button"
+        onClick={() => {
+          onClose();
+          if (onNavigate) onNavigate('/claims');
+        }}
+      >
+        View claims history
         <ArrowUpRight size={15} />
       </button>
     </div>
@@ -1392,6 +1499,280 @@ function PayslipsView() {
   );
 }
 
+
+
+/* -------------------------------------------------------------------------- */
+/* Notifications View (Live Claim Alerts with Auto-Dismiss)                   */
+/* -------------------------------------------------------------------------- */
+
+function NotificationsView({ notifications = [], unreadCount = 0, onRefresh, onNavigate }) {
+  const [filter, setFilter] = useState("active"); // 'active' (unread) or 'all'
+  const [dismissingId, setDismissingId] = useState(null);
+
+  const displayList = filter === "active" 
+    ? notifications.filter((n) => !n.readAt) 
+    : notifications;
+
+  const handleViewClaim = async (notification) => {
+    try {
+      setDismissingId(notification._id);
+      // Mark as read in backend so it disappears from unread queue
+      await apiClient.patch(`/notifications/${notification._id}/read`);
+      if (onRefresh) await onRefresh();
+      // Route employee directly to claims review
+      if (onNavigate) {
+        onNavigate("/claims");
+      }
+    } catch (err) {
+      console.error("Failed to dismiss viewed notification:", err);
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const handleDismiss = async (id, e) => {
+    e.stopPropagation();
+    try {
+      setDismissingId(id);
+      await apiClient.patch(`/notifications/${id}/read`);
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      console.error("Failed to mark notification as read:", err);
+    } finally {
+      setDismissingId(null);
+    }
+  };
+
+  const handleMarkAllRead = async () => {
+    try {
+      await apiClient.patch('/notifications/read-all');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      console.error("Failed to mark all as read:", err);
+    }
+  };
+
+  const formatTimestamp = (dateStr) => {
+    if (!dateStr) return '';
+    const d = new Date(dateStr);
+    return d.toLocaleDateString('en-IN', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  return (
+    <div className="panel claims-panel" style={{ padding: '24px' }}>
+      <div className="panel-header" style={{ marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+        <div>
+          <h3 style={{ fontSize: 18, fontWeight: 700, color: '#0f172a', margin: 0 }}>
+            Claim Notifications &amp; Pipeline Updates
+          </h3>
+          <p style={{ color: '#64748b', fontSize: 13, marginTop: 4 }}>
+            Real-time stage transitions, department transfers, and sanction alerts. Notifications disappear once viewed.
+          </p>
+        </div>
+
+        {unreadCount > 0 && (
+          <button
+            type="button"
+            onClick={handleMarkAllRead}
+            style={{
+              background: '#eff6ff',
+              color: '#2563eb',
+              border: '1px solid #bfdbfe',
+              padding: '6px 14px',
+              borderRadius: 8,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+            }}
+          >
+            <CheckCheck size={15} />
+            Mark all as viewed
+          </button>
+        )}
+      </div>
+
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: 10, borderBottom: '1px solid #e2e8f0', paddingBottom: 12, marginBottom: 20 }}>
+        <button
+          type="button"
+          onClick={() => setFilter("active")}
+          style={{
+            background: filter === "active" ? "#2563eb" : "#f1f5f9",
+            color: filter === "active" ? "#ffffff" : "#475569",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 6,
+          }}
+        >
+          Active / Unread
+          <span
+            style={{
+              background: filter === "active" ? "rgba(255,255,255,0.25)" : "#cbd5e1",
+              color: filter === "active" ? "#ffffff" : "#0f172a",
+              borderRadius: 10,
+              padding: "1px 7px",
+              fontSize: 11,
+            }}
+          >
+            {unreadCount}
+          </span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setFilter("all")}
+          style={{
+            background: filter === "all" ? "#2563eb" : "#f1f5f9",
+            color: filter === "all" ? "#ffffff" : "#475569",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          All Activity History
+        </button>
+      </div>
+
+      {/* Notifications List */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {displayList.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '48px 16px', background: '#f8fafc', borderRadius: 12, border: '1px dashed #cbd5e1' }}>
+            <FileCheck2 size={36} color="#10b981" style={{ margin: '0 auto 10px', display: 'block' }} />
+            <strong style={{ display: 'block', fontSize: 15, color: '#0f172a', marginBottom: 4 }}>
+              {filter === "active" ? "All Caught Up!" : "No notifications found"}
+            </strong>
+            <span style={{ fontSize: 13, color: '#64748b' }}>
+              {filter === "active"
+                ? "You have viewed all claim pipeline updates. New notifications will appear here when an officer takes action."
+                : "There is no recorded notification activity for your account yet."}
+            </span>
+          </div>
+        ) : (
+          displayList.map((item) => {
+            const isApproved = item.type === "CLAIM_APPROVED" || item.type === "CLAIM_SANCTIONED";
+            const isRejected = item.type === "CLAIM_REJECTED";
+            const isReturned = item.type === "CLAIM_RETURNED";
+
+            const badgeBg = isApproved ? "#dcfce7" : isRejected ? "#fee2e2" : isReturned ? "#fef3c7" : "#e0e7ff";
+            const badgeColor = isApproved ? "#15803d" : isRejected ? "#b91c1c" : isReturned ? "#b45309" : "#4338ca";
+            const badgeLabel = isApproved ? "Approved & Forwarded" : isRejected ? "Rejected" : isReturned ? "Returned for Correction" : "Pipeline Update";
+
+            return (
+              <div
+                key={item._id}
+                style={{
+                  background: item.readAt ? "#ffffff" : "#f0f7ff",
+                  border: item.readAt ? "1px solid #e2e8f0" : "1px solid #bfdbfe",
+                  borderRadius: 12,
+                  padding: "16px 20px",
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  boxShadow: item.readAt ? "none" : "0 2px 6px rgba(37, 99, 235, 0.06)",
+                  transition: "all 0.2s ease",
+                  opacity: dismissingId === item._id ? 0.5 : 1,
+                }}
+              >
+                <div style={{ flex: 1, paddingRight: 20 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 6 }}>
+                    <span
+                      style={{
+                        background: badgeBg,
+                        color: badgeColor,
+                        padding: "3px 10px",
+                        borderRadius: 6,
+                        fontSize: 11,
+                        fontWeight: 700,
+                        textTransform: "uppercase",
+                        letterSpacing: "0.5px",
+                      }}
+                    >
+                      {badgeLabel}
+                    </span>
+
+                    <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                      {formatTimestamp(item.createdAt)}
+                    </span>
+                  </div>
+
+                  <h4 style={{ margin: "0 0 6px 0", fontSize: 15, fontWeight: 700, color: "#0f172a" }}>
+                    {item.title}
+                  </h4>
+
+                  <p style={{ margin: 0, fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
+                    {item.message}
+                  </p>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 10, flexShrink: 0 }}>
+                  <button
+                    type="button"
+                    onClick={() => handleViewClaim(item)}
+                    style={{
+                      background: "#2563eb",
+                      color: "#ffffff",
+                      border: "none",
+                      padding: "8px 16px",
+                      borderRadius: 8,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                    title="View claim in history"
+                  >
+                    View Claim
+                    <ArrowUpRight size={14} />
+                  </button>
+
+                  {!item.readAt && (
+                    <button
+                      type="button"
+                      onClick={(e) => handleDismiss(item._id, e)}
+                      style={{
+                        background: "#f1f5f9",
+                        color: "#64748b",
+                        border: "1px solid #cbd5e1",
+                        padding: "8px 12px",
+                        borderRadius: 8,
+                        fontSize: 12,
+                        fontWeight: 600,
+                        cursor: "pointer",
+                      }}
+                      title="Dismiss from unread queue"
+                    >
+                      Dismiss
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
 
 /* -------------------------------------------------------------------------- */
 /* Placeholder                                                                */

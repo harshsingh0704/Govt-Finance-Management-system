@@ -4,6 +4,7 @@ const TAClaim = require("../models/TAClaim");
 const MedicalClaim = require("../models/MedicalClaim");
 const LTCClaim = require("../models/LTCClaim");
 const Employee = require("../models/Employee");
+const { notifyEmployee } = require("../services/notificationService");
 
 const claimModelMap = {
   TAClaim,
@@ -77,6 +78,55 @@ exports.processApprovalAction = async (req, res, next) => {
         status: status === "hold" ? "draft" : status,
         remarks,
       });
+    }
+
+    // Send real-time notification to the claim applicant
+    try {
+      const claimTypeLabels = {
+        TAClaim: "TA Claim",
+        MedicalClaim: "Medical Claim",
+        LTCClaim: "LTC Claim",
+        LTCAdvance: "LTC Advance",
+      };
+
+      const readableType = claimTypeLabels[approval.claimType] || approval.claimType;
+      const statusTitleMap = {
+        approved: `${readableType} Approved`,
+        rejected: `${readableType} Rejected`,
+        verified: `${readableType} Verified`,
+        hold: `${readableType} Placed On Hold`,
+      };
+
+      const statusMsgMap = {
+        approved: `Your ${readableType} has been approved. Remarks: ${remarks || "No additional remarks."}`,
+        rejected: `Your ${readableType} was rejected. Reason: ${remarks || "No reason specified."}`,
+        verified: `Your ${readableType} has been verified and moved to the next processing stage.`,
+        hold: `Your ${readableType} has been put on hold. Remarks: ${remarks || "Please check with the finance department."}`,
+      };
+
+      const notifTypeMap = {
+        approved: "CLAIM_APPROVED",
+        rejected: "CLAIM_REJECTED",
+        verified: "CLAIM_APPROVED",
+        hold: "CLAIM_RETURNED",
+      };
+
+      await notifyEmployee(approval.employeeId, {
+        actor: req.user ? req.user.id : null,
+        claimId: approval.claimId,
+        claimType: approval.claimType,
+        link: "/claims",
+        title: statusTitleMap[status] || `${readableType} Update`,
+        message: statusMsgMap[status] || `Your ${readableType} status changed to ${status}.`,
+        type: notifTypeMap[status] || "GENERAL",
+        metadata: {
+          status,
+          remarks: remarks || "",
+          reviewedBy: req.user ? req.user.id : null,
+        },
+      });
+    } catch (notifErr) {
+      console.error("Approval action notification error:", notifErr.message);
     }
 
     // Create Audit Log

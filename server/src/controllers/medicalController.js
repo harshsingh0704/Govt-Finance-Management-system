@@ -1,3 +1,4 @@
+const { notifyEmployee } = require("../services/notificationService");
 ﻿const mongoose = require("mongoose");
 const Employee = require("../models/Employee");
 const MedicalClaim = require("../models/MedicalClaim");
@@ -452,9 +453,13 @@ exports.getClaimsByEmployee = async (req, res) => {
 
 exports.updateClaimStatus = async (req, res) => {
   try {
+    const { status, remarks } = req.body;
+    const updatePayload = { status };
+    if (remarks) updatePayload.remarks = remarks;
+
     const claim = await MedicalClaim.findByIdAndUpdate(
       req.params.id,
-      { status: req.body.status },
+      updatePayload,
       { new: true, runValidators: true }
     );
 
@@ -463,6 +468,54 @@ exports.updateClaimStatus = async (req, res) => {
         success: false,
         message: "Medical claim not found.",
       });
+    }
+
+    // Send real-time notification to the applicant
+    try {
+      const normalizedStatus = String(status).toUpperCase();
+      const isApproved = ["APPROVED", "SANCTIONED"].includes(normalizedStatus);
+      const isRejected = ["REJECTED"].includes(normalizedStatus);
+      const isReturned = ["RETURNED_FOR_CORRECTION", "HOLD"].includes(normalizedStatus);
+
+      const title = isApproved
+        ? "Medical Claim Approved"
+        : isRejected
+        ? "Medical Claim Rejected"
+        : isReturned
+        ? "Medical Claim Returned"
+        : "Medical Claim Status Updated";
+
+      const message = isApproved
+        ? `Your Medical claim has been approved. Remarks: ${remarks || "No additional remarks."}`
+        : isRejected
+        ? `Your Medical claim was rejected. Reason: ${remarks || "No reason specified."}`
+        : isReturned
+        ? `Your Medical claim has been returned. Remarks: ${remarks || "Please review and resubmit."}`
+        : `Your Medical claim status has been updated to ${status}.`;
+
+      const notifType = isApproved
+        ? "CLAIM_APPROVED"
+        : isRejected
+        ? "CLAIM_REJECTED"
+        : isReturned
+        ? "CLAIM_RETURNED"
+        : "GENERAL";
+
+      await notifyEmployee(claim.employeeId, {
+        actor: req.user ? req.user.id || req.user._id : null,
+        claimId: claim._id,
+        claimType: "MedicalClaim",
+        link: "/claims",
+        title,
+        message,
+        type: notifType,
+        metadata: {
+          status,
+          remarks: remarks || "",
+        },
+      });
+    } catch (notifErr) {
+      console.error("Medical status update notification error:", notifErr.message);
     }
 
     return res.json({ success: true, record: claim });

@@ -9,7 +9,7 @@ import UnauthorizedPage from "../features/auth/pages/UnauthorizedPage";
 
 import DashboardPage from "../features/Employee/dashboard/EmployeeDashboardPage";
 import ProfilePage from "../features/profile/ProfilePage";
-import ClaimsPage from "../features/claims/pages/ClaimsPage";
+import EmployeeClaimsPage from "../features/Employee/claims/EmployeeClaimsPage";
 import AdminPage from "../features/admin/AdminPage";
 import ITCellInchargeDashboard from "../features/it-cell-incharge/ItCellIncharge";
 import SampleInchargeDashboard from "../features/sample-incharge/SampleIncharge";
@@ -79,7 +79,7 @@ export const router = createBrowserRouter([
         children: [
           { path: "/dashboard", element: <DashboardPage /> },
           { path: "/profile", element: <ProfilePage /> },
-          { path: "/claims", element: <ClaimsPage /> },
+          { path: "/claims", element: <EmployeeClaimsPage /> },
         ],
       },
 

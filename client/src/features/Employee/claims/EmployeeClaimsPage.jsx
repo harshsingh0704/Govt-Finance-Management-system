@@ -1,668 +1,529 @@
-
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
 import {
-  AlertCircle,
-  CheckCircle2,
-  Clock3,
   FileText,
-  RefreshCw,
-  Plus,
+  Clock3,
+  CheckCircle2,
+  XCircle,
   Search,
+  RefreshCw,
+  Eye,
+  X,
   IndianRupee,
   Plane,
-  CalendarDays,
-  X,
-} from "lucide-react";
-import { useSelector } from "react-redux";
+  HeartPulse,
+  Home,
+  Briefcase,
+  ArrowLeft,
+  Calendar,
+} from 'lucide-react';
+import { fetchAllEmployeeClaims } from './services/claimsService';
+import './EmployeeClaimsPage.css';
 
+const formatINR = (val) => {
+  const num = Number(val) || 0;
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(num);
+};
 
-import { getTAClaims } from "../../claims/claims.api";
-import apiClient from "../../../services/api/axios";
-import "./EmployeeClaimsPage.css";
-
-function readStoredUser() {
-  if (typeof window === "undefined") return {};
-
-  for (const key of ["fms_auth", "user", "authUser", "currentUser"]) {
-    try {
-      const raw = localStorage.getItem(key);
-      if (!raw) continue;
-
-      const parsed = JSON.parse(raw);
-      if (parsed && typeof parsed === "object") {
-        return parsed.user || parsed.employee || parsed;
-      }
-    } catch {
-      // Try the next storage key.
-    }
-  }
-
-  return {};
-}
-
-function getId(value) {
-  if (!value) return "";
-  if (typeof value === "object") {
-    return String(value._id || value.id || value.employeeId || "");
-  }
-  return String(value).trim();
-}
-
-function getEmployeeId(user) {
-  if (!user) return "";
-
-  const candidates = [
-    user.employeeId,
-    user.employee?._id,
-    user.employee?.id,
-    user.employee?.employeeId,
-    user.employeeProfile?._id,
-    user.employeeProfile?.id,
-    user.employeeProfile?.employeeId,
-    user.profile?.employeeId,
-    user.profile?._id,
-  ];
-
-  for (const value of candidates) {
-    const id = getId(value);
-    if (id) return id;
-  }
-
-  return "";
-}
-
-function unwrapClaims(response) {
-  const data = response?.data ?? response;
-
-  if (Array.isArray(data)) return data;
-  if (Array.isArray(data?.claims)) return data.claims;
-  if (Array.isArray(data?.data)) return data.data;
-  if (Array.isArray(data?.results)) return data.results;
-  if (Array.isArray(data?.items)) return data.items;
-
-  return [];
-}
-
-function getStatus(claim) {
-  return String(
-    claim?.status ||
-      claim?.claimStatus ||
-      claim?.approvalStatus ||
-      claim?.workflowStatus ||
-      "Pending"
-  )
-    .trim()
-    .toLowerCase()
-    .replace(/[\s-]+/g, "_");
-}
-
-function isApproved(claim) {
-  return [
-    "approved",
-    "sanctioned",
-    "paid",
-    "completed",
-    "processed",
-    "payment_completed",
-    "payment_done",
-  ].includes(getStatus(claim));
-}
-
-function isRejected(claim) {
-  return ["rejected", "declined", "cancelled", "canceled"].includes(
-    getStatus(claim)
-  );
-}
-
-function getType(claim, fallback = "TA") {
-  return String(
-    claim?.claimType ||
-      claim?.type ||
-      claim?.claimCategory ||
-      claim?.category ||
-      fallback
-  ).toUpperCase();
-}
-
-function getAmount(claim) {
-  const values = [
-    claim?.netAmount,
-    claim?.amount,
-    claim?.claimAmount,
-    claim?.fareClaimed,
-    claim?.grossAmount,
-    claim?.totalAmount,
-    claim?.fare,
-  ];
-
-  for (const value of values) {
-    if (
-      value !== undefined &&
-      value !== null &&
-      value !== "" &&
-      Number.isFinite(Number(value))
-    ) {
-      return Number(value);
-    }
-  }
-
-  return 0;
-}
-
-function getDate(claim) {
-  const value =
-    claim?.createdAt ||
-    claim?.submittedAt ||
-    claim?.claimDate ||
-    claim?.fromDate ||
-    claim?.date;
-
-  if (!value) return "Date unavailable";
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "Date unavailable";
-
-  return date.toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
+const formatDate = (val) => {
+  if (!val) return 'Date unavailable';
+  const d = new Date(val);
+  if (Number.isNaN(d.getTime())) return 'Date unavailable';
+  return d.toLocaleDateString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
   });
-}
+};
 
-function getReference(claim) {
-  return (
-    claim?.claimNumber ||
-    claim?.referenceNumber ||
-    claim?.claimId ||
-    claim?._id ||
-    claim?.id ||
-    "Claim"
-  );
-}
+const getCategoryIcon = (type) => {
+  const t = String(type || '').toUpperCase();
+  if (t.includes('TA')) return <Plane size={18} />;
+  if (t.includes('MED')) return <HeartPulse size={18} />;
+  if (t.includes('ACCOM')) return <Home size={18} />;
+  return <Briefcase size={18} />;
+};
 
-function getTitle(claim, type) {
-  return (
-    claim?.projectName ||
-    claim?.destination ||
-    claim?.toPlace ||
-    claim?.homeTown ||
-    claim?.purpose ||
-    `${type} Travel Claim`
-  );
-}
-
-function StatusBadge({ claim }) {
-  const approved = isApproved(claim);
-  const rejected = isRejected(claim);
-  const status = getStatus(claim);
-
-  const className = approved
-    ? "ec-status ec-status-approved"
-    : rejected
-      ? "ec-status ec-status-rejected"
-      : "ec-status ec-status-pending";
-
-  const label = status
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (character) => character.toUpperCase());
-
-  return (
-    <span className={className}>
-      {approved ? (
-        <CheckCircle2 size={14} />
-      ) : (
-        <Clock3 size={14} />
-      )}
-      {label}
-    </span>
-  );
-}
-
-function ClaimSection({ title, claims, type, emptyText }) {
-  const approved = type === "approved";
-
-  return (
-    <section className="ec-section">
-      <div className="ec-section-header">
-        <h2 className="ec-section-title">
-          <span
-            className={`ec-section-icon ${
-              approved ? "ec-icon-approved" : "ec-icon-pending"
-            }`}
-          >
-            {approved ? (
-              <CheckCircle2 size={19} />
-            ) : (
-              <Clock3 size={19} />
-            )}
-          </span>
-          {title}
-          <span className="ec-count">{claims.length}</span>
-        </h2>
-      </div>
-
-      {claims.length === 0 ? (
-        <div className="ec-empty">
-          <div className="ec-empty-icon">
-            <FileText size={25} />
-          </div>
-          <h3>No claims found</h3>
-          <p>{emptyText}</p>
-        </div>
-      ) : (
-        <div className="ec-claim-list">
-          {claims.map((claim, index) => {
-            const claimType = getType(claim);
-            const amount = getAmount(claim);
-            const key = String(
-              claim?._id || claim?.id || `${claimType}-${index}`
-            );
-
-            return (
-              <article className="ec-claim-row" key={key}>
-                <div className="ec-claim-main">
-                  <div className="ec-claim-type-icon">
-                    {claimType === "LTC" ? (
-                      <Plane size={21} />
-                    ) : (
-                      <FileText size={21} />
-                    )}
-                  </div>
-
-                  <div className="ec-claim-info">
-                    <h3>{getTitle(claim, claimType)}</h3>
-
-                    <div className="ec-claim-meta">
-                      <span>{claimType} Claim</span>
-                      <span className="ec-meta-dot">•</span>
-                      <span>
-                        Ref: {String(getReference(claim)).slice(-12)}
-                      </span>
-                      <span className="ec-meta-dot">•</span>
-                      <span className="ec-date">
-                        <CalendarDays size={13} />
-                        {getDate(claim)}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="ec-claim-right">
-                  <div className="ec-claim-amount">
-                    <strong>
-                      ₹
-                      {amount.toLocaleString("en-IN", {
-                        maximumFractionDigits: 2,
-                      })}
-                    </strong>
-                    <span>Claim amount</span>
-                  </div>
-
-                  <StatusBadge claim={claim} />
-                </div>
-              </article>
-            );
-          })}
-        </div>
-      )}
-    </section>
-  );
-}
+const formatStatus = (raw) => {
+  if (!raw) return 'Submitted';
+  return String(raw)
+    .replace(/_/g, ' ')
+    .replace(/hod/gi, 'HOD')
+    .replace(/hoa/gi, 'HOA')
+    .replace(/fo/gi, 'FO')
+    .replace(/clerk/gi, 'Clerk')
+    .replace(/\w/g, (char) => char.toUpperCase());
+};
 
 export default function EmployeeClaimsPage() {
-  const auth = useSelector((state) => state.auth || {});
-  const reduxUser = useSelector(
-    (state) =>
-      state.auth?.user ||
-      state.auth?.currentUser ||
-      state.auth?.employee ||
-      state.user?.user ||
-      state.user?.currentUser ||
-      null
-  );
+  const navigate = useNavigate();
+  const currentUser = useSelector((state) => state.auth?.user);
 
-  const [storedUser] = useState(readStoredUser);
-
-  const employeeId = useMemo(
-    () =>
-      getEmployeeId(reduxUser) ||
-      getEmployeeId(storedUser) ||
-      getEmployeeId(auth.user) ||
-      getEmployeeId(auth.currentUser) ||
-      getEmployeeId(auth.employee),
-    [reduxUser, storedUser, auth]
-  );
-
-  const [taClaims, setTaClaims] = useState([]);
-  const [ltcClaims, setLtcClaims] = useState([]);
+  const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
-  const [error, setError] = useState("");
-  const [warning, setWarning] = useState("");
-  const [search, setSearch] = useState("");
-  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [activeCategory, setActiveCategory] = useState('ALL');
+  const [selectedYear, setSelectedYear] = useState('ALL');
+  const [selectedClaim, setSelectedClaim] = useState(null);
 
-  const loadClaims = useCallback(
-    async (showLoader = true) => {
-      if (!employeeId) {
-        setLoading(false);
-        setRefreshing(false);
-        setError(
-          "Your employee profile identifier is not available. Sign in again or ask the administrator to link your login account to your employee profile."
-        );
-        return;
-      }
-
-      if (showLoader) setLoading(true);
-      else setRefreshing(true);
-
-      setError("");
-      setWarning("");
-
-      const results = await Promise.allSettled([
-        getTAClaims(employeeId),
-        apiClient.get(`/ltc/claims/${employeeId}`),
-      ]);
-
-      const errors = [];
-
-      if (results[0].status === "fulfilled") {
-        setTaClaims(unwrapClaims(results[0].value));
-      } else {
-        setTaClaims([]);
-        errors.push(
-          results[0].reason?.response?.data?.message ||
-            results[0].reason?.message ||
-            "TA claims could not be loaded."
-        );
-      }
-
-      if (results[1].status === "fulfilled") {
-        setLtcClaims(unwrapClaims(results[1].value));
-      } else {
-        setLtcClaims([]);
-        errors.push(
-          results[1].reason?.response?.data?.message ||
-            results[1].reason?.message ||
-            "LTC claims could not be loaded."
-        );
-      }
-
-      if (errors.length === 2) {
-        setError(
-          "Claims could not be loaded. Check that the TA and LTC GET routes exist on the server and that your login session is valid."
-        );
-      } else if (errors.length === 1) {
-        setWarning(errors[0]);
-      }
-
+  const loadClaims = useCallback(async (isRefresh = false) => {
+    try {
+      if (isRefresh) setRefreshing(true);
+      else setLoading(true);
+      const data = await fetchAllEmployeeClaims();
+      setClaims(data || []);
+    } catch (err) {
+      console.error('Failed to load employee claims:', err);
+    } finally {
       setLoading(false);
       setRefreshing(false);
-    },
-    [employeeId]
-  );
+    }
+  }, []);
 
   useEffect(() => {
-    loadClaims(true);
+    loadClaims();
   }, [loadClaims]);
 
-  const allClaims = useMemo(() => {
-    const ta = taClaims.map((claim) => ({
-      ...claim,
-      claimType: getType(claim, "TA"),
-    }));
-
-    const ltc = ltcClaims.map((claim) => ({
-      ...claim,
-      claimType: getType(claim, "LTC"),
-    }));
-
-    const seen = new Set();
-
-    return [...ta, ...ltc].filter((claim) => {
-      const key = String(claim._id || claim.id || getReference(claim));
-
-      if (seen.has(key)) return false;
-
-      seen.add(key);
-      return true;
+  // Extract all distinct years available in claims
+  const availableYears = useMemo(() => {
+    const yearsSet = new Set();
+    claims.forEach((c) => {
+      const d = new Date(c.createdAt);
+      if (!Number.isNaN(d.getTime())) {
+        yearsSet.add(d.getFullYear());
+      }
     });
-  }, [taClaims, ltcClaims]);
+    // Ensure current year is always present
+    yearsSet.add(new Date().getFullYear());
+    return Array.from(yearsSet).sort((a, b) => b - a);
+  }, [claims]);
 
-  const searchedClaims = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return allClaims;
-
-    return allClaims.filter((claim) => {
-      const searchable = [
-        getReference(claim),
-        getTitle(claim, getType(claim)),
-        getType(claim),
-        claim.status,
-        claim.claimStatus,
-        claim.destination,
-        claim.toPlace,
-        claim.projectName,
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      return searchable.includes(query);
+  // 1. Filter claims by Selected Year first (for year-scoped stats)
+  const yearFilteredClaims = useMemo(() => {
+    if (selectedYear === 'ALL') return claims;
+    return claims.filter((item) => {
+      const d = new Date(item.createdAt);
+      return !Number.isNaN(d.getTime()) && String(d.getFullYear()) === String(selectedYear);
     });
-  }, [allClaims, search]);
+  }, [claims, selectedYear]);
 
-  const pendingClaims = searchedClaims.filter(
-    (claim) => !isApproved(claim) && !isRejected(claim)
-  );
+  // 2. Compute Metric summaries for the selected year
+  const stats = useMemo(() => {
+    const total = yearFilteredClaims.length;
+    const pending = yearFilteredClaims.filter((c) =>
+      ['submitted', 'pending', 'verified', 'under_review', 'draft'].includes(c.status) ||
+      String(c.status).toLowerCase().startsWith('pending')
+    ).length;
+    const approvedList = yearFilteredClaims.filter((c) =>
+      ['approved', 'sanctioned', 'paid', 'completed', 'settled'].includes(c.status)
+    );
+    const approved = approvedList.length;
+    const totalVal = yearFilteredClaims.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
+    const approvedVal = approvedList.reduce((acc, c) => acc + (Number(c.amount) || 0), 0);
 
-  const approvedClaims = searchedClaims.filter(isApproved);
-  const rejectedClaims = searchedClaims.filter(isRejected);
+    return { total, pending, approved, totalVal, approvedVal };
+  }, [yearFilteredClaims]);
 
-  const totalAmount = allClaims.reduce(
-    (sum, claim) => sum + getAmount(claim),
-    0
-  );
+  // 3. Further filter by Category and Search query for the display list
+  const filteredClaims = useMemo(() => {
+    return yearFilteredClaims.filter((item) => {
+      const matchCategory =
+        activeCategory === 'ALL' ||
+        String(item.claimType || '').toUpperCase().includes(activeCategory);
 
-  const approvedAmount = allClaims
-    .filter(isApproved)
-    .reduce((sum, claim) => sum + getAmount(claim), 0);
+      const q = searchQuery.toLowerCase().trim();
+      const matchSearch =
+        q === '' ||
+        String(item.applicationId || '').toLowerCase().includes(q) ||
+        String(item.claimType || '').toLowerCase().includes(q) ||
+        String(item.status || '').toLowerCase().includes(q);
 
-  const handleClaimSubmitted = () => {
-    setShowCreateModal(false);
-    loadClaims(false);
-  };
+      return matchCategory && matchSearch;
+    });
+  }, [yearFilteredClaims, activeCategory, searchQuery]);
 
   return (
-    <main className="ec-page">
+    <div className="ec-page">
       <div className="ec-container">
-        <header className="ec-header">
-          <div>
-            <p className="ec-eyebrow">Employee Portal / Finance</p>
-            <h1>My Claims</h1>
-            <p className="ec-subtitle">
-              Track your travel and leave travel concession claims in one place.
-            </p>
+        {/* Header with Back Button */}
+        <div className="ec-header">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button
+              type="button"
+              className="ec-button ec-button-primary"
+              onClick={() => navigate(-1)}
+              style={{
+                padding: '8px 16px',
+                borderRadius: 10,
+                display: 'inline-flex',
+                alignItems: 'center',
+                cursor: 'pointer',
+                fontWeight: 600,
+                fontSize: 13,
+                boxShadow: '0 4px 12px rgba(37, 99, 235, 0.25)',
+              }}
+              title="Go back"
+            >
+              <ArrowLeft size={16} style={{ marginRight: 6 }} />
+              Back
+            </button>
+            <div>
+              <p className="ec-eyebrow">Finance Management System</p>
+              <h1>My Claims</h1>
+              <p className="ec-subtitle">
+                Track and monitor all your submitted travel, medical, and allowance claims.
+              </p>
+            </div>
           </div>
-
           <div className="ec-header-actions">
             <button
+              type="button"
               className="ec-button ec-button-secondary"
-              onClick={() => loadClaims(false)}
-              disabled={loading || refreshing}
-              type="button"
+              onClick={() => loadClaims(true)}
+              disabled={refreshing || loading}
             >
-              <RefreshCw
-                size={16}
-                className={refreshing ? "ec-spin" : ""}
-              />
-              {refreshing ? "Refreshing..." : "Refresh"}
-            </button>
-
-            <button
-              className="ec-button ec-button-primary"
-              onClick={() => setShowCreateModal(true)}
-              disabled={!employeeId}
-              title={!employeeId ? "Employee profile ID is required" : ""}
-              type="button"
-            >
-              <Plus size={17} />
-              Submit New Claim
+              <RefreshCw size={15} className={refreshing ? 'ec-spin' : ''} style={{ marginRight: 6 }} />
+              Refresh
             </button>
           </div>
-        </header>
+        </div>
 
-        {error && (
-          <div className="ec-alert ec-alert-error" role="alert">
-            <AlertCircle size={19} />
-            <div>
-              <strong>Unable to load your claims</strong>
-              <p>{error}</p>
-            </div>
-          </div>
-        )}
-
-        {warning && !error && (
-          <div className="ec-alert ec-alert-warning" role="status">
-            <AlertCircle size={19} />
-            <div>
-              <strong>Some claims may be missing</strong>
-              <p>{warning}</p>
-            </div>
-          </div>
-        )}
-
-        <section className="ec-stats">
+        {/* 4 Stat Cards (Updated dynamically by Year) */}
+        <div className="ec-stats">
           <div className="ec-stat-card">
             <div className="ec-stat-top">
               <span>Total Claims</span>
-              <div className="ec-stat-icon ec-blue">
-                <FileText size={21} />
-              </div>
+              <span className="ec-stat-icon ec-blue">
+                <FileText size={18} />
+              </span>
             </div>
-            <strong>{loading ? "—" : allClaims.length}</strong>
-            <p>All submitted claims</p>
+            <div className="ec-count">{stats.total}</div>
+            <p className="ec-stat-money">
+              {selectedYear === 'ALL' ? 'All submitted claims' : `Submitted in ${selectedYear}`}
+            </p>
           </div>
 
           <div className="ec-stat-card">
             <div className="ec-stat-top">
               <span>Pending Review</span>
-              <div className="ec-stat-icon ec-orange">
-                <Clock3 size={21} />
-              </div>
+              <span className="ec-stat-icon ec-orange">
+                <Clock3 size={18} />
+              </span>
             </div>
-            <strong>
-              {loading
-                ? "—"
-                : allClaims.filter(
-                    (claim) => !isApproved(claim) && !isRejected(claim)
-                  ).length}
-            </strong>
-            <p>Awaiting a decision</p>
+            <div className="ec-count">{stats.pending}</div>
+            <p className="ec-stat-money">Awaiting decision</p>
           </div>
 
           <div className="ec-stat-card">
             <div className="ec-stat-top">
               <span>Approved Claims</span>
-              <div className="ec-stat-icon ec-green">
-                <CheckCircle2 size={21} />
-              </div>
+              <span className="ec-stat-icon ec-green">
+                <CheckCircle2 size={18} />
+              </span>
             </div>
-            <strong>
-              {loading ? "—" : allClaims.filter(isApproved).length}
-            </strong>
-            <p>Approved, sanctioned or paid</p>
+            <div className="ec-count">{stats.approved}</div>
+            <p className="ec-stat-money">Approved or settled</p>
           </div>
 
           <div className="ec-stat-card">
             <div className="ec-stat-top">
               <span>Total Claim Value</span>
-              <div className="ec-stat-icon ec-purple">
-                <IndianRupee size={21} />
-              </div>
+              <span className="ec-stat-icon ec-purple">
+                <IndianRupee size={18} />
+              </span>
             </div>
-            <strong className="ec-stat-money">
-              {loading
-                ? "—"
-                : `₹${totalAmount.toLocaleString("en-IN", {
-                    maximumFractionDigits: 0,
-                  })}`}
-            </strong>
-            <p>
-              Approved value: ₹
-              {approvedAmount.toLocaleString("en-IN", {
-                maximumFractionDigits: 0,
-              })}
-            </p>
+            <div className="ec-count">{formatINR(stats.totalVal)}</div>
+            <p className="ec-stat-money">Approved value: {formatINR(stats.approvedVal)}</p>
           </div>
-        </section>
-
-        <div className="ec-overview-header">
-          <div>
-            <h2>Claim Overview</h2>
-            <p>View the latest status of your submitted claims.</p>
-          </div>
-
-          <label className="ec-search">
-            <Search size={17} />
-            <input
-              type="search"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search claims..."
-              aria-label="Search claims"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => setSearch("")}
-                aria-label="Clear search"
-              >
-                <X size={15} />
-              </button>
-            )}
-          </label>
         </div>
 
-        {loading ? (
-          <div className="ec-loading">
-            <RefreshCw size={24} className="ec-spin" />
-            <p>Loading your claims...</p>
+        {/* Filter Controls: Categories, Year Selector, and Search */}
+        <div
+          className="ec-overview-header"
+          style={{
+            marginTop: 28,
+            marginBottom: 20,
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            flexWrap: 'wrap',
+            gap: 12,
+          }}
+        >
+          {/* Category Tabs */}
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+            {['ALL', 'TA', 'LTC', 'MEDICAL', 'ACCOMMODATION'].map((cat) => (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={`ec-button ${activeCategory === cat ? 'ec-button-primary' : 'ec-button-secondary'}`}
+                style={{ fontSize: 12, padding: '7px 14px' }}
+              >
+                {cat === 'ALL' ? 'All Claims' : cat}
+              </button>
+            ))}
           </div>
-        ) : (
-          <>
-            <ClaimSection
-              title="Pending Claims"
-              claims={pendingClaims}
-              type="pending"
-              emptyText="Claims awaiting review will appear here."
-            />
 
-            <ClaimSection
-              title="Approved Claims"
-              claims={approvedClaims}
-              type="approved"
-              emptyText="Once your claims are approved, they will appear here."
-            />
-
-            {rejectedClaims.length > 0 && (
-              <ClaimSection
-                title="Rejected Claims"
-                claims={rejectedClaims}
-                type="pending"
-                emptyText="No rejected claims."
+          {/* Right Controls: Year Filter + Search Bar */}
+          <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+            {/* Year Dropdown Filter */}
+            <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+              <Calendar
+                size={15}
+                style={{ position: 'absolute', left: 12, color: '#64748b', pointerEvents: 'none' }}
               />
-            )}
-          </>
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                style={{
+                  padding: '8px 14px 8px 34px',
+                  borderRadius: 10,
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: '#1e293b',
+                  cursor: 'pointer',
+                  outline: 'none',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                }}
+              >
+                <option value="ALL">All Years</option>
+                {availableYears.map((yr) => (
+                  <option key={yr} value={String(yr)}>
+                    {yr}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Search Input */}
+            <div className="ec-search" style={{ position: 'relative', minWidth: 240 }}>
+              <Search
+                size={15}
+                style={{
+                  position: 'absolute',
+                  left: 12,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  color: '#94a3b8',
+                }}
+              />
+              <input
+                type="text"
+                placeholder="Search claims..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: '9px 12px 9px 36px',
+                  borderRadius: 10,
+                  border: '1px solid #e2e8f0',
+                  background: '#fff',
+                  fontSize: 13,
+                  outline: 'none',
+                }}
+              />
+            </div>
+          </div>
+        </div>
+
+        {/* Claims List Section */}
+        <section className="ec-section">
+          <div className="ec-section-header">
+            <h2 className="ec-section-title">
+              <span className="ec-section-icon ec-icon-pending">
+                <FileText size={18} />
+              </span>
+              Submitted Claims
+              <span className="ec-count">{filteredClaims.length}</span>
+            </h2>
+          </div>
+
+          {loading ? (
+            <div className="ec-loading" style={{ padding: 48, textAlign: 'center', color: '#64748b' }}>
+              <RefreshCw size={24} className="ec-spin" style={{ margin: '0 auto 12px' }} />
+              <p style={{ margin: 0, fontSize: 14 }}>Loading claims records...</p>
+            </div>
+          ) : filteredClaims.length === 0 ? (
+            <div className="ec-empty">
+              <div className="ec-empty-icon">
+                <FileText size={28} />
+              </div>
+              <h3>No claims found</h3>
+              <p>
+                No claims match {selectedYear !== 'ALL' ? `year ${selectedYear} and ` : ''}your active category or search query.
+              </p>
+            </div>
+          ) : (
+            <div className="ec-claim-list">
+              {filteredClaims.map((claim) => {
+                const isAppr = ['approved', 'sanctioned', 'paid', 'completed'].includes(claim.status);
+                const isRej = ['rejected', 'declined', 'cancelled'].includes(claim.status);
+                const statusClass = isAppr
+                  ? 'ec-status ec-status-approved'
+                  : isRej
+                  ? 'ec-status ec-status-rejected'
+                  : 'ec-status ec-status-pending';
+
+                return (
+                  <div key={claim.id} className="ec-claim-row">
+                    <div className="ec-claim-type-icon">
+                      {getCategoryIcon(claim.claimType)}
+                    </div>
+
+                    <div className="ec-claim-main">
+                      <div className="ec-claim-info">
+                        <h4 style={{ margin: 0, fontSize: 14, fontWeight: 700, color: '#0f172a' }}>
+                          {claim.applicationId}
+                        </h4>
+                        <div className="ec-claim-meta" style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: '#475569' }}>
+                            {claim.claimType} Claim
+                          </span>
+                          <span className="ec-meta-dot">&bull;</span>
+                          <span className="ec-date">{formatDate(claim.createdAt)}</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="ec-claim-right">
+                      <div className="ec-claim-amount" style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: 15, fontWeight: 800, color: '#0f172a' }}>
+                          {formatINR(claim.amount)}
+                        </span>
+                      </div>
+
+                      <span className={statusClass}>
+                        {isAppr ? <CheckCircle2 size={13} /> : isRej ? <XCircle size={13} /> : <Clock3 size={13} />}
+                        <span>{formatStatus(claim.status)}</span>
+                      </span>
+
+                      <button
+                        type="button"
+                        className="ec-button ec-button-secondary"
+                        onClick={() => setSelectedClaim(claim)}
+                        style={{ padding: '6px 14px', fontSize: 12, fontWeight: 600 }}
+                      >
+                        <Eye size={13} style={{ marginRight: 5 }} />
+                        View
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {/* Modal for Details */}
+        {selectedClaim && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              zIndex: 9999,
+              backgroundColor: 'rgba(15, 23, 42, 0.5)',
+              backdropFilter: 'blur(3px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              padding: 16,
+            }}
+            onClick={() => setSelectedClaim(null)}
+          >
+            <div
+              style={{
+                background: '#fff',
+                borderRadius: 16,
+                maxWidth: 540,
+                width: '100%',
+                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
+                overflow: 'hidden',
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                style={{
+                  padding: '18px 24px',
+                  borderBottom: '1px solid #f1f5f9',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                }}
+              >
+                <div>
+                  <h3 style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+                    Claim Details: {selectedClaim.applicationId}
+                  </h3>
+                  <span style={{ fontSize: 12, color: '#64748b' }}>
+                    Category: {selectedClaim.claimType}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedClaim(null)}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b' }}
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div style={{ padding: 24, fontSize: 13, lineHeight: 1.8 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>AMOUNT</span>
+                    <strong style={{ fontSize: 16, color: '#276fb5' }}>{formatINR(selectedClaim.amount)}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>STATUS</span>
+                    <strong>{formatStatus(selectedClaim.status)}</strong>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>SUBMITTED ON</span>
+                    <span>{formatDate(selectedClaim.createdAt)}</span>
+                  </div>
+                  <div>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>REFERENCE ID</span>
+                    <span>{selectedClaim.id || selectedClaim.applicationId}</span>
+                  </div>
+                </div>
+
+                {selectedClaim.purpose && (
+                  <div style={{ marginBottom: 12 }}>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>PURPOSE</span>
+                    <p style={{ margin: '4px 0 0', color: '#1e293b' }}>{selectedClaim.purpose}</p>
+                  </div>
+                )}
+
+                {selectedClaim.remarks && (
+                  <div style={{ background: '#f8fafc', padding: 12, borderRadius: 8, marginTop: 12 }}>
+                    <span style={{ color: '#64748b', display: 'block', fontSize: 11, fontWeight: 700 }}>REMARKS</span>
+                    <p style={{ margin: '4px 0 0', color: '#334155' }}>{selectedClaim.remarks}</p>
+                  </div>
+                )}
+              </div>
+
+              <div style={{ padding: '14px 24px', background: '#f8fafc', borderTop: '1px solid #f1f5f9', textAlign: 'right' }}>
+                <button
+                  type="button"
+                  className="ec-button ec-button-primary"
+                  onClick={() => setSelectedClaim(null)}
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
         )}
-
-        <footer className="ec-footer">
-          <AlertCircle size={14} />
-          Claim statuses reflect the information returned by the FMS server.
-        </footer>
       </div>
-
-     
-    </main>
+    </div>
   );
 }

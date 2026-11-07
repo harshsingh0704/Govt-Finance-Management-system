@@ -1,4 +1,4 @@
-const { notifyEmployee } = require("../services/notificationService");
+const { notifyEmployee, notifyRole } = require("../services/notificationService");
 const Approval = require('../models/Approval');
 const Employee = require('../models/Employee');
 const mongoose = require('mongoose');
@@ -383,6 +383,26 @@ exports.createClaim = async (req, res) => {
       }], { session });
     });
 
+        // Real-time dispatch to Head of Department
+    try {
+      const applicantName = employee.fullName || employee.name || user.name || "Employee";
+      await notifyRole("Head of Department", {
+        actor: user._id,
+        claimId: claim._id,
+        claimType: "LTCClaim",
+        link: "/hod",
+        title: "New LTC Claim submitted",
+        message: `${applicantName} submitted a new LTC claim (${claim.applicationId || claim._id}) awaiting HOD review.`,
+        type: "CLAIM_SUBMITTED",
+        metadata: {
+          currentStage: "PENDING_HOD",
+          claimType: "LTCClaim",
+        },
+      }, user._id);
+    } catch (e) {
+      console.error("HOD notification error (LTC Claim):", e.message);
+    }
+
     return res.status(201).json({
       success: true,
       message: "LTC claim submitted successfully.",
@@ -467,7 +487,7 @@ exports.updateClaimStatus = async (req, res) => {
         ? "CLAIM_RETURNED"
         : "GENERAL";
 
-      await notifyEmployee(claim.employeeId, {
+      await notifyEmployee, notifyRole(claim.employeeId, {
         actor: req.user ? req.user.id || req.user._id : null,
         claimId: claim._id,
         claimType: "LTCClaim",

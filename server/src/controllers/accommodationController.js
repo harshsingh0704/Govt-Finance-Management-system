@@ -1,3 +1,4 @@
+const { notifyRole } = require("../services/notificationService");
 const mongoose = require("mongoose");
 const Employee = require("../models/Employee");
 const Accommodation = require("../models/Accommodation");
@@ -168,7 +169,25 @@ exports.createAccommodation = async (req, res) => {
       status: "submitted",
     });
 
-    return res.status(201).json({
+    return     // Real-time dispatch to Head of Department
+    try {
+      await notifyRole("Head of Department", {
+        actor: req.user?._id || req.user?.id,
+        claimId: accommodation?._id || req.body._id,
+        claimType: "Accommodation",
+        link: "/hod",
+        title: "New Accommodation Request",
+        message: `An accommodation request has been submitted and is awaiting review.`,
+        type: "CLAIM_SUBMITTED",
+        metadata: {
+          currentStage: "PENDING_HOD",
+        },
+      }, req.user?._id || req.user?.id);
+    } catch (e) {
+      console.error("HOD notification error (Accommodation):", e.message);
+    }
+
+    res.status(201).json({
       success: true,
       message: "Accommodation application saved successfully.",
       record,

@@ -249,8 +249,16 @@ export default function HeadOfDepartmentPage() {
   }, []);
 
   useEffect(() => {
-    if (activeSection === "Notifications") fetchNotifications();
-  }, [activeSection, fetchNotifications]);
+    // Initial fetch on mount or section switch
+    fetchNotifications();
+
+    // Background poll every 12 seconds to keep notifications badge live
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 12000);
+
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   async function markNotificationRead(notification) {
     if (!notification?._id || notification.readAt) {

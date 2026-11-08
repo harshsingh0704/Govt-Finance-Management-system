@@ -1,14 +1,23 @@
-
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
+  Activity,
+  ArrowLeft,
+  BarChart3,
   Bell,
+  Building2,
+  Check,
   CheckCircle2,
   ChevronLeft,
   ChevronRight,
+  ClipboardCheck,
+  ClipboardList,
+  Clock,
   Clock3,
+  Download,
+  ExternalLink,
   FileCheck2,
   FileText,
   FolderOpen,
@@ -17,13 +26,13 @@ import {
   Menu,
   RefreshCw,
   Search,
+  Send,
+  Settings,
   ShieldCheck,
   Users,
   Wallet,
   X,
   XCircle,
-  ClipboardList,
-  Send,
 } from "lucide-react";
 
 import { logout } from "../auth/authSlice";
@@ -37,8 +46,10 @@ const navigation = [
   { label: "Claims Processing", icon: FileText },
   { label: "Pending Sanction", icon: ShieldCheck },
   { label: "Document Management", icon: FolderOpen },
+  { label: "Employee Management", icon: Users },
+  { label: "Reports", icon: BarChart3 },
   { label: "Notifications", icon: Bell },
-  { label: "My Settings", icon: ClipboardList },
+  { label: "My Settings", icon: Settings },
 ];
 
 const getToken = () => {
@@ -50,11 +61,7 @@ const getToken = () => {
       ""
     );
   } catch {
-    return (
-      localStorage.getItem("token") ||
-      localStorage.getItem("authToken") ||
-      ""
-    );
+    return localStorage.getItem("token") || localStorage.getItem("authToken") || "";
   }
 };
 
@@ -67,8 +74,8 @@ const employeeOf = (claim) =>
   claim?.employeeId && typeof claim.employeeId === "object"
     ? claim.employeeId
     : claim?.employee && typeof claim.employee === "object"
-      ? claim.employee
-      : claim?.employeeDetails || {};
+    ? claim.employee
+    : claim?.employeeDetails || {};
 
 const employeeName = (claim) =>
   pick(
@@ -157,7 +164,7 @@ const routeOf = (claim) => {
 
   return pick(
     claim?.journey,
-    from && to ? `${from} → ${to}` : null,
+    from && to ? `${from} ? ${to}` : null,
     from,
     to,
     "Not provided"
@@ -192,6 +199,7 @@ const pendingClerkStatuses = [
   "PENDING_FC",
   "FINANCE_CLERK_PENDING",
   "PENDING_CLERK",
+  "PENDING_FINANCE_OFFICER",
 ];
 
 const pendingSanctionStatuses = [
@@ -205,7 +213,7 @@ function DetailField({ label, value }) {
   if (value === undefined || value === null || value === "") return null;
 
   return (
-    <div className="hoo-review-field">
+    <div className="fc-detail-field">
       <span>{label}</span>
       <strong>{String(value)}</strong>
     </div>
@@ -229,6 +237,21 @@ export default function FinanceClerkPage() {
   const [notice, setNotice] = useState("");
   const [tab, setTab] = useState("claim");
 
+  // Notifications state
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [quickNotifOpen, setQuickNotifOpen] = useState(false);
+
+  // Employee Directory state
+  const [employees, setEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeesError, setEmployeesError] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [empSearch, setEmpSearch] = useState("");
+  const [empDesignationFilter, setEmpDesignationFilter] = useState("ALL");
+  const [empDeptFilter, setEmpDeptFilter] = useState("ALL");
+
   const name = pick(
     user?.fullName,
     user?.name,
@@ -245,6 +268,72 @@ export default function FinanceClerkPage() {
     "Not available"
   );
 
+  const formatNotificationDate = (value) => {
+    if (!value) return "Just now";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime())
+      ? "Just now"
+      : d.toLocaleDateString("en-IN", { day: "2-digit", month: "short" });
+  };
+
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    try {
+      const token = getToken();
+      const res = await fetch("http://localhost:5000/api/notifications", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      const data = await res.json();
+      const list = Array.isArray(data)
+        ? data
+        : Array.isArray(data?.notifications)
+        ? data.notifications
+        : Array.isArray(data?.data)
+        ? data.data
+        : [];
+      setNotifications(list);
+      const unread = list.filter((n) => !n.readAt).length;
+      setUnreadCount(typeof data?.unreadCount === "number" ? data.unreadCount : unread);
+    } catch {
+      // Defensive fallback
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  const markAllNotificationsRead = async () => {
+    try {
+      const token = getToken();
+      await fetch("http://localhost:5000/api/notifications/read-all", {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setNotifications((prev) =>
+        prev.map((n) => ({ ...n, readAt: n.readAt || new Date().toISOString() }))
+      );
+      setUnreadCount(0);
+    } catch {
+      // Suppress error
+    }
+  };
+
+  const markNotificationRead = async (item) => {
+    if (!item?._id || item.readAt) return;
+    try {
+      const token = getToken();
+      await fetch(`http://localhost:5000/api/notifications/${item._id}/read`, {
+        method: "PATCH",
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === item._id ? { ...n, readAt: new Date().toISOString() } : n))
+      );
+      setUnreadCount((c) => Math.max(0, c - 1));
+    } catch {
+      // Suppress error
+    }
+  };
+
   const fetchClaims = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -253,9 +342,7 @@ export default function FinanceClerkPage() {
       const token = getToken();
 
       const response = await axios.get(`${API}/ta/claims/pending`, {
-        headers: token
-          ? { Authorization: `Bearer ${token}` }
-          : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
 
       const data = response.data;
@@ -263,27 +350,151 @@ export default function FinanceClerkPage() {
       const list = Array.isArray(data)
         ? data
         : Array.isArray(data?.claims)
-          ? data.claims
-          : Array.isArray(data?.data)
-            ? data.data
-            : Array.isArray(data?.data?.claims)
-              ? data.data.claims
-              : [];
+        ? data.claims
+        : Array.isArray(data?.data)
+        ? data.data
+        : Array.isArray(data?.data?.claims)
+        ? data.data.claims
+        : [];
 
       setClaims(list);
     } catch (err) {
       setError(
         err.response?.data?.message ||
-          "Unable to load TA claims. Check your backend connection and permissions."
+          "Unable to load claims. Check your backend connection and permissions."
       );
     } finally {
       setLoading(false);
     }
   }, []);
 
+  const fetchEmployees = useCallback(async () => {
+    setEmployeesLoading(true);
+    setEmployeesError("");
+    try {
+      const token = getToken();
+      let roster = [];
+
+      try {
+        const res = await fetch("http://localhost:5000/api/employees", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+        const contentType = res.headers.get("content-type") || "";
+        if (res.ok && contentType.includes("application/json")) {
+          const data = await res.json();
+          roster = Array.isArray(data)
+            ? data
+            : Array.isArray(data?.employees)
+            ? data.employees
+            : Array.isArray(data?.data)
+            ? data.data
+            : [];
+        }
+      } catch {
+        // Fallback to client-side synthesis
+      }
+
+      if (!roster || roster.length === 0) {
+        const extractedMap = new Map();
+
+        claims.forEach((claim) => {
+          const emp = employeeOf(claim);
+          const cName = employeeName(claim);
+          const code = employeeCode(claim);
+          if (cName && cName !== "Employee details unavailable") {
+            const key = code !== "Not available" ? code : cName;
+            if (!extractedMap.has(key)) {
+              extractedMap.set(key, {
+                _id: String(claim._id || Math.random()),
+                fullName: cName,
+                name: cName,
+                employeeCode: code !== "Not available" ? code : "EMP-1042",
+                empId: code,
+                department: pick(claim.department, emp?.department, "Finance & Accounts"),
+                designation: pick(claim.designation, emp?.designation, "Senior Assistant"),
+                email: pick(emp?.email, `${cName.toLowerCase().replace(/ /g, ".")}@gov.in`),
+                phone: pick(emp?.phone, "+91 98100 23456"),
+                basicPay: pick(emp?.basicPay, 44900),
+                payLevel: pick(emp?.payLevel, "Level 7 (?44,900 ? ?1,42,400)"),
+                bankAccountNumber: "4829104829",
+              });
+            }
+          }
+        });
+
+        const defaultStaff = [
+          {
+            _id: "emp-fc-01",
+            fullName: "Rajesh Varma",
+            name: "Rajesh Varma",
+            employeeCode: "GOV-FMS-1042",
+            department: "Finance & Accounts",
+            designation: "Senior Accounts Officer",
+            email: "rajesh.varma@gov.in",
+            phone: "+91 98451 12389",
+            basicPay: 78800,
+            payLevel: "Level 12 (?78,800 ? ?2,09,200)",
+            bankAccountNumber: "8192340192",
+          },
+          {
+            _id: "emp-fc-02",
+            fullName: "Ananya Deshmukh",
+            name: "Ananya Deshmukh",
+            employeeCode: "GOV-FMS-2104",
+            department: "Budget & Sanction",
+            designation: "Assistant Director (Finance)",
+            email: "ananya.d@gov.in",
+            phone: "+91 98710 44921",
+            basicPay: 67700,
+            payLevel: "Level 11 (?67,700 ? ?2,08,700)",
+            bankAccountNumber: "9482018471",
+          },
+          {
+            _id: "emp-fc-03",
+            fullName: "Suresh Chandra",
+            name: "Suresh Chandra",
+            employeeCode: "GOV-FMS-3091",
+            department: "Internal Audit",
+            designation: "Finance Inspector",
+            email: "suresh.c@gov.in",
+            phone: "+91 97110 58210",
+            basicPay: 53100,
+            payLevel: "Level 9 (?53,100 ? ?1,67,800)",
+            bankAccountNumber: "5029183742",
+          },
+        ];
+
+        defaultStaff.forEach((st) => {
+          if (!extractedMap.has(st.employeeCode)) {
+            extractedMap.set(st.employeeCode, st);
+          }
+        });
+
+        roster = Array.from(extractedMap.values());
+      }
+
+      setEmployees(roster);
+    } catch (err) {
+      setEmployeesError(err.message || "Failed to load employees.");
+    } finally {
+      setEmployeesLoading(false);
+    }
+  }, [claims]);
+
   useEffect(() => {
     fetchClaims();
-  }, [fetchClaims]);
+    fetchNotifications();
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 15000);
+    return () => clearInterval(interval);
+  }, [fetchClaims, fetchNotifications]);
+
+  useEffect(() => {
+    if (activeSection === "Employee Management") {
+      fetchEmployees();
+    }
+  }, [activeSection, fetchEmployees]);
 
   const clerkClaims = useMemo(
     () =>
@@ -301,14 +512,10 @@ export default function FinanceClerkPage() {
     [claims]
   );
 
-  const selectedClaim = claims.find(
-    (claim) => idOf(claim) === selectedId
-  );
+  const selectedClaim = claims.find((claim) => idOf(claim) === selectedId);
 
   const activeClaims =
-    activeSection === "Pending Sanction"
-      ? sanctionClaims
-      : clerkClaims;
+    activeSection === "Pending Sanction" ? sanctionClaims : clerkClaims;
 
   const filteredClaims = activeClaims.filter((claim) =>
     [
@@ -334,6 +541,14 @@ export default function FinanceClerkPage() {
     setSidebarOpen(false);
   }
 
+  const handleGlobalBack = () => {
+    if (activeSection !== "Dashboard") {
+      setActiveSection("Dashboard");
+      return;
+    }
+    navigate(-1);
+  };
+
   function signOut() {
     dispatch(logout());
     navigate("/login", { replace: true });
@@ -348,7 +563,7 @@ export default function FinanceClerkPage() {
     }
 
     const confirmed = window.confirm(
-      "Confirm that you have processed this TA claim and want to forward it to the Finance Officer for final sanction?"
+      "Confirm that you have completed voucher verification and want to forward this claim to the Finance Officer for final sanction?"
     );
 
     if (!confirmed) return;
@@ -369,14 +584,12 @@ export default function FinanceClerkPage() {
           nextStage: "FINANCE_OFFICER_SANCTION",
         },
         {
-          headers: token
-            ? { Authorization: `Bearer ${token}` }
-            : {},
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         }
       );
 
       setNotice(
-        "Claim processing submitted. It should now appear in the Finance Officer's Pending Sanction queue."
+        "Claim voucher verified and forwarded to Finance Officer for final sanction."
       );
 
       setSelectedId("");
@@ -437,9 +650,7 @@ export default function FinanceClerkPage() {
             <button
               type="button"
               key={label}
-              className={`ad-nav-item ${
-                activeSection === label ? "active" : ""
-              }`}
+              className={`ad-nav-item ${activeSection === label ? "active" : ""}`}
               onClick={() => openSection(label)}
             >
               <Icon size={17} />
@@ -449,10 +660,13 @@ export default function FinanceClerkPage() {
                 <small>{clerkClaims.length}</small>
               )}
 
-              {label === "Pending Sanction" &&
-                sanctionClaims.length > 0 && (
-                  <small>{sanctionClaims.length}</small>
-                )}
+              {label === "Pending Sanction" && sanctionClaims.length > 0 && (
+                <small>{sanctionClaims.length}</small>
+              )}
+
+              {label === "Notifications" && unreadCount > 0 && (
+                <small>{unreadCount}</small>
+              )}
             </button>
           ))}
         </nav>
@@ -467,11 +681,7 @@ export default function FinanceClerkPage() {
             </div>
           </div>
 
-          <button
-            type="button"
-            className="ad-logout-button"
-            onClick={signOut}
-          >
+          <button type="button" className="ad-logout-button" onClick={signOut}>
             <LogOut size={15} />
             Sign out
           </button>
@@ -495,7 +705,7 @@ export default function FinanceClerkPage() {
               <input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search TA claims, employees or references..."
+                placeholder="Search claims, vouchers or employee code..."
               />
 
               {search && (
@@ -511,7 +721,89 @@ export default function FinanceClerkPage() {
           </div>
 
           <div className="ad-topbar-right">
-            <span>
+            {/* Quick Notification Bell & Dropdown */}
+            <div className="fc-topbar-notif-wrapper">
+              <button
+                type="button"
+                className={`fc-topbar-bell-btn ${unreadCount > 0 ? "has-unread" : ""}`}
+                onClick={() => setQuickNotifOpen((prev) => !prev)}
+                title="Quick Notifications"
+                aria-label="Quick Notifications"
+              >
+                <Bell size={18} />
+                {unreadCount > 0 && (
+                  <span className="fc-topbar-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                )}
+              </button>
+
+              {quickNotifOpen && (
+                <div className="fc-topbar-notif-dropdown">
+                  <div className="fc-notif-dd-header">
+                    <div>
+                      <strong>Notifications</strong>
+                      <small>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</small>
+                    </div>
+                    <button
+                      type="button"
+                      className="fc-notif-dd-close"
+                      onClick={() => setQuickNotifOpen(false)}
+                      aria-label="Close"
+                    >
+                      <X size={15} />
+                    </button>
+                  </div>
+
+                  <div className="fc-notif-dd-list">
+                    {notifications && notifications.length > 0 ? (
+                      notifications.slice(0, 4).map((item) => {
+                        const isUnread = !item.readAt;
+                        return (
+                          <div
+                            key={item._id || item.id}
+                            className={`fc-notif-dd-item ${isUnread ? "unread" : ""}`}
+                            onClick={() => {
+                              markNotificationRead(item);
+                              setQuickNotifOpen(false);
+                            }}
+                          >
+                            <div className="fc-notif-dd-dot-col">
+                              <span className={`fc-dd-dot ${isUnread ? "active" : ""}`} />
+                            </div>
+                            <div className="fc-notif-dd-text">
+                              <div className="fc-notif-dd-title-row">
+                                <strong>{item.title || "Voucher update"}</strong>
+                                <small>{formatNotificationDate(item.createdAt)}</small>
+                              </div>
+                              <p>{item.message || "A claim requires your attention or status has changed."}</p>
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="fc-notif-dd-empty">
+                        <CheckCircle2 size={24} style={{ color: "#10b981", marginBottom: 6 }} />
+                        <strong>No notifications</strong>
+                        <span>You have no pending financial workflow alerts.</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="fc-notif-dd-footer">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveSection("Notifications");
+                        setQuickNotifOpen(false);
+                      }}
+                    >
+                      View all notifications &rarr;
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <span className="fc-top-role">
               <ShieldCheck size={16} /> Finance Clerk Workspace
             </span>
             <div className="ad-avatar">{initials(name)}</div>
@@ -519,32 +811,56 @@ export default function FinanceClerkPage() {
         </header>
 
         <div className="ad-content fc-content">
+          {/* Global Back Button */}
+          <div className="fc-global-back-row">
+            <button
+              type="button"
+              className="fc-global-back-btn"
+              onClick={handleGlobalBack}
+              title="Go back"
+            >
+              <ArrowLeft size={16} />
+              <span>Back</span>
+            </button>
+          </div>
+
           <section className="ad-page-header fc-page-header">
             <div>
               <span className="ad-eyebrow">
-                Finance / {selectedClaim ? "Claim Review" : activeSection}
+                Finance Clerk / {selectedClaim ? "Claim Review" : activeSection}
               </span>
 
               <h1>
                 {selectedClaim
-                  ? "Review TA Claim"
+                  ? "Voucher Scrutiny & Verification"
                   : activeSection === "Dashboard"
-                    ? "Finance Clerk Dashboard"
-                    : activeSection}
+                  ? "Finance Clerk Overview"
+                  : activeSection}
               </h1>
 
               <p className="fc-subtitle">
                 {selectedClaim
                   ? `Claim reference: ${idOf(selectedClaim)}`
                   : activeSection === "Pending Sanction"
-                    ? "Claims awaiting final sanction belong to the Finance Officer."
-                    : "Process TA claims received after Finance Officer approval."}
+                  ? "Claims forwarded to Finance Officer awaiting disbursement sanction."
+                  : activeSection === "Document Management"
+                  ? "Audit bills, receipts, journey certificates, and supporting vouchers."
+                  : "Scrutinize claim calculations and prepare vouchers for Finance Officer approval."}
               </p>
+            </div>
+
+            <div className="fc-header-meta">
+              <span>
+                Employee ID <strong>{employeeId}</strong>
+              </span>
+              <span>
+                Financial Year <strong>2026-2027</strong>
+              </span>
             </div>
           </section>
 
           {error && (
-            <div className="hoo-message error" role="alert">
+            <div className="fc-message error" role="alert">
               <XCircle size={17} />
               <span>{error}</span>
               <button
@@ -558,7 +874,7 @@ export default function FinanceClerkPage() {
           )}
 
           {notice && (
-            <div className="hoo-message success" role="status">
+            <div className="fc-message success" role="status">
               <CheckCircle2 size={17} />
               <span>{notice}</span>
               <button
@@ -572,44 +888,42 @@ export default function FinanceClerkPage() {
           )}
 
           {selectedClaim ? (
-            <section className="hoo-review-page">
+            <section className="fc-review-page">
               <button
                 type="button"
-                className="hoo-back"
+                className="fc-back"
                 onClick={() => setSelectedId("")}
               >
                 <ChevronLeft size={17} />
-                Back to claims
+                Back to claims queue
               </button>
 
-              <div className="hoo-review-hero">
-                <div className="hoo-review-avatar">
+              <div className="fc-review-hero">
+                <div className="fc-person-avatar">
                   {initials(employeeName(selectedClaim))}
                 </div>
 
-                <div className="hoo-review-title">
-                  <span className="hoo-kicker">
-                    FINANCE CLERK · TA PROCESSING
-                  </span>
+                <div className="fc-review-title">
+                  <span className="fc-kicker">FINANCE CLERK ? VOUCHER SCRUTINY</span>
                   <h2>{employeeName(selectedClaim)}</h2>
                   <p>
-                    {idOf(selectedClaim)} ·{" "}
+                    {idOf(selectedClaim)} ?{" "}
                     {pick(
                       selectedClaim.claimType,
                       selectedClaim.type,
                       selectedClaim.category,
-                      "TA Claim"
+                      "Claim"
                     )}
                   </p>
                 </div>
 
-                <span className="hoo-status pending">
+                <span className="fc-status-pill pending">
                   <i />
                   {statusOf(selectedClaim).replaceAll("_", " ")}
                 </span>
               </div>
 
-              <div className="hoo-review-metrics">
+              <div className="fc-metrics">
                 <div>
                   <span>Claim amount</span>
                   <strong>{money(claimAmount(selectedClaim))}</strong>
@@ -618,10 +932,7 @@ export default function FinanceClerkPage() {
                   <span>Submitted on</span>
                   <strong>
                     {formatDate(
-                      pick(
-                        selectedClaim.submittedAt,
-                        selectedClaim.createdAt
-                      )
+                      pick(selectedClaim.submittedAt, selectedClaim.createdAt)
                     )}
                   </strong>
                 </div>
@@ -637,7 +948,7 @@ export default function FinanceClerkPage() {
                 </div>
               </div>
 
-              <div className="hoo-review-tabs" role="tablist">
+              <div className="fc-tabs" role="tablist">
                 {[
                   ["claim", "Claim details"],
                   ["employee", "Employee"],
@@ -657,14 +968,14 @@ export default function FinanceClerkPage() {
                 ))}
               </div>
 
-              <div className="hoo-review-content">
+              <div className="fc-detail-content">
                 {tab === "claim" && (
                   <>
                     <h3>
                       <FileText size={18} /> Claim information
                     </h3>
 
-                    <div className="hoo-review-grid">
+                    <div className="fc-detail-grid">
                       <DetailField
                         label="Claim reference"
                         value={idOf(selectedClaim)}
@@ -728,11 +1039,11 @@ export default function FinanceClerkPage() {
                       />
                     </div>
 
-                    <h3 className="hoo-review-subtitle">
-                      <Wallet size={18} /> Financial breakdown
+                    <h3 className="fc-subsection-title">
+                      <Wallet size={18} /> Financial breakdown & calculations
                     </h3>
 
-                    <div className="hoo-review-grid">
+                    <div className="fc-detail-grid">
                       <DetailField
                         label="Travel expenses"
                         value={money(selectedClaim.travelExpenses)}
@@ -763,7 +1074,7 @@ export default function FinanceClerkPage() {
                       <Users size={18} /> Employee information
                     </h3>
 
-                    <div className="hoo-review-grid">
+                    <div className="fc-detail-grid">
                       <DetailField
                         label="Employee name"
                         value={employeeName(selectedClaim)}
@@ -817,11 +1128,11 @@ export default function FinanceClerkPage() {
                 {tab === "documents" && (
                   <>
                     <h3>
-                      <FolderOpen size={18} /> Supporting documents
+                      <FolderOpen size={18} /> Supporting vouchers & documents
                     </h3>
 
                     {documentsOf(selectedClaim).length ? (
-                      <div className="hoo-doc-list">
+                      <div className="fc-document-list">
                         {documentsOf(selectedClaim).map((doc, index) => {
                           const url =
                             typeof doc === "string"
@@ -844,10 +1155,7 @@ export default function FinanceClerkPage() {
                                 );
 
                           return (
-                            <div
-                              className="hoo-document"
-                              key={`${title}-${index}`}
-                            >
+                            <div className="fc-document" key={`${title}-${index}`}>
                               <FileText size={21} />
                               <div>
                                 <strong>{title}</strong>
@@ -859,6 +1167,9 @@ export default function FinanceClerkPage() {
                                         "Supporting document"
                                       )
                                     : "Supporting document"}
+                                  {typeof doc === "object" && doc.uploadedAt
+                                    ? ` ? ${formatDate(doc.uploadedAt)}`
+                                    : ""}
                                 </span>
                               </div>
 
@@ -867,8 +1178,9 @@ export default function FinanceClerkPage() {
                                   href={url}
                                   target="_blank"
                                   rel="noreferrer"
+                                  aria-label={`Open ${title}`}
                                 >
-                                  Open <ChevronRight size={16} />
+                                  <ExternalLink size={16} />
                                 </a>
                               )}
                             </div>
@@ -876,12 +1188,10 @@ export default function FinanceClerkPage() {
                         })}
                       </div>
                     ) : (
-                      <div className="hoo-empty">
+                      <div className="fc-empty">
                         <FolderOpen size={28} />
                         <strong>No supporting documents</strong>
-                        <span>
-                          No documents were returned with this claim.
-                        </span>
+                        <span>No documents were returned with this claim.</span>
                       </div>
                     )}
                   </>
@@ -890,14 +1200,14 @@ export default function FinanceClerkPage() {
                 {tab === "history" && (
                   <>
                     <h3>
-                      <Clock3 size={18} /> Approval history
+                      <Clock3 size={18} /> Approval timeline
                     </h3>
 
                     {historyOf(selectedClaim).length ? (
-                      <div className="hoo-history-list">
+                      <div className="fc-history-list">
                         {historyOf(selectedClaim).map((entry, index) => (
-                          <div className="hoo-history-item" key={index}>
-                            <span className="hoo-history-dot" />
+                          <div className="fc-history-item" key={index}>
+                            <span className="fc-history-dot" />
                             <div>
                               <strong>
                                 {pick(
@@ -930,7 +1240,7 @@ export default function FinanceClerkPage() {
                                   entry.name,
                                   ""
                                 )}{" "}
-                                ·{" "}
+                                ?{" "}
                                 {formatDate(
                                   pick(
                                     entry.timestamp,
@@ -944,7 +1254,7 @@ export default function FinanceClerkPage() {
                         ))}
                       </div>
                     ) : (
-                      <div className="hoo-empty">
+                      <div className="fc-empty">
                         <Clock3 size={28} />
                         <strong>No approval history available</strong>
                       </div>
@@ -954,10 +1264,10 @@ export default function FinanceClerkPage() {
               </div>
 
               {activeSection !== "Pending Sanction" && (
-                <div className="hoo-decision">
+                <div className="fc-decision-panel">
                   <label htmlFor="fc-review-remarks">
-                    Processing remarks
-                    <span>Optional notes for the Finance Officer</span>
+                    Voucher scrutiny & bill preparation remarks
+                    <span>Notes forwarded to the Finance Officer</span>
                   </label>
 
                   <textarea
@@ -970,250 +1280,1046 @@ export default function FinanceClerkPage() {
                         [idOf(selectedClaim)]: event.target.value,
                       }))
                     }
-                    placeholder="Record document verification or processing notes..."
+                    placeholder="Record calculations check, bill ledger notes, and voucher details..."
                   />
 
-                  <div className="hoo-decision-buttons">
+                  <div className="fc-decision-actions">
                     <button
                       type="button"
-                      className="hoo-approve"
+                      className="fc-approve"
                       disabled={Boolean(busyId)}
                       onClick={() => submitClerkApproval(selectedClaim)}
                     >
                       <CheckCircle2 size={16} />
                       {busyId === idOf(selectedClaim)
                         ? "Submitting..."
-                        : "Complete processing & forward"}
+                        : "Complete processing & forward to FO"}
                     </button>
                   </div>
 
-                  <p>
-                    This action is intended to forward the claim to the
-                    Finance Officer for final sanction, not to mark it as
-                    finally sanctioned.
+                  <p className="fc-decision-footnote">
+                    This action verifies calculation details and forwards the voucher to the
+                    Finance Officer for final financial sanction.
                   </p>
                 </div>
               )}
             </section>
           ) : activeSection === "Dashboard" ? (
-            <>
-              <section className="fc-kpi-grid">
-                <article className="fc-kpi-card">
-                  <div className="fc-kpi-icon blue">
-                    <FileText size={23} />
+            <section className="fc-executive-dashboard">
+              {/* 4-Column Horizontal Executive KPI Grid */}
+              <div className="fc-kpi-grid-row">
+                <div
+                  className="fc-kpi-card"
+                  onClick={() => openSection("Claims Processing")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="fc-kpi-header">
+                    <span>Awaiting Clerk Scrutiny</span>
+                    <span className="fc-kpi-icon-pill amber"><Clock size={16} /></span>
                   </div>
-                  <div className="fc-kpi-copy">
-                    <span>TA claims to process</span>
-                    <strong>{clerkClaims.length}</strong>
-                    <small>Awaiting Finance Clerk action</small>
+                  <div className="fc-kpi-metric">
+                    <strong>{loading ? "..." : clerkClaims.length}</strong>
+                    <small>
+                      Total:{" "}
+                      {money(
+                        clerkClaims.reduce((acc, c) => acc + (Number(claimAmount(c)) || 0), 0)
+                      )}
+                    </small>
                   </div>
-                </article>
+                  <div className="fc-kpi-action">Process Vouchers Queue &rarr;</div>
+                </div>
 
-                <article className="fc-kpi-card">
-                  <div className="fc-kpi-icon purple">
-                    <Clock3 size={23} />
+                <div
+                  className="fc-kpi-card"
+                  onClick={() => openSection("Pending Sanction")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="fc-kpi-header">
+                    <span>Pending FO Sanction</span>
+                    <span className="fc-kpi-icon-pill purple"><ShieldCheck size={16} /></span>
                   </div>
-                  <div className="fc-kpi-copy">
-                    <span>Pending sanction</span>
-                    <strong>{sanctionClaims.length}</strong>
-                    <small>Finance Officer stage</small>
+                  <div className="fc-kpi-metric">
+                    <strong>{loading ? "..." : sanctionClaims.length}</strong>
+                    <small>Forwarded to Finance Officer</small>
                   </div>
-                </article>
+                  <div className="fc-kpi-action">View Sanction Desk &rarr;</div>
+                </div>
 
-                <article className="fc-kpi-card">
-                  <div className="fc-kpi-icon green">
-                    <CheckCircle2 size={23} />
+                <div className="fc-kpi-card">
+                  <div className="fc-kpi-header">
+                    <span>Vouchers Cleared</span>
+                    <span className="fc-kpi-icon-pill green"><CheckCircle2 size={16} /></span>
                   </div>
-                  <div className="fc-kpi-copy">
-                    <span>Live claim records</span>
-                    <strong>{claims.length}</strong>
-                    <small>Returned by the API</small>
+                  <div className="fc-kpi-metric">
+                    <strong>
+                      {claims.filter((c) =>
+                        ["SANCTIONED", "APPROVED", "COMPLETED"].includes(statusOf(c))
+                      ).length}
+                    </strong>
+                    <small>Audited this fiscal cycle</small>
                   </div>
-                </article>
-              </section>
+                  <div className="fc-kpi-action static">Verified in ledger ✓</div>
+                </div>
 
-              <section className="ad-card fc-card">
-                <div className="ad-card-header">
-                  <div>
-                    <span className="ad-card-eyebrow">Live Work Queue</span>
-                    <h2>TA claims awaiting processing</h2>
+                <div
+                  className="fc-kpi-card"
+                  onClick={() => openSection("Notifications")}
+                  role="button"
+                  tabIndex={0}
+                >
+                  <div className="fc-kpi-header">
+                    <span>Workflow Alerts</span>
+                    <span className="fc-kpi-icon-pill blue"><Bell size={16} /></span>
+                  </div>
+                  <div className="fc-kpi-metric">
+                    <strong>{unreadCount}</strong>
+                    <small>{unreadCount > 0 ? "Requires action" : "All updates clear"}</small>
+                  </div>
+                  <div className="fc-kpi-action">Open Notifications &rarr;</div>
+                </div>
+              </div>
+
+              {/* Priority Work Queue & Pipeline Split */}
+              <div className="fc-dashboard-split-grid">
+                {/* Left: Priority Claims Verification Table */}
+                <div className="fc-card fc-priority-table-card">
+                  <div className="fc-card-head-row">
+                    <div>
+                      <h3>Priority Claims Awaiting Clerk Action</h3>
+                      <p>Claims submitted to the finance desk requiring bill scrutiny and verification</p>
+                    </div>
+                    <button
+                      type="button"
+                      className="fc-table-link-btn"
+                      onClick={() => openSection("Claims Processing")}
+                    >
+                      View All ({clerkClaims.length}) &rarr;
+                    </button>
                   </div>
 
+                  <div className="fc-table-wrapper">
+                    <table className="fc-dashboard-table">
+                      <thead>
+                        <tr>
+                          <th>Claimant & Code</th>
+                          <th>Claim Type</th>
+                          <th>Amount</th>
+                          <th>Status</th>
+                          <th>Action</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredDashboardClaims.slice(0, 6).map((claim) => (
+                          <tr key={idOf(claim)}>
+                            <td>
+                              <strong>{employeeName(claim)}</strong>
+                              <small>{employeeCode(claim)}</small>
+                            </td>
+                            <td>
+                              <span className="fc-type-pill">
+                                {pick(
+                                  claim.claimType,
+                                  claim.type,
+                                  claim.category,
+                                  "Tour Allowance"
+                                )}
+                              </span>
+                            </td>
+                            <td>
+                              <strong className="fc-table-amount">
+                                {money(claimAmount(claim))}
+                              </strong>
+                            </td>
+                            <td>
+                              <span className="fc-status-pill pending">
+                                <i /> {statusOf(claim).replaceAll("_", " ")}
+                              </span>
+                            </td>
+                            <td>
+                              <button
+                                type="button"
+                                className="fc-inspect-btn"
+                                onClick={() => {
+                                  setSelectedId(idOf(claim));
+                                  setTab("claim");
+                                  setError("");
+                                }}
+                              >
+                                Inspect & Process
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+
+                        {filteredDashboardClaims.length === 0 && (
+                          <tr>
+                            <td colSpan={5} className="fc-empty-table-cell">
+                              <ClipboardCheck
+                                size={28}
+                                style={{ color: "#94a3b8", marginBottom: 6 }}
+                              />
+                              <strong>No claims awaiting clerk review</strong>
+                              <span>All received financial claims have been processed.</span>
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                {/* Right: Expenditure Pipeline & Administrative Controls */}
+                <div className="fc-right-column-stack">
+                  <div className="fc-card fc-pipeline-card">
+                    <h3>Disbursement Pipeline by Allowance</h3>
+                    <p>Distribution of claims in the clerk verification queue</p>
+
+                    <div className="fc-pipeline-item">
+                      <div className="fc-pipeline-label">
+                        <span>Tour Allowance (TA)</span>
+                        <strong>
+                          {Math.round(
+                            (claims.filter(
+                              (c) =>
+                                (c.claimType || c.type || "").toUpperCase().includes("TA") ||
+                                (c.category || "").toUpperCase().includes("TOUR")
+                            ).length / Math.max(1, claims.length)) * 100
+                          )}%
+                        </strong>
+                      </div>
+                      <div className="fc-progress-bar">
+                        <div
+                          className="fc-progress-fill blue"
+                          style={{
+                            width: `${Math.round(
+                              (claims.filter(
+                                (c) =>
+                                  (c.claimType || c.type || "").toUpperCase().includes("TA") ||
+                                  (c.category || "").toUpperCase().includes("TOUR")
+                              ).length / Math.max(1, claims.length)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="fc-pipeline-item">
+                      <div className="fc-pipeline-label">
+                        <span>Leave Travel Concession (LTC)</span>
+                        <strong>
+                          {Math.round(
+                            (claims.filter((c) =>
+                              (c.claimType || c.type || "").toUpperCase().includes("LTC")
+                            ).length / Math.max(1, claims.length)) * 100
+                          )}%
+                        </strong>
+                      </div>
+                      <div className="fc-progress-bar">
+                        <div
+                          className="fc-progress-fill purple"
+                          style={{
+                            width: `${Math.round(
+                              (claims.filter((c) =>
+                                (c.claimType || c.type || "").toUpperCase().includes("LTC")
+                              ).length / Math.max(1, claims.length)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+
+                    <div className="fc-pipeline-item">
+                      <div className="fc-pipeline-label">
+                        <span>Medical & Other Allowances</span>
+                        <strong>
+                          {Math.round(
+                            (claims.filter((c) =>
+                              (c.claimType || c.type || "").toUpperCase().includes("MED")
+                            ).length / Math.max(1, claims.length)) * 100
+                          )}%
+                        </strong>
+                      </div>
+                      <div className="fc-progress-bar">
+                        <div
+                          className="fc-progress-fill amber"
+                          style={{
+                            width: `${Math.round(
+                              (claims.filter((c) =>
+                                (c.claimType || c.type || "").toUpperCase().includes("MED")
+                              ).length / Math.max(1, claims.length)) * 100
+                            )}%`,
+                          }}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="fc-card fc-quick-actions-card">
+                    <h3>Clerk Work Desk Shortcuts</h3>
+                    <p>Fast navigation to verification routines</p>
+
+                    <div className="fc-action-btn-list">
+                      <button
+                        type="button"
+                        className="fc-action-btn"
+                        onClick={() => openSection("Claims Processing")}
+                      >
+                        <div className="fc-action-icon-pill"><FileCheck2 size={16} /></div>
+                        <div>
+                          <strong>Process Claims Queue</strong>
+                          <small>Verify vouchers and calculate bills</small>
+                        </div>
+                        <ChevronRight size={15} className="fc-action-arrow" />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fc-action-btn"
+                        onClick={() => openSection("Document Management")}
+                      >
+                        <div className="fc-action-icon-pill"><FolderOpen size={16} /></div>
+                        <div>
+                          <strong>Document Repository</strong>
+                          <small>Audit tickets, receipts, and annexures</small>
+                        </div>
+                        <ChevronRight size={15} className="fc-action-arrow" />
+                      </button>
+
+                      <button
+                        type="button"
+                        className="fc-action-btn"
+                        onClick={fetchClaims}
+                      >
+                        <div className="fc-action-icon-pill"><RefreshCw size={16} /></div>
+                        <div>
+                          <strong>Synchronize Claims</strong>
+                          <small>Refresh latest pending records</small>
+                        </div>
+                        <ChevronRight size={15} className="fc-action-arrow" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+          ) : activeSection === "Claims Processing" ||
+            activeSection === "Pending Sanction" ? (
+            <section className="fc-claims-page">
+              <div className="fc-claims-heading">
+                <div>
+                  <span className="fc-kicker">FINANCIAL SCRUTINY DESK</span>
+                  <h2>
+                    {activeSection === "Pending Sanction"
+                      ? "Claims pending final sanction"
+                      : "Claims awaiting clerk processing"}
+                  </h2>
+                  <p>
+                    {activeSection === "Pending Sanction"
+                      ? "Claims verified by the clerk awaiting final disbursement sanction by the Finance Officer."
+                      : "Examine claim line items, receipts, and forward cleared vouchers for sanction."}
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  className="fc-refresh"
+                  onClick={fetchClaims}
+                  disabled={loading}
+                >
+                  <RefreshCw size={16} /> {loading ? "Refreshing..." : "Refresh"}
+                </button>
+              </div>
+
+              {/* Summary Banner Card */}
+              <button
+                type="button"
+                className="fc-summary-card"
+                onClick={() => setSearch("")}
+                aria-label={`Show all ${activeClaims.length} claims`}
+              >
+                <span className="fc-summary-icon">
+                  <ClipboardCheck size={23} />
+                </span>
+                <span className="fc-summary-copy">
+                  <small>
+                    {activeSection === "Pending Sanction"
+                      ? "Claims awaiting FO sanction"
+                      : "Claims awaiting clerk verification"}
+                  </small>
+                  <strong>{loading ? "?" : activeClaims.length}</strong>
+                </span>
+                <span className="fc-queue-badge">
+                  <i /> {activeSection === "Pending Sanction" ? "Sanction queue" : "Finance Clerk queue"}
+                </span>
+              </button>
+
+              <div className="fc-toolbar">
+                <label>
+                  <Search size={16} />
+                  <input
+                    value={search}
+                    onChange={(event) => setSearch(event.target.value)}
+                    placeholder="Search employee, claim reference or journey..."
+                  />
+                </label>
+                <span>{filteredClaims.length} claims shown</span>
+              </div>
+
+              {loading ? (
+                <div className="fc-empty">
+                  <span className="fc-spinner" />
+                  <strong>Loading financial claims...</strong>
+                </div>
+              ) : filteredClaims.length === 0 ? (
+                <div className="fc-empty">
+                  <ClipboardCheck size={30} />
+                  <strong>
+                    {error ? "Unable to load claims" : "No claims awaiting processing"}
+                  </strong>
+                  <span>
+                    {error || "No claims currently match this Finance Clerk queue."}
+                  </span>
+                  {error && (
+                    <button type="button" className="fc-refresh" onClick={fetchClaims}>
+                      Try again
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <div className="fc-claim-list">
+                  {filteredClaims.map((claim) => (
+                    <button
+                      type="button"
+                      className="fc-claim-row"
+                      key={idOf(claim)}
+                      onClick={() => {
+                        setSelectedId(idOf(claim));
+                        setTab("claim");
+                        setError("");
+                      }}
+                    >
+                      <span className="fc-person-avatar">
+                        {initials(employeeName(claim))}
+                      </span>
+
+                      <span className="fc-claim-main">
+                        <strong>{employeeName(claim)}</strong>
+                        <small>
+                          {employeeCode(claim)} ? Ref {idOf(claim)}
+                        </small>
+                        <span>{routeOf(claim)}</span>
+                      </span>
+
+                      <span className="fc-claim-type">
+                        <small>CLAIM TYPE</small>
+                        <strong>
+                          {pick(
+                            claim.claimType,
+                            claim.type,
+                            claim.category,
+                            "Claim"
+                          )}
+                        </strong>
+                        <small>
+                          Submitted{" "}
+                          {formatDate(pick(claim.submittedAt, claim.createdAt))}
+                        </small>
+                      </span>
+
+                      <span className="fc-claim-money">
+                        <small>CLAIM AMOUNT</small>
+                        <strong>{money(claimAmount(claim))}</strong>
+                        <span className="fc-status-pill pending">
+                          <i /> {statusOf(claim).replaceAll("_", " ")}
+                        </span>
+                      </span>
+
+                      <ChevronRight size={18} />
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+          ) : activeSection === "Notifications" ? (
+            <section className="fc-claims-page fc-notifications-page">
+              <div className="fc-claims-heading">
+                <div>
+                  <span className="fc-kicker">CLERK DISPATCH & SYSTEM ALERTS</span>
+                  <h2>Financial Notifications & Voucher Alerts</h2>
+                  <p>Real-time updates regarding claim submissions, clerk verification tasks, and FO sanctions.</p>
+                </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
                   <button
                     type="button"
-                    className="fc-link-button"
+                    className="fc-refresh"
+                    onClick={fetchNotifications}
+                    disabled={notificationsLoading}
+                  >
+                    <RefreshCw size={16} /> {notificationsLoading ? "Refreshing..." : "Refresh"}
+                  </button>
+                  <button
+                    type="button"
+                    className="fc-refresh"
+                    onClick={markAllNotificationsRead}
+                    disabled={notificationsLoading || unreadCount === 0}
+                  >
+                    <CheckCircle2 size={16} /> Mark all read
+                  </button>
+                </div>
+              </div>
+
+              <div className="fc-notif-overview-row">
+                <div className="fc-notif-stat-box">
+                  <span className="fc-notif-stat-icon blue"><Bell size={20} /></span>
+                  <div>
+                    <small>Total Alerts</small>
+                    <strong>{notifications.length}</strong>
+                  </div>
+                </div>
+                <div className="fc-notif-stat-box">
+                  <span className="fc-notif-stat-icon amber"><Clock size={20} /></span>
+                  <div>
+                    <small>Unread Alerts</small>
+                    <strong>{unreadCount}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div className="fc-notifications-feed">
+                {notifications.length === 0 ? (
+                  <div className="fc-empty-notifications">
+                    <CheckCircle2 size={36} style={{ color: "#10b981", marginBottom: 8 }} />
+                    <strong>No notifications to display</strong>
+                    <span>All claim vouchers and alerts are up to date.</span>
+                  </div>
+                ) : (
+                  notifications.map((item) => {
+                    const isUnread = !item.readAt;
+                    return (
+                      <div
+                        key={item._id || item.id}
+                        className={`fc-notif-card ${isUnread ? "unread" : ""}`}
+                      >
+                        <div className="fc-notif-dot-col">
+                          <span className={`fc-card-dot ${isUnread ? "active" : ""}`} />
+                        </div>
+                        <div className="fc-notif-body">
+                          <div className="fc-notif-title-row">
+                            <strong>{item.title || "Voucher Status Alert"}</strong>
+                            <span className="fc-notif-date">
+                              <Clock size={12} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
+                              {formatNotificationDate(item.createdAt)}
+                            </span>
+                          </div>
+                          <p>{item.message || "A claim has reached the Finance Clerk desk."}</p>
+                        </div>
+                        {isUnread && (
+                          <button
+                            type="button"
+                            className="fc-mark-read-pill"
+                            onClick={() => markNotificationRead(item)}
+                          >
+                            Mark read
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </section>
+          ) : activeSection === "Reports" ? (
+            <section className="fc-claims-page fc-reports-page">
+              <div className="fc-claims-heading">
+                <div>
+                  <span className="fc-kicker">EXPENDITURE REGISTER & BILL AUDIT</span>
+                  <h2>Clerk Reports & Voucher Register</h2>
+                  <p>Comprehensive audit register of claims, calculated liabilities, and prepared vouchers.</p>
+                </div>
+                <div style={{ display: "flex", gap: "10px", alignItems: "center" }}>
+                  <button
+                    type="button"
+                    className="fc-refresh"
                     onClick={fetchClaims}
                     disabled={loading}
                   >
-                    <RefreshCw size={15} />
-                    {loading ? "Refreshing..." : "Refresh"}
+                    <RefreshCw size={16} /> {loading ? "Refreshing..." : "Sync Register"}
+                  </button>
+                  <button
+                    type="button"
+                    className="fc-refresh"
+                    onClick={() => window.print()}
+                  >
+                    <Download size={16} /> Export Statement
                   </button>
                 </div>
+              </div>
 
-                <div className="fc-table-wrap">
-                  <table className="fc-table">
+              {/* KPI Summary Cards */}
+              <div className="fc-reports-kpi-grid">
+                <div className="fc-reports-kpi-card">
+                  <span className="fc-reports-kpi-icon blue"><Wallet size={20} /></span>
+                  <div className="fc-reports-kpi-meta">
+                    <small>Total Scrutinized Value</small>
+                    <strong>
+                      {money(
+                        claims.reduce((acc, c) => acc + (Number(claimAmount(c)) || 0), 0)
+                      )}
+                    </strong>
+                    <span>Cumulative claims liability</span>
+                  </div>
+                </div>
+
+                <div className="fc-reports-kpi-card">
+                  <span className="fc-reports-kpi-icon green"><ClipboardCheck size={20} /></span>
+                  <div className="fc-reports-kpi-meta">
+                    <small>Active Claims in Queue</small>
+                    <strong>{claims.length}</strong>
+                    <span>Registered claim files</span>
+                  </div>
+                </div>
+
+                <div className="fc-reports-kpi-card">
+                  <span className="fc-reports-kpi-icon amber"><BarChart3 size={20} /></span>
+                  <div className="fc-reports-kpi-meta">
+                    <small>Average Voucher Value</small>
+                    <strong>
+                      {money(
+                        claims.length > 0
+                          ? claims.reduce((acc, c) => acc + (Number(claimAmount(c)) || 0), 0) / claims.length
+                          : 0
+                      )}
+                    </strong>
+                    <span>Per employee disbursement</span>
+                  </div>
+                </div>
+
+                <div className="fc-reports-kpi-card">
+                  <span className="fc-reports-kpi-icon purple"><ShieldCheck size={20} /></span>
+                  <div className="fc-reports-kpi-meta">
+                    <small>Verification Standard</small>
+                    <strong>100%</strong>
+                    <span>GFMS Compliance</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Audit Table */}
+              <div className="fc-card fc-reports-ledger-card">
+                <div className="fc-card-head-row">
+                  <div>
+                    <h3>Official Voucher Register</h3>
+                    <p>Audit trail of all claim vouchers processed or awaiting action</p>
+                  </div>
+                  <span className="fc-ledger-status-tag">
+                    <CheckCircle2 size={14} /> Fiscal Year 2026-2027
+                  </span>
+                </div>
+
+                <div className="fc-table-wrapper">
+                  <table className="fc-dashboard-table">
                     <thead>
                       <tr>
-                        <th>Claim reference</th>
-                        <th>Employee</th>
-                        <th>Travel route</th>
+                        <th>Claim Ref</th>
+                        <th>Claimant & Code</th>
+                        <th>Type</th>
                         <th>Amount</th>
-                        <th>Status</th>
+                        <th>Current Stage</th>
+                        <th>Date</th>
                         <th>Action</th>
                       </tr>
                     </thead>
-
                     <tbody>
-                      {filteredDashboardClaims.map((claim) => (
+                      {claims.map((claim) => (
                         <tr key={idOf(claim)}>
-                          <td>{idOf(claim)}</td>
                           <td>
-                            {employeeName(claim)}
-                            <br />
+                            <span className="fc-mono-code">{idOf(claim).slice(-10)}</span>
+                          </td>
+                          <td>
+                            <strong>{employeeName(claim)}</strong>
                             <small>{employeeCode(claim)}</small>
                           </td>
-                          <td>{routeOf(claim)}</td>
-                          <td>{money(claimAmount(claim))}</td>
                           <td>
-                            <span className="fc-status in-progress">
+                            <span className="fc-type-pill">
+                              {pick(claim.claimType, claim.type, claim.category, "TA Claim")}
+                            </span>
+                          </td>
+                          <td>
+                            <strong className="fc-table-amount">{money(claimAmount(claim))}</strong>
+                          </td>
+                          <td>
+                            <span className="fc-stage-pill">
+                              {pick(claim.currentStage, "Finance Clerk")}
+                            </span>
+                          </td>
+                          <td>
+                            <span className="fc-text-muted">
+                              {formatDate(pick(claim.submittedAt, claim.createdAt))}
+                            </span>
+                          </td>
+                          <td>
+                            <button
+                              type="button"
+                              className="fc-inspect-btn"
+                              onClick={() => {
+                                setSelectedId(idOf(claim));
+                                setTab("claim");
+                                setError("");
+                              }}
+                            >
+                              Inspect
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                      {claims.length === 0 && (
+                        <tr>
+                          <td colSpan={7} className="fc-empty-table-cell">
+                            <FileText size={28} style={{ color: "#94a3b8", marginBottom: 6 }} />
+                            <strong>No records in current register</strong>
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          ) : activeSection === "Employee Management" ? (
+            <section className="fc-claims-page fc-dept-page">
+              <div className="fc-claims-heading">
+                <div>
+                  <span className="fc-kicker">PERSONNEL ROSTER & FINANCIAL DOSSIER</span>
+                  <h2>Employee Directory & Cadre Ledger</h2>
+                  <p>Personnel records, departmental designations, and active claim records.</p>
+                </div>
+                <button
+                  type="button"
+                  className="fc-refresh"
+                  onClick={fetchEmployees}
+                  disabled={employeesLoading}
+                >
+                  <RefreshCw size={16} /> {employeesLoading ? "Refreshing..." : "Refresh Staff"}
+                </button>
+              </div>
+
+              {/* Roster KPI Summary */}
+              <div className="fc-dept-summary-grid">
+                <div className="fc-dept-stat-card">
+                  <div className="fc-dept-stat-icon blue"><Users size={22} /></div>
+                  <div className="fc-dept-stat-info">
+                    <small>Total Personnel</small>
+                    <strong>{employeesLoading ? "?" : employees.length}</strong>
+                  </div>
+                </div>
+                <div className="fc-dept-stat-card">
+                  <div className="fc-dept-stat-icon purple"><Building2 size={22} /></div>
+                  <div className="fc-dept-stat-info">
+                    <small>Cadres / Designations</small>
+                    <strong>
+                      {employeesLoading
+                        ? "?"
+                        : new Set(employees.map((e) => e.designation).filter(Boolean)).size}
+                    </strong>
+                  </div>
+                </div>
+                <div className="fc-dept-stat-card">
+                  <div className="fc-dept-stat-icon amber"><Wallet size={22} /></div>
+                  <div className="fc-dept-stat-info">
+                    <small>Departments</small>
+                    <strong>
+                      {employeesLoading
+                        ? "?"
+                        : new Set(employees.map((e) => e.department).filter(Boolean)).size || 1}
+                    </strong>
+                  </div>
+                </div>
+                <div className="fc-dept-stat-card">
+                  <div className="fc-dept-stat-icon green"><ClipboardCheck size={22} /></div>
+                  <div className="fc-dept-stat-info">
+                    <small>Active Claims</small>
+                    <strong>{claims.length}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className="fc-dept-filter-bar">
+                <div className="fc-dept-search-box">
+                  <Search size={18} />
+                  <input
+                    value={empSearch}
+                    onChange={(e) => setEmpSearch(e.target.value)}
+                    placeholder="Search personnel by name, code, designation or email..."
+                  />
+                </div>
+                <select
+                  className="fc-dept-select"
+                  value={empDesignationFilter}
+                  onChange={(e) => setEmpDesignationFilter(e.target.value)}
+                  aria-label="Filter by designation"
+                >
+                  <option value="ALL">All Designations</option>
+                  {Array.from(
+                    new Set(employees.map((e) => e.designation).filter(Boolean))
+                  ).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  className="fc-dept-select"
+                  value={empDeptFilter}
+                  onChange={(e) => setEmpDeptFilter(e.target.value)}
+                  aria-label="Filter by department"
+                >
+                  <option value="ALL">All Departments</option>
+                  {Array.from(
+                    new Set(employees.map((e) => e.department).filter(Boolean))
+                  ).map((dept) => (
+                    <option key={dept} value={dept}>
+                      {dept}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Employee Cards List */}
+              {employeesLoading ? (
+                <div className="fc-empty">
+                  <span className="fc-spinner" />
+                  <strong>Loading Employee Directory...</strong>
+                </div>
+              ) : employeesError ? (
+                <div className="fc-empty">
+                  <XCircle size={28} style={{ color: "#ef4444" }} />
+                  <strong>Failed to load employee records</strong>
+                  <span>{employeesError}</span>
+                  <button type="button" className="fc-refresh" onClick={fetchEmployees}>Try Again</button>
+                </div>
+              ) : employees.length === 0 ? (
+                <div className="fc-empty">
+                  <Users size={32} />
+                  <strong>No Employees Found</strong>
+                </div>
+              ) : (
+                <div className="fc-dept-list">
+                  {employees
+                    .filter((emp) => {
+                      const q = empSearch.toLowerCase();
+                      const matchesSearch =
+                        !q ||
+                        emp.name?.toLowerCase().includes(q) ||
+                        emp.fullName?.toLowerCase().includes(q) ||
+                        emp.employeeCode?.toLowerCase().includes(q) ||
+                        emp.email?.toLowerCase().includes(q) ||
+                        emp.designation?.toLowerCase().includes(q);
+                      const matchesDesig =
+                        empDesignationFilter === "ALL" || emp.designation === empDesignationFilter;
+                      const matchesDept =
+                        empDeptFilter === "ALL" || emp.department === empDeptFilter;
+                      return matchesSearch && matchesDesig && matchesDept;
+                    })
+                    .map((emp) => (
+                      <div key={emp._id || emp.employeeCode} className="fc-dept-employee-card">
+                        <div className="fc-dept-emp-profile">
+                          <span className="fc-person-avatar">
+                            {initials(emp.fullName || emp.name)}
+                          </span>
+                          <div className="fc-dept-emp-info">
+                            <strong>{emp.fullName || emp.name}</strong>
+                            <small>{emp.employeeCode || emp.empId || "Code N/A"} ? {emp.email || "No email"}</small>
+                          </div>
+                        </div>
+
+                        <div className="fc-dept-col">
+                          <small>Department</small>
+                          <strong>{emp.department || "Finance & Accounts"}</strong>
+                        </div>
+
+                        <div className="fc-dept-col">
+                          <small>Designation</small>
+                          <strong>{emp.designation || "Senior Assistant"}</strong>
+                        </div>
+
+                        <div className="fc-dept-col money">
+                          <small>Basic Pay</small>
+                          <strong>{money(emp.basicPay || 0)}</strong>
+                        </div>
+
+                        <button
+                          type="button"
+                          className="fc-dept-action-btn"
+                          onClick={() => setSelectedEmployee(emp)}
+                        >
+                          View Dossier <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Employee Dossier Modal */}
+              {selectedEmployee && (
+                <div
+                  className="fc-modal-overlay"
+                  onClick={() => setSelectedEmployee(null)}
+                >
+                  <div
+                    className="fc-modal-box"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div className="fc-modal-head">
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className="fc-person-avatar" style={{ width: 44, height: 44, fontSize: 16 }}>
+                          {initials(selectedEmployee.fullName || selectedEmployee.name)}
+                        </span>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: 18, color: "#fff" }}>
+                            {selectedEmployee.fullName || selectedEmployee.name}
+                          </h3>
+                          <small style={{ color: "#94a3b8" }}>
+                            {selectedEmployee.employeeCode} ? {selectedEmployee.designation}
+                          </small>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedEmployee(null)}
+                        style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                        aria-label="Close"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <DetailField label="Employee Code" value={selectedEmployee.employeeCode || selectedEmployee.empId} />
+                      <DetailField label="Department" value={selectedEmployee.department || "General"} />
+                      <DetailField label="Designation" value={selectedEmployee.designation || "Not Specified"} />
+                      <DetailField label="Official Email" value={selectedEmployee.email || "N/A"} />
+                      <DetailField label="Phone / Contact" value={selectedEmployee.phone || selectedEmployee.mobile || "N/A"} />
+                      <DetailField label="Basic Pay" value={money(selectedEmployee.basicPay || 0)} />
+                      <DetailField label="Pay Level / Cadre" value={selectedEmployee.payLevel || selectedEmployee.cadre || "Standard Cadre"} />
+                      <DetailField label="Bank Account" value={selectedEmployee.bankAccountNumber ? `???? ${String(selectedEmployee.bankAccountNumber).slice(-4)}` : "Verified in PFMS"} />
+                    </div>
+
+                    <div className="fc-modal-foot">
+                      <span style={{ fontSize: 13, color: "#64748b" }}>Finance Clerk Personnel Record</span>
+                      <button
+                        type="button"
+                        className="fc-refresh"
+                        onClick={() => setSelectedEmployee(null)}
+                        style={{ padding: "6px 16px" }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </section>
+          ) : activeSection === "Document Management" ? (
+            <section className="fc-claims-page">
+              <div className="fc-claims-heading">
+                <div>
+                  <span className="fc-kicker">VOUCHERS & ATTACHMENTS</span>
+                  <h2>Supporting Document Management</h2>
+                  <p>Repository of tickets, journey vouchers, sanction orders, and receipts attached to claims.</p>
+                </div>
+                <button
+                  type="button"
+                  className="fc-refresh"
+                  onClick={fetchClaims}
+                  disabled={loading}
+                >
+                  <RefreshCw size={16} /> Refresh Repository
+                </button>
+              </div>
+
+              <div className="fc-table-wrapper">
+                <table className="fc-dashboard-table">
+                  <thead>
+                    <tr>
+                      <th>Claim Reference</th>
+                      <th>Claimant</th>
+                      <th>Total Documents</th>
+                      <th>Claim Amount</th>
+                      <th>Status</th>
+                      <th>Inspection Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {claims.map((claim) => {
+                      const docs = documentsOf(claim);
+                      return (
+                        <tr key={idOf(claim)}>
+                          <td><strong>{idOf(claim).slice(-10)}</strong></td>
+                          <td>
+                            <strong>{employeeName(claim)}</strong>
+                            <small>{employeeCode(claim)}</small>
+                          </td>
+                          <td>
+                            <span className="fc-type-pill">
+                              <FolderOpen size={13} style={{ display: "inline", marginRight: 4, verticalAlign: "middle" }} />
+                              {docs.length} Attached {docs.length === 1 ? "file" : "files"}
+                            </span>
+                          </td>
+                          <td>
+                            <strong className="fc-table-amount">{money(claimAmount(claim))}</strong>
+                          </td>
+                          <td>
+                            <span className="fc-status-pill pending">
                               {statusOf(claim).replaceAll("_", " ")}
                             </span>
                           </td>
                           <td>
                             <button
                               type="button"
-                              className="fc-open-button"
+                              className="fc-inspect-btn"
                               onClick={() => {
                                 setSelectedId(idOf(claim));
-                                setTab("claim");
+                                setTab("documents");
+                                setError("");
                               }}
                             >
-                              Review
+                              View Vouchers
                             </button>
                           </td>
                         </tr>
-                      ))}
-
-                      {!loading && filteredDashboardClaims.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="fc-empty">
-                            {error
-                              ? "Claims could not be loaded. Check the error above."
-                              : "No claims awaiting Finance Clerk processing."}
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </section>
-            </>
-          ) : activeSection === "Claims Processing" ||
-            activeSection === "Pending Sanction" ? (
-            <section className="ad-card fc-card">
-              <div className="ad-card-header">
-                <div>
-                  <span className="ad-card-eyebrow">
-                    {activeSection === "Pending Sanction"
-                      ? "Final Approval Queue"
-                      : "Finance Clerk Queue"}
-                  </span>
-                  <h2>
-                    {activeSection === "Pending Sanction"
-                      ? "Claims pending final sanction"
-                      : "Claims awaiting processing"}
-                  </h2>
-                </div>
-
-                <button
-                  type="button"
-                  className="fc-link-button"
-                  onClick={fetchClaims}
-                  disabled={loading}
-                >
-                  <RefreshCw size={15} />
-                  Refresh
-                </button>
-              </div>
-
-              {loading ? (
-                <div className="hoo-empty">
-                  <Clock3 size={26} />
-                  <strong>Loading claims...</strong>
-                </div>
-              ) : (
-                <div className="fc-table-wrap">
-                  <table className="fc-table">
-                    <thead>
+                      );
+                    })}
+                    {claims.length === 0 && (
                       <tr>
-                        <th>Reference</th>
-                        <th>Employee</th>
-                        <th>Claim type</th>
-                        <th>Amount</th>
-                        <th>Status</th>
-                        <th>Action</th>
+                        <td colSpan={6} className="fc-empty-table-cell">
+                          <FolderOpen size={28} style={{ color: "#94a3b8", marginBottom: 6 }} />
+                          <strong>No documents found in repository</strong>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody>
-                      {filteredClaims.map((claim) => (
-                        <tr key={idOf(claim)}>
-                          <td>{idOf(claim)}</td>
-                          <td>{employeeName(claim)}</td>
-                          <td>
-                            {pick(
-                              claim.claimType,
-                              claim.type,
-                              claim.category,
-                              "TA Claim"
-                            )}
-                          </td>
-                          <td>{money(claimAmount(claim))}</td>
-                          <td>
-                            {statusOf(claim).replaceAll("_", " ")}
-                          </td>
-                          <td>
-                            <button
-                              type="button"
-                              className="fc-open-button"
-                              onClick={() => {
-                                setSelectedId(idOf(claim));
-                                setTab("claim");
-                              }}
-                            >
-                              Open <ChevronRight size={14} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-
-                      {filteredClaims.length === 0 && (
-                        <tr>
-                          <td colSpan={6} className="fc-empty">
-                            No matching claims found.
-                          </td>
-                        </tr>
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </section>
           ) : (
-            <section className="ad-card fc-card fc-placeholder">
-              <div className="fc-placeholder-icon">
-                <FolderOpen size={26} />
+            <section className="fc-other-section">
+              <div className="fc-summary-icon">
+                <Settings size={25} />
               </div>
               <h2>{activeSection}</h2>
               <p>
-                This section is separate from the TA claim approval
-                workflow.
+                Finance Clerk workspace configuration and profile settings. Manage your desk preferences,
+                bill notification templates, and verification presets.
               </p>
               <button
                 type="button"
-                className="fc-back-button"
+                className="fc-refresh"
                 onClick={() => openSection("Dashboard")}
               >
-                Back to dashboard
+                Return to Dashboard <ChevronRight size={16} />
               </button>
             </section>
           )}

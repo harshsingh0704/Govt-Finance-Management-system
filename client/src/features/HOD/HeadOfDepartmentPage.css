@@ -100,3 +100,191 @@
 .hod-footer { display:flex; justify-content:space-between; gap:12px; padding:20px 2px; color:#8291a5; font-size:10px; }
 @media(max-width:1000px) { .hod-claim-row { grid-template-columns:44px minmax(0,1fr) minmax(0,1fr); } .hod-claim-money { grid-column:2; } .hod-claim-row > svg { display:none; } .hod-detail-grid { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media(max-width:640px) { .hod-claims-page,.hod-review-page { padding:15px; border-radius:14px; } .hod-clickable-summary { padding:14px; gap:10px; } .hod-queue-pill { font-size:9px; padding:7px; } .hod-list-toolbar { flex-direction:column; align-items:stretch; } .hod-list-toolbar label { width:auto; } .hod-claim-row { grid-template-columns:40px minmax(0,1fr); gap:10px; padding:13px; } .hod-claim-route,.hod-claim-money { grid-column:2; } .hod-detail-metrics,.hod-detail-grid { grid-template-columns:1fr; } .hod-review-hero { padding:14px; } .hod-decision-actions { flex-direction:column; } .hod-decision-actions button { width:100%; } .hod-footer { flex-direction:column; } }
+
+/* === Department Management Styles === */
+.hod-dept-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.hod-dept-stat-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: #ffffff;
+  padding: 16px 20px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.hod-dept-stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.hod-dept-stat-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.hod-dept-stat-info small {
+  font-size: 12px;
+  color: #64748b;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hod-dept-stat-info strong {
+  font-size: 24px;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.2;
+  margin-top: 2px;
+}
+
+.hod-dept-filter-bar {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+
+.hod-dept-search-box {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 8px 14px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.hod-dept-search-box svg {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.hod-dept-search-box input {
+  border: none;
+  outline: none;
+  width: 100%;
+  font-size: 14px;
+  color: #1e293b;
+  background: transparent;
+}
+
+.hod-dept-select {
+  padding: 9px 16px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  font-size: 14px;
+  font-weight: 500;
+  outline: none;
+  cursor: pointer;
+}
+
+.hod-dept-employee-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin-bottom: 12px;
+  transition: all 0.15s ease-in-out;
+  gap: 16px;
+}
+
+.hod-dept-employee-card:hover {
+  border-color: #93c5fd;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.06);
+}
+
+.hod-dept-emp-profile {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 240px;
+  flex: 1.5;
+}
+
+.hod-dept-emp-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.hod-dept-emp-info strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.hod-dept-emp-info small {
+  font-size: 12px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.hod-dept-col {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 120px;
+}
+
+.hod-dept-col small {
+  font-size: 11px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.hod-dept-col strong {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin-top: 2px;
+}
+
+.hod-dept-col.money strong {
+  color: #059669;
+}
+
+.hod-dept-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.hod-dept-action-btn:hover {
+  background: #dbeafe;
+  border-color: #93c5fd;
+}

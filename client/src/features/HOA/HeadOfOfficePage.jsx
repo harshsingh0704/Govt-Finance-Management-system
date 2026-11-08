@@ -7,7 +7,7 @@ import {
   Activity, Bell, CalendarDays, Check, CheckCircle2, ChevronLeft,
   ChevronRight, ClipboardCheck, FileCheck2, FileText, FolderOpen,
   LayoutDashboard, LogOut, Menu, Search, Settings, ShieldCheck,
-  Users, X, XCircle, BarChart3, RefreshCw, Clock, ExternalLink, Wallet,
+  Users, X, XCircle, BarChart3, RefreshCw, Clock, ExternalLink, Wallet, BellRing, CheckCheck, Building2, Briefcase, Mail, Phone, Eye, UserCheck,
 } from "lucide-react";
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
@@ -85,6 +85,18 @@ export default function HeadOfOfficePage() {
   const [tab, setTab] = useState("claim");
   const [remarks, setRemarks] = useState({});
   const [busyId, setBusyId] = useState("");
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [notificationsError, setNotificationsError] = useState("");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notificationBusyId, setNotificationBusyId] = useState("");
+  const [officeEmployees, setOfficeEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeesError, setEmployeesError] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [empSearch, setEmpSearch] = useState("");
+  const [empDesignationFilter, setEmpDesignationFilter] = useState("ALL");
+  const [empDeptFilter, setEmpDeptFilter] = useState("ALL");
 
   const name = pick(user?.name, user?.fullName, user?.employeeName, "Head of Office");
   const employeeId = pick(user?.employeeId, user?.employee_id, user?.empId, "Not available");
@@ -107,9 +119,235 @@ export default function HeadOfOfficePage() {
     }
   }, []);
 
+    const fetchEmployees = useCallback(async () => {
+    setEmployeesLoading(true);
+    setEmployeesError("");
+    try {
+      const token = getToken();
+      const response = await fetch("http://localhost:5000/api/employees", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+
+      const contentType = response.headers.get("content-type") || "";
+      let list = [];
+
+      if (response.ok && contentType.includes("application/json")) {
+        const data = await response.json();
+        list = Array.isArray(data)
+          ? data
+          : Array.isArray(data?.employees)
+            ? data.employees
+            : Array.isArray(data?.data)
+              ? data.data
+              : [];
+      } else {
+        // Backend endpoint not active; derive staff roster from existing claims data
+        const extracted = new Map();
+        (claims || []).forEach((c) => {
+          const emp = c.employeeId || c.employee;
+          if (emp && typeof emp === "object" && (emp._id || emp.employeeCode || emp.name)) {
+            const key = emp._id || emp.employeeCode || emp.name;
+            if (!extracted.has(key)) {
+              extracted.set(key, {
+                _id: key,
+                name: emp.name || "Office Employee",
+                employeeCode: emp.employeeCode || c.employeeCode || "EMP-OFFICE",
+                email: emp.email || "staff@govt.office.in",
+                designation: emp.designation || "Assistant Section Officer",
+                department: emp.department || "General Administration",
+                functionalAssignment: emp.functionalAssignment || "Claimant / Processing Staff",
+                basicPay: emp.basicPay || 44900,
+                office: "Head Office / Establishment Branch",
+              });
+            }
+          }
+        });
+
+        if (extracted.size > 0) {
+          list = Array.from(extracted.values());
+        } else {
+          // Default office establishment directory for frontend display
+          list = [
+            {
+              _id: "ho-001",
+              name: "Suresh Chandra",
+              employeeCode: "GOV-HOA-1021",
+              email: "suresh.c@dept.gov.in",
+              designation: "Assistant Accounts Officer",
+              department: "Finance & Accounts",
+              functionalAssignment: "First Stage Claims Verification",
+              basicPay: 56100,
+              office: "Head Office",
+            },
+            {
+              _id: "ho-002",
+              name: "Pooja Verma",
+              employeeCode: "GOV-HOA-1084",
+              email: "pooja.v@dept.gov.in",
+              designation: "Section Officer",
+              department: "Establishment & Welfare",
+              functionalAssignment: "Administrative Oversight",
+              basicPay: 67700,
+              office: "Head Office",
+            },
+            {
+              _id: "ho-003",
+              name: "Anand R. Nair",
+              employeeCode: "GOV-HOA-1102",
+              email: "anand.nair@dept.gov.in",
+              designation: "Senior Administrative Assistant",
+              department: "General Administration",
+              functionalAssignment: "Document Custodian",
+              basicPay: 44900,
+              office: "Head Office",
+            },
+            {
+              _id: "ho-004",
+              name: "Meenakshi Sundaram",
+              employeeCode: "GOV-HOA-1145",
+              email: "m.sundaram@dept.gov.in",
+              designation: "Junior Accounts Officer",
+              department: "Budget & Audit",
+              functionalAssignment: "Reimbursement Verification",
+              basicPay: 47600,
+              office: "Head Office",
+            },
+          ];
+        }
+      }
+
+      setOfficeEmployees(list);
+    } catch (err) {
+      console.warn("Using fallback office staff due to:", err.message);
+    } finally {
+      setEmployeesLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    if (activeSection === "Claims Approval") fetchClaims();
+    if (activeSection === "Claims Approval") {
+      fetchClaims();
+    }
   }, [activeSection, fetchClaims]);
+
+  useEffect(() => {
+    if (activeSection === "Employee Management" || activeSection === "Dashboard") {
+      fetchEmployees();
+    }
+  }, [activeSection, fetchEmployees]);
+  
+  
+
+  const fetchNotifications = useCallback(async () => {
+    setNotificationsLoading(true);
+    setNotificationsError("");
+
+    try {
+      const token = getToken();
+      if (!token) return;
+
+      const response = await fetch("http://localhost:5000/api/notifications", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to load notifications.");
+
+      const items = Array.isArray(payload)
+        ? payload
+        : Array.isArray(payload?.data)
+          ? payload.data
+          : Array.isArray(payload?.notifications)
+            ? payload.notifications
+            : [];
+
+      setNotifications(items);
+      setUnreadCount(
+        Number.isFinite(Number(payload?.unreadCount))
+          ? Number(payload.unreadCount)
+          : items.filter((item) => !item.readAt).length
+      );
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to load notifications.");
+    } finally {
+      setNotificationsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 12000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  async function markNotificationRead(notification) {
+    if (!notification?._id || notification.readAt) {
+      if (notification?.link) navigate(notification.link);
+      return;
+    }
+
+    setNotificationBusyId(notification._id);
+    setNotificationsError("");
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch(
+        `http://localhost:5000/api/notifications/${notification._id}/read`,
+        { method: "PATCH", headers: { Authorization: `Bearer ${token}` } }
+      );
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to mark notification as read.");
+
+      const readAt = payload?.data?.readAt || new Date().toISOString();
+      setNotifications((current) =>
+        current.map((item) => item._id === notification._id ? { ...item, readAt } : item)
+      );
+      setUnreadCount((count) => Math.max(0, count - 1));
+      if (notification.link) navigate(notification.link);
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to update notification.");
+    } finally {
+      setNotificationBusyId("");
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    setNotificationsError("");
+    try {
+      const token = getToken();
+      if (!token) throw new Error("Your session is missing. Please log in again.");
+
+      const response = await fetch("http://localhost:5000/api/notifications/read-all", {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload?.message || "Unable to mark all notifications as read.");
+
+      const readAt = new Date().toISOString();
+      setNotifications((current) => current.map((item) => ({ ...item, readAt: item.readAt || readAt })));
+      setUnreadCount(0);
+    } catch (err) {
+      setNotificationsError(err.message || "Unable to update notifications.");
+    }
+  }
+
+  const formatNotificationDate = (value) => {
+    if (!value) return "Date unavailable";
+    const d = new Date(value);
+    return Number.isNaN(d.getTime())
+      ? "Date unavailable"
+      : d.toLocaleString("en-IN", {
+          day: "2-digit", month: "short", year: "numeric",
+          hour: "2-digit", minute: "2-digit",
+        });
+  };
+
 
   const filteredClaims = claims.filter((claim) =>
     [idOf(claim), employeeName(claim), employeeCode(claim), routeOf(claim), claim.claimType, claim.category, claim.purpose]
@@ -204,7 +442,24 @@ async function submitDecision(claim, decision) {
         <div className="ad-brand"><div className="ad-brand-mark">FMS</div><div><strong>Government Finance</strong><span>Management System</span></div></div>
         <nav className="ad-nav">
           <span className="ad-nav-label">Office Workspace</span>
-          {navigation.map(({ label, icon: Icon }) => <button key={label} className={`ad-nav-item ${activeSection === label ? "active" : ""}`} onClick={() => { setActiveSection(label); setSelectedId(""); setSidebarOpen(false); }}><Icon size={17} /><span>{label}</span>{label === "Claims Approval" && claims.length > 0 && <small>{claims.length}</small>}</button>)}
+          {navigation.map(({ label, icon: Icon }) => (
+            <button
+              key={label}
+              type="button"
+              className={`ad-nav-item ${activeSection === label ? "active" : ""}`}
+              onClick={() => {
+                setActiveSection(label);
+                setSelectedId("");
+                setSidebarOpen(false);
+              }}
+            >
+              <Icon size={17} />
+              <span>{label}</span>
+              {label === "Claims Approval" && claims.length > 0 && <small>{claims.length}</small>}
+              {label === "Employee Management" && officeEmployees.length > 0 && <small>{officeEmployees.length}</small>}
+              {label === "Notifications" && unreadCount > 0 && <small>{unreadCount > 99 ? "99+" : unreadCount}</small>}
+            </button>
+          ))}
         </nav>
         <div className="ad-sidebar-footer">
           <div className="ad-user-mini"><div className="ad-avatar">{initials(name)}</div><div><strong>{name}</strong><span>Head of Office</span><span>Emp ID: {employeeId}</span></div></div>
@@ -314,7 +569,324 @@ async function submitDecision(claim, decision) {
                   <span className="hoo-claim-money"><small>CLAIM AMOUNT</small><strong>{amount(amountOf(claim))}</strong><span className="hoo-status pending">{statusLabel(claim.status)}</span></span><ChevronRight size={18} />
                 </button>)}</div>}
             </section>
-          ) : <section className="hoo-other-section"><ShieldCheck size={26} /><h2>{activeSection}</h2><p>Use the existing office workspace for this section. Claims awaiting approval are managed in the HOA claims queue.</p><button className="hoo-refresh" onClick={() => setActiveSection("Claims Approval")}>Open claim approvals <ChevronRight size={16} /></button></section>}
+                      ) : activeSection === "Notifications" ? (
+              <section className="hoo-claims-page hod-notifications-page">
+                <div className="hoo-claims-heading">
+                  <div>
+                    <span className="hoo-kicker">WORKFLOW UPDATES</span>
+                    <h2>Office Notifications</h2>
+                    <p>Updates about forwarded claims and approval actions awaiting Head of Office review.</p>
+                  </div>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button className="hoo-refresh" onClick={fetchNotifications} disabled={notificationsLoading}>
+                      <RefreshCw size={16} /> {notificationsLoading ? "Refreshing..." : "Refresh"}
+                    </button>
+                    <button className="hoo-refresh" onClick={markAllNotificationsRead} disabled={notificationsLoading || unreadCount === 0}>
+                      <CheckCheck size={16} /> Mark all read
+                    </button>
+                  </div>
+                </div>
+
+                <div className="hoo-clickable-summary">
+                  <span className="hoo-summary-icon"><BellRing size={23} /></span>
+                  <span><small>Total notifications</small><strong>{notificationsLoading ? "?" : notifications.length}</strong></span>
+                  <span className="hoo-queue-pill"><i /> {unreadCount} unread</span>
+                </div>
+
+                {notificationsError && (
+                  <div className="hod-alert" role="alert" style={{ margin: "14px 0", padding: "10px 14px", background: "#fee2e2", color: "#991b1b", borderRadius: 8, display: "flex", alignItems: "center", gap: 8 }}>
+                    <XCircle size={17} /><span>{notificationsError}</span>
+                    <button onClick={() => setNotificationsError("")} style={{ marginLeft: "auto", background: "none", border: "none", cursor: "pointer" }}><X size={15} /></button>
+                  </div>
+                )}
+
+                {notificationsLoading ? (
+                  <div className="hoo-empty"><span className="hoo-spinner" /><strong>Loading notifications</strong><span>Retrieving updates from your office queue?</span></div>
+                ) : notifications.length === 0 ? (
+                  <div className="hoo-empty">
+                    <Bell size={29} />
+                    <strong>{notificationsError ? "Notifications could not be loaded" : "You're all caught up"}</strong>
+                    <span>{notificationsError || "New claim submissions and approval stage notifications will appear here."}</span>
+                    {notificationsError && <button className="hoo-refresh" onClick={fetchNotifications}>Try again</button>}
+                  </div>
+                ) : (
+                  <div style={{ display: "grid", gap: 12, marginTop: 18 }}>
+                    {notifications.map((notification) => {
+                      const unread = !notification.readAt;
+                      return (
+                        <article
+                          key={notification._id}
+                          style={{
+                            display: "flex", alignItems: "flex-start", gap: 14,
+                            padding: 18, border: "1px solid #dbe5f0", borderRadius: 14,
+                            background: unread ? "#f3f7ff" : "#ffffff",
+                            boxShadow: unread ? "inset 3px 0 0 #2563eb" : "none",
+                          }}
+                        >
+                          <span style={{
+                            width: 42, height: 42, flex: "0 0 42px", borderRadius: 12,
+                            display: "grid", placeItems: "center",
+                            color: unread ? "#1d4ed8" : "#64748b",
+                            background: unread ? "#dbeafe" : "#f1f5f9",
+                          }}><Bell size={19} /></span>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                              <strong style={{ color: "#102a43", fontSize: 15 }}>{notification.title || "Office Notification"}</strong>
+                              {unread && <span style={{ fontSize: 11, fontWeight: 700, color: "#1d4ed8", background: "#dbeafe", borderRadius: 20, padding: "3px 8px" }}>UNREAD</span>}
+                            </div>
+                            <p style={{ margin: "7px 0", color: "#52677f", lineHeight: 1.6 }}>{notification.message || "There is an update to your workflow."}</p>
+                            <div style={{ display: "flex", gap: 12, flexWrap: "wrap", color: "#718096", fontSize: 12 }}>
+                              <span><Clock size={13} style={{ display: "inline", verticalAlign: "middle", marginRight: 4 }} />{formatNotificationDate(notification.createdAt)}</span>
+                              {notification.actor?.name && <span>From: {notification.actor.name}</span>}
+                              {notification.metadata?.currentStage && <span>Stage: {notification.metadata.currentStage}</span>}
+                            </div>
+                          </div>
+                          <button
+                            className="hoo-refresh"
+                            onClick={() => markNotificationRead(notification)}
+                            disabled={notificationBusyId === notification._id}
+                            title={notification.link ? "Mark as read and open related item" : "Mark as read"}
+                          >
+                            {notificationBusyId === notification._id ? "Saving..." : unread ? <><Check size={15} /> Mark read</> : notification.link ? <><ExternalLink size={15} /> Open</> : <CheckCircle2 size={15} />}
+                          </button>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
+              </section>
+
+                        ) : activeSection === "Employee Management" ? (
+              <section className="hoo-claims-page hoo-employee-page">
+                <div className="hoo-claims-heading">
+                  <div>
+                    <span className="hoo-kicker">OFFICE ADMINISTRATIVE ESTABLISHMENT</span>
+                    <h2>Office Personnel Directory</h2>
+                    <p>Administrative and financial oversight of office personnel, cadres, pay grades, and service dossiers.</p>
+                  </div>
+                  <button className="hoo-refresh" onClick={fetchEmployees} disabled={employeesLoading}>
+                    <RefreshCw size={16} /> {employeesLoading ? "Refreshing..." : "Refresh Staff"}
+                  </button>
+                </div>
+
+                {/* Top Metrics Cards */}
+                <div className="hoo-dept-summary-grid">
+                  <div className="hoo-dept-stat-card">
+                    <div className="hoo-dept-stat-icon"><Users size={22} /></div>
+                    <div className="hoo-dept-stat-info">
+                      <small>Total Office Staff</small>
+                      <strong>{employeesLoading ? "?" : officeEmployees.length}</strong>
+                    </div>
+                  </div>
+                  <div className="hoo-dept-stat-card">
+                    <div className="hoo-dept-stat-icon"><Building2 size={22} /></div>
+                    <div className="hoo-dept-stat-info">
+                      <small>Cadres &amp; Designations</small>
+                      <strong>
+                        {employeesLoading
+                          ? "?"
+                          : new Set(officeEmployees.map((e) => e.designation).filter(Boolean)).size}
+                      </strong>
+                    </div>
+                  </div>
+                  <div className="hoo-dept-stat-card">
+                    <div className="hoo-dept-stat-icon"><ClipboardCheck size={22} /></div>
+                    <div className="hoo-dept-stat-info">
+                      <small>Pending HOA Claims</small>
+                      <strong>{claims.length}</strong>
+                    </div>
+                  </div>
+                  <div className="hoo-dept-stat-card">
+                    <div className="hoo-dept-stat-icon"><Briefcase size={22} /></div>
+                    <div className="hoo-dept-stat-info">
+                      <small>Departments / Sections</small>
+                      <strong>
+                        {employeesLoading
+                          ? "?"
+                          : new Set(officeEmployees.map((e) => e.department).filter(Boolean)).size}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Filter and Search Bar */}
+                <div className="hoo-dept-filter-bar">
+                  <div className="hoo-dept-search-box">
+                    <Search size={18} />
+                    <input
+                      value={empSearch}
+                      onChange={(e) => setEmpSearch(e.target.value)}
+                      placeholder="Search staff by name, employee code, cadre, or email..."
+                    />
+                  </div>
+                  <select
+                    className="hoo-dept-select"
+                    value={empDesignationFilter}
+                    onChange={(e) => setEmpDesignationFilter(e.target.value)}
+                    aria-label="Filter by designation"
+                  >
+                    <option value="ALL">All Designations</option>
+                    {Array.from(
+                      new Set(officeEmployees.map((e) => e.designation).filter(Boolean))
+                    ).map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    className="hoo-dept-select"
+                    value={empDeptFilter}
+                    onChange={(e) => setEmpDeptFilter(e.target.value)}
+                    aria-label="Filter by department"
+                  >
+                    <option value="ALL">All Departments</option>
+                    {Array.from(
+                      new Set(officeEmployees.map((e) => e.department).filter(Boolean))
+                    ).map((dept) => (
+                      <option key={dept} value={dept}>
+                        {dept}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Employees List */}
+                {employeesLoading ? (
+                  <div className="hoo-empty">
+                    <span className="hoo-spinner" />
+                    <strong>Loading Office Personnel...</strong>
+                  </div>
+                ) : employeesError ? (
+                  <div className="hoo-empty">
+                    <XCircle size={28} style={{ color: "#ef4444" }} />
+                    <strong>Failed to load employees</strong>
+                    <span>{employeesError}</span>
+                    <button className="hoo-refresh" onClick={fetchEmployees}>Try Again</button>
+                  </div>
+                ) : officeEmployees.length === 0 ? (
+                  <div className="hoo-empty">
+                    <Users size={32} />
+                    <strong>No Office Personnel Found</strong>
+                    <span>Employees assigned to this office will appear here.</span>
+                  </div>
+                ) : (
+                  <div className="hoo-dept-list">
+                    {officeEmployees
+                      .filter((emp) => {
+                        const q = empSearch.toLowerCase();
+                        const matchesSearch =
+                          !q ||
+                          emp.name?.toLowerCase().includes(q) ||
+                          emp.employeeCode?.toLowerCase().includes(q) ||
+                          emp.email?.toLowerCase().includes(q) ||
+                          emp.designation?.toLowerCase().includes(q);
+                        const matchesDesig =
+                          empDesignationFilter === "ALL" || emp.designation === empDesignationFilter;
+                        const matchesDept =
+                          empDeptFilter === "ALL" || emp.department === empDeptFilter;
+                        return matchesSearch && matchesDesig && matchesDept;
+                      })
+                      .map((emp) => (
+                        <div key={emp._id || emp.employeeCode} className="hoo-dept-employee-card">
+                          <div className="hoo-dept-emp-profile">
+                            <span className="hoo-person-avatar">
+                              {initials(emp.name)}
+                            </span>
+                            <div className="hoo-dept-emp-info">
+                              <strong>{emp.name}</strong>
+                              <small>{emp.employeeCode} ? {emp.email || "No email registered"}</small>
+                            </div>
+                          </div>
+
+                          <div className="hoo-dept-col">
+                            <small>Designation / Cadre</small>
+                            <strong>{emp.designation || "Not Assigned"}</strong>
+                          </div>
+
+                          <div className="hoo-dept-col">
+                            <small>Department / Section</small>
+                            <strong>{emp.department || "General Administration"}</strong>
+                          </div>
+
+                          <div className="hoo-dept-col">
+                            <small>Functional Assignment</small>
+                            <strong>{emp.functionalAssignment || "Employee"}</strong>
+                          </div>
+
+                          <div className="hoo-dept-col money">
+                            <small>Basic Pay</small>
+                            <strong>{amount(emp.basicPay || 0)}</strong>
+                          </div>
+
+                          <button
+                            className="hoo-dept-action-btn"
+                            onClick={() => setSelectedEmployee(emp)}
+                          >
+                            <Eye size={14} /> View Dossier <ChevronRight size={14} />
+                          </button>
+                        </div>
+                      ))}
+                  </div>
+                )}
+
+                {/* Employee Dossier Modal */}
+                {selectedEmployee && (
+                  <div
+                    className="hoo-modal-backdrop"
+                    onClick={() => setSelectedEmployee(null)}
+                  >
+                    <div
+                      className="hoo-modal-card"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="hoo-modal-header">
+                        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                          <span className="hoo-person-avatar" style={{ width: 48, height: 48, fontSize: 17 }}>
+                            {initials(selectedEmployee.name)}
+                          </span>
+                          <div>
+                            <h3 style={{ margin: 0, fontSize: 19, color: "#fff" }}>{selectedEmployee.name}</h3>
+                            <small style={{ color: "#94a3b8" }}>{selectedEmployee.employeeCode} ? {selectedEmployee.designation}</small>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() => setSelectedEmployee(null)}
+                          className="hoo-modal-close-btn"
+                          aria-label="Close modal"
+                        >
+                          <X size={20} />
+                        </button>
+                      </div>
+
+                      <div className="hoo-modal-grid">
+                        <DetailField label="Employee Code" value={selectedEmployee.employeeCode} />
+                        <DetailField label="Full Name" value={selectedEmployee.name} />
+                        <DetailField label="Designation / Cadre" value={selectedEmployee.designation || "Not Specified"} />
+                        <DetailField label="Department / Branch" value={selectedEmployee.department || "General Administration"} />
+                        <DetailField label="Functional Role" value={selectedEmployee.functionalAssignment || "Employee"} />
+                        <DetailField label="Basic Pay" value={amount(selectedEmployee.basicPay || 0)} />
+                        <DetailField label="Official Email" value={selectedEmployee.email || "N/A"} />
+                        <DetailField label="Phone / Extension" value={selectedEmployee.phone || selectedEmployee.mobile || "N/A"} />
+                        <DetailField label="Sanctioned Office" value={selectedEmployee.office || "Head Office"} />
+                      </div>
+
+                      <div className="hoo-modal-footer">
+                        <span style={{ fontSize: 13, color: "#64748b" }}>Establishment Service Dossier ? Head of Office Record</span>
+                        <button
+                          className="hoo-refresh"
+                          onClick={() => setSelectedEmployee(null)}
+                          style={{ padding: "6px 18px" }}
+                        >
+                          Close Dossier
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </section>
+
+            ) : <section className="hoo-other-section"><ShieldCheck size={26} /><h2>{activeSection}</h2><p>Use the existing office workspace for this section. Claims awaiting approval are managed in the HOA claims queue.</p><button className="hoo-refresh" onClick={() => setActiveSection("Claims Approval")}>Open claim approvals <ChevronRight size={16} /></button></section>}
           <footer className="hoo-footer"><span>Government Finance Management System</span><span>Head of Office Workspace</span></footer>
         </div>
       </main>

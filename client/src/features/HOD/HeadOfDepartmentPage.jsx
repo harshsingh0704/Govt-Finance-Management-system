@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
@@ -7,7 +6,7 @@ import {
   ChevronLeft, ChevronRight, ClipboardCheck, FileCheck2, FileText,
   FolderOpen, LayoutDashboard, LogOut, Menu, Search, Settings,
   ShieldCheck, Users, Wallet, X, XCircle, RefreshCw, Clock,
-  Download, ExternalLink, CheckCheck, BellRing,
+  ExternalLink, CheckCheck, BellRing,
 } from "lucide-react";
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
@@ -115,7 +114,7 @@ const initials = (name) =>
 const journey = (claim) => {
   const from = pick(claim?.fromPlace, claim?.fromLocation, claim?.from, claim?.journeyFrom);
   const to = pick(claim?.toPlace, claim?.toLocation, claim?.to, claim?.journeyTo);
-  return pick(claim?.journey, from && to ? `${from} → ${to}` : null, from, to, "Not provided");
+  return pick(claim?.journey, from && to ? `${from} ? ${to}` : null, from, to, "Not provided");
 };
 
 const statusLabel = (status) =>
@@ -174,9 +173,36 @@ export default function HeadOfDepartmentPage() {
   const [notificationsError, setNotificationsError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
   const [notificationBusyId, setNotificationBusyId] = useState("");
+  const [departmentEmployees, setDepartmentEmployees] = useState([]);
+  const [employeesLoading, setEmployeesLoading] = useState(false);
+  const [employeesError, setEmployeesError] = useState("");
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [empSearch, setEmpSearch] = useState("");
+  const [empDesignationFilter, setEmpDesignationFilter] = useState("ALL");
 
   const name = pick(user?.fullName, user?.name, user?.employeeName, user?.email?.split("@")[0], "Head of Department");
   const employeeId = pick(user?.employeeId, user?.employee_id, user?.empId, "Not available");
+
+  const fetchEmployees = useCallback(async () => {
+    setEmployeesLoading(true);
+    setEmployeesError("");
+    try {
+      const token = getToken();
+      const res = await fetch("http://localhost:5000/api/employees", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || "Failed to load employees.");
+      setDepartmentEmployees(Array.isArray(data?.employees) ? data.employees : []);
+    } catch (err) {
+      setEmployeesError(err.message || "Failed to load department employees.");
+    } finally {
+      setEmployeesLoading(false);
+    }
+  }, []);
 
   const fetchClaims = useCallback(async () => {
     setLoading(true);
@@ -211,7 +237,8 @@ export default function HeadOfDepartmentPage() {
 
   useEffect(() => {
     if (activeSection === "Claims Approval") fetchClaims();
-  }, [activeSection, fetchClaims]);
+    if (activeSection === "Department Management" || activeSection === "Dashboard") fetchEmployees();
+  }, [activeSection, fetchClaims, fetchEmployees]);
 
   const fetchNotifications = useCallback(async () => {
     setNotificationsLoading(true);
@@ -249,10 +276,7 @@ export default function HeadOfDepartmentPage() {
   }, []);
 
   useEffect(() => {
-    // Initial fetch on mount or section switch
     fetchNotifications();
-
-    // Background poll every 12 seconds to keep notifications badge live
     const interval = setInterval(() => {
       fetchNotifications();
     }, 12000);
@@ -467,7 +491,7 @@ export default function HeadOfDepartmentPage() {
                 {selectedClaim ? `Reference ${claimId(selectedClaim)}` : "Review department activity and manage claims assigned to your approval stage."}
               </p>
             </div>
-            <label className="hod-year-select"><span>Financial Year</span><select defaultValue="2026–2027"><option>2026–2027</option><option>2025–2026</option></select></label>
+            <label className="hod-year-select"><span>Financial Year</span><select defaultValue="2026?2027"><option>2026?2027</option><option>2025?2026</option></select></label>
           </section>
 
           {error && <div className="hod-alert" role="alert"><XCircle size={17} /> <span>{error}</span><button onClick={() => setError("")} aria-label="Dismiss error"><X size={15} /></button></div>}
@@ -482,7 +506,7 @@ export default function HeadOfDepartmentPage() {
                 <div className="hod-review-title">
                   <span className="hod-kicker">HOD CLAIM REVIEW</span>
                   <h2>{employeeName(selectedClaim)}</h2>
-                  <p>{claimId(selectedClaim)} · {pick(selectedClaim.claimType, selectedClaim.type, selectedClaim.category, "Travel claim")}</p>
+                  <p>{claimId(selectedClaim)} ? {pick(selectedClaim.claimType, selectedClaim.type, selectedClaim.category, "Travel claim")}</p>
                 </div>
                 <span className="hod-status pending"><i /> {statusLabel(selectedClaim.status)}</span>
               </div>
@@ -547,7 +571,7 @@ export default function HeadOfDepartmentPage() {
                         const title = typeof doc === "string" ? doc.split("/").pop() : pick(doc.name, doc.fileName, doc.originalName, `Document ${index + 1}`);
                         return <div className="hod-document" key={`${title}-${index}`}>
                           <FileText size={21} />
-                          <div><strong>{title}</strong><span>{typeof doc === "object" ? pick(doc.type, doc.mimeType, "Supporting document") : "Supporting document"}{typeof doc === "object" && doc.uploadedAt ? ` · ${formatDate(doc.uploadedAt)}` : ""}</span></div>
+                          <div><strong>{title}</strong><span>{typeof doc === "object" ? pick(doc.type, doc.mimeType, "Supporting document") : "Supporting document"}{typeof doc === "object" && doc.uploadedAt ? ` ? ${formatDate(doc.uploadedAt)}` : ""}</span></div>
                           {url && <a href={url} target="_blank" rel="noreferrer" aria-label={`Open ${title}`}><ExternalLink size={16} /></a>}
                         </div>;
                       })}
@@ -585,7 +609,7 @@ export default function HeadOfDepartmentPage() {
 
               <button className="hod-clickable-summary" onClick={() => { setStatusFilter("ALL"); setSearch(""); }}>
                 <span className="hod-summary-icon"><ClipboardCheck size={23} /></span>
-                <span><small>Claims awaiting your review</small><strong>{loading ? "…" : claims.length}</strong></span>
+                <span><small>Claims awaiting your review</small><strong>{loading ? "?" : claims.length}</strong></span>
                 <span className="hod-queue-pill"><i /> HOD approval queue</span>
               </button>
 
@@ -594,11 +618,11 @@ export default function HeadOfDepartmentPage() {
                 <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} aria-label="Filter claim status"><option value="ALL">All statuses</option><option value="PENDING_HOD">Pending HOD</option></select>
               </div>
 
-              {loading ? <div className="hod-empty"><span className="hod-spinner" /><strong>Loading claims</strong><span>Retrieving claims from the HOD queue…</span></div> :
+              {loading ? <div className="hod-empty"><span className="hod-spinner" /><strong>Loading claims</strong><span>Retrieving claims from the HOD queue?</span></div> :
                 filteredClaims.length === 0 ? <div className="hod-empty"><ClipboardCheck size={29} /><strong>{error ? "Unable to load claims" : "No pending claims found"}</strong><span>{error || "There are no claims matching your search in the HOD queue."}</span>{error && <button className="hod-refresh" onClick={fetchClaims}>Try again</button>}</div> :
                 <div className="hod-claim-list">{filteredClaims.map((claim) => <button className="hod-claim-row" key={claimId(claim)} onClick={() => { setSelectedId(claimId(claim)); setTab("claim"); setRemarks(""); setError(""); }}>
                   <span className="hod-person-avatar">{initials(employeeName(claim))}</span>
-                  <span className="hod-claim-main"><strong>{employeeName(claim)}</strong><small>{employeeCode(claim)} · {claimId(claim)}</small><span>{journey(claim)}</span></span>
+                  <span className="hod-claim-main"><strong>{employeeName(claim)}</strong><small>{employeeCode(claim)} ? {claimId(claim)}</small><span>{journey(claim)}</span></span>
                   <span className="hod-claim-route"><small>CLAIM TYPE</small><strong>{pick(claim.claimType, claim.type, claim.category, "Travel claim")}</strong><small>Submitted {formatDate(pick(claim.submittedAt, claim.createdAt))}</small></span>
                   <span className="hod-claim-money"><small>CLAIM AMOUNT</small><strong>{formatAmount(amountValue(claim))}</strong><span className="hod-status pending">{statusLabel(claim.status)}</span></span>
                   <ChevronRight size={18} />
@@ -625,7 +649,7 @@ export default function HeadOfDepartmentPage() {
 
               <div className="hod-clickable-summary">
                 <span className="hod-summary-icon"><BellRing size={23} /></span>
-                <span><small>Total notifications</small><strong>{notificationsLoading ? "…" : notifications.length}</strong></span>
+                <span><small>Total notifications</small><strong>{notificationsLoading ? "?" : notifications.length}</strong></span>
                 <span className="hod-queue-pill"><i /> {unreadCount} unread</span>
               </div>
 
@@ -637,7 +661,7 @@ export default function HeadOfDepartmentPage() {
               )}
 
               {notificationsLoading ? (
-                <div className="hod-empty"><span className="hod-spinner" /><strong>Loading notifications</strong><span>Retrieving updates from your account…</span></div>
+                <div className="hod-empty"><span className="hod-spinner" /><strong>Loading notifications</strong><span>Retrieving updates from your account?</span></div>
               ) : notifications.length === 0 ? (
                 <div className="hod-empty">
                   <Bell size={29} />
@@ -688,6 +712,233 @@ export default function HeadOfDepartmentPage() {
                       </article>
                     );
                   })}
+                </div>
+              )}
+            </section>
+          ) : activeSection === "Department Management" ? (
+            <section className="hod-claims-page hod-dept-page">
+              <div className="hod-claims-heading">
+                <div>
+                  <span className="hod-kicker">DEPARTMENT DIRECTORY &amp; OVERSIGHT</span>
+                  <h2>Department Personnel</h2>
+                  <p>Overview of departmental employees, cadre assignments, and active claims.</p>
+                </div>
+                <button className="hod-refresh" onClick={fetchEmployees} disabled={employeesLoading}>
+                  <RefreshCw size={16} /> {employeesLoading ? "Refreshing..." : "Refresh Staff"}
+                </button>
+              </div>
+
+              {/* Top Metrics Cards */}
+              <div className="hod-dept-summary-grid">
+                <div className="hod-dept-stat-card">
+                  <div className="hod-dept-stat-icon"><Users size={22} /></div>
+                  <div className="hod-dept-stat-info">
+                    <small>Total Department Staff</small>
+                    <strong>{employeesLoading ? "?" : departmentEmployees.length}</strong>
+                  </div>
+                </div>
+                <div className="hod-dept-stat-card">
+                  <div className="hod-dept-stat-icon"><Building2 size={22} /></div>
+                  <div className="hod-dept-stat-info">
+                    <small>Designations / Cadres</small>
+                    <strong>
+                      {employeesLoading
+                        ? "?"
+                        : new Set(departmentEmployees.map((e) => e.designation).filter(Boolean)).size}
+                    </strong>
+                  </div>
+                </div>
+                <div className="hod-dept-stat-card">
+                  <div className="hod-dept-stat-icon"><ClipboardCheck size={22} /></div>
+                  <div className="hod-dept-stat-info">
+                    <small>Pending Dept Claims</small>
+                    <strong>{claims.length}</strong>
+                  </div>
+                </div>
+              </div>
+
+              {/* Filter and Search Bar */}
+              <div className="hod-dept-filter-bar">
+                <div className="hod-dept-search-box">
+                  <Search size={18} />
+                  <input
+                    value={empSearch}
+                    onChange={(e) => setEmpSearch(e.target.value)}
+                    placeholder="Search staff by name, employee code, or email..."
+                  />
+                </div>
+                <select
+                  className="hod-dept-select"
+                  value={empDesignationFilter}
+                  onChange={(e) => setEmpDesignationFilter(e.target.value)}
+                  aria-label="Filter by designation"
+                >
+                  <option value="ALL">All Designations</option>
+                  {Array.from(
+                    new Set(departmentEmployees.map((e) => e.designation).filter(Boolean))
+                  ).map((d) => (
+                    <option key={d} value={d}>
+                      {d}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Employees List */}
+              {employeesLoading ? (
+                <div className="hod-empty">
+                  <span className="hod-spinner" />
+                  <strong>Loading Department Employees...</strong>
+                </div>
+              ) : employeesError ? (
+                <div className="hod-empty">
+                  <XCircle size={28} style={{ color: "#ef4444" }} />
+                  <strong>Failed to load employees</strong>
+                  <span>{employeesError}</span>
+                  <button className="hod-refresh" onClick={fetchEmployees}>Try Again</button>
+                </div>
+              ) : departmentEmployees.length === 0 ? (
+                <div className="hod-empty">
+                  <Users size={32} />
+                  <strong>No Department Employees Found</strong>
+                  <span>Employees assigned to this department will appear here.</span>
+                </div>
+              ) : (
+                <div className="hod-dept-list">
+                  {departmentEmployees
+                    .filter((emp) => {
+                      const q = empSearch.toLowerCase();
+                      const matchesSearch =
+                        !q ||
+                        emp.name?.toLowerCase().includes(q) ||
+                        emp.employeeCode?.toLowerCase().includes(q) ||
+                        emp.email?.toLowerCase().includes(q) ||
+                        emp.designation?.toLowerCase().includes(q);
+                      const matchesDesig =
+                        empDesignationFilter === "ALL" || emp.designation === empDesignationFilter;
+                      return matchesSearch && matchesDesig;
+                    })
+                    .map((emp) => (
+                      <div key={emp._id || emp.employeeCode} className="hod-dept-employee-card">
+                        <div className="hod-dept-emp-profile">
+                          <span className="hod-person-avatar">
+                            {initials(emp.name)}
+                          </span>
+                          <div className="hod-dept-emp-info">
+                            <strong>{emp.name}</strong>
+                            <small>{emp.employeeCode} ? {emp.email || "No email provided"}</small>
+                          </div>
+                        </div>
+
+                        <div className="hod-dept-col">
+                          <small>Designation</small>
+                          <strong>{emp.designation || "Not Assigned"}</strong>
+                        </div>
+
+                        <div className="hod-dept-col">
+                          <small>Assignment</small>
+                          <strong>{emp.functionalAssignment || "Employee"}</strong>
+                        </div>
+
+                        <div className="hod-dept-col money">
+                          <small>Basic Pay</small>
+                          <strong>{formatAmount(emp.basicPay || 0)}</strong>
+                        </div>
+
+                        <button
+                          className="hod-dept-action-btn"
+                          onClick={() => setSelectedEmployee(emp)}
+                        >
+                          View Dossier <ChevronRight size={14} />
+                        </button>
+                      </div>
+                    ))}
+                </div>
+              )}
+
+              {/* Employee Dossier Modal */}
+              {selectedEmployee && (
+                <div
+                  style={{
+                    position: "fixed",
+                    inset: 0,
+                    background: "rgba(15, 23, 42, 0.6)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                    backdropFilter: "blur(4px)",
+                    padding: 16,
+                  }}
+                  onClick={() => setSelectedEmployee(null)}
+                >
+                  <div
+                    style={{
+                      background: "#fff",
+                      borderRadius: 12,
+                      maxWidth: 600,
+                      width: "100%",
+                      boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1)",
+                      overflow: "hidden",
+                    }}
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <div
+                      style={{
+                        background: "#0f172a",
+                        color: "#fff",
+                        padding: "18px 24px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                        <span className="hod-person-avatar" style={{ width: 44, height: 44, fontSize: 16 }}>
+                          {initials(selectedEmployee.name)}
+                        </span>
+                        <div>
+                          <h3 style={{ margin: 0, fontSize: 18, color: "#fff" }}>{selectedEmployee.name}</h3>
+                          <small style={{ color: "#94a3b8" }}>{selectedEmployee.employeeCode} ? {selectedEmployee.designation}</small>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => setSelectedEmployee(null)}
+                        style={{ background: "none", border: "none", color: "#94a3b8", cursor: "pointer" }}
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+
+                    <div style={{ padding: 24, display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                      <DetailField label="Employee Code" value={selectedEmployee.employeeCode} />
+                      <DetailField label="Department" value={selectedEmployee.department || "General"} />
+                      <DetailField label="Designation" value={selectedEmployee.designation || "Not Specified"} />
+                      <DetailField label="Functional Role" value={selectedEmployee.functionalAssignment || "Employee"} />
+                      <DetailField label="Official Email" value={selectedEmployee.email || "N/A"} />
+                      <DetailField label="Basic Pay" value={formatAmount(selectedEmployee.basicPay || 0)} />
+                    </div>
+
+                    <div
+                      style={{
+                        borderTop: "1px solid #e2e8f0",
+                        background: "#f8fafc",
+                        padding: "14px 24px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <span style={{ fontSize: 13, color: "#64748b" }}>Department Financial Oversight Record</span>
+                      <button
+                        className="hod-refresh"
+                        onClick={() => setSelectedEmployee(null)}
+                        style={{ padding: "6px 16px" }}
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </section>

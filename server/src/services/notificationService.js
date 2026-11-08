@@ -69,12 +69,21 @@ async function notifyRole(roleName, data, actorId = null) {
 
   try {
     const normalizedRole = String(roleName).trim().toLowerCase();
-    
-    // Find all users possessing this role
+    const roleAliases = {
+      "head of office": ["head of office", "hoa"],
+      "hoa": ["head of office", "hoa"],
+      "head of department": ["head of department", "hod"],
+      "hod": ["head of department", "hod"],
+      "finance officer": ["finance officer", "fo"],
+    };
+    const aliases = roleAliases[normalizedRole] || [normalizedRole];
+    const roleRegexes = aliases.map((r) => new RegExp(`^${r}$`, "i"));
+    const desigRegexes = aliases.map((r) => new RegExp(r, "i"));
+
     const users = await User.find({
       $or: [
-        { role: new RegExp(`^${normalizedRole}$`, "i") },
-        { designation: new RegExp(normalizedRole, "i") },
+        { role: { $in: roleRegexes } },
+        { designation: { $in: desigRegexes } },
       ],
       isActive: { $ne: false },
     }).select("_id");

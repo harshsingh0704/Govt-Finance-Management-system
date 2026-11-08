@@ -257,7 +257,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
             onClick={() => onClose?.()}
             aria-label="Close Medical Advance Claim"
           >
-            Ã—
+              ✕
           </button>
         </header>
         <div className="employee-medical-advance-content">
@@ -590,7 +590,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>â‚¹</span>
+                <span>₹</span>
                 <input
                   id="estimatedTreatmentExpense"
                   name="estimatedTreatmentExpense"
@@ -612,7 +612,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>â‚¹</span>
+                <span>₹</span>
                 <input
                   id="estimatedMedicineInvestigationExpense"
                   name="estimatedMedicineInvestigationExpense"
@@ -634,7 +634,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>â‚¹</span>
+                <span>₹</span>
                 <input
                   id="estimatedOtherExpense"
                   name="estimatedOtherExpense"
@@ -652,7 +652,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
           <div className="medical-advance-summary">
             <div>
               <span>Total Estimated Expense</span>
-              <strong>â‚¹ {totalEstimatedExpense.toFixed(2)}</strong>
+              <strong>₹ {totalEstimatedExpense.toFixed(2)}</strong>
             </div>
 
             <div className="medical-form-field">
@@ -661,7 +661,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
               </label>
 
               <div className="medical-amount-input">
-                <span>â‚¹</span>
+                <span>₹</span>
                 <input
                   id="advanceAmountRequested"
                   name="advanceAmountRequested"
@@ -750,7 +750,7 @@ function EmployeeMedicalAdvancePage({ onClose }) {
                 onChange={handleFileChange}
               />
 
-              <small>Optional â€¢ PDF, JPG, JPEG, PNG</small>
+              <small>Optional • PDF, JPG, JPEG, PNG</small>
 
               {form.otherSupportingDocuments && (
                 <span className="medical-selected-file">

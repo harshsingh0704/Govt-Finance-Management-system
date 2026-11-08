@@ -327,7 +327,7 @@ function TATravelPage() {
       <section className="fms-ta-modal" role="dialog" aria-modal="true" aria-label="TA and Travel form">
         <div className="fms-ta-modal-topbar">
           <span>Employee Services / TA &amp; Travel</span>
-          <button type="button" className="fms-ta-modal-close" aria-label="Close TA and Travel form" onClick={() => window.dispatchEvent(new Event("fms:close-ta-travel"))}>×</button>
+          <button type="button" className="fms-ta-modal-close" aria-label="Close TA and Travel form" onClick={() => window.dispatchEvent(new Event("fms:close-ta-travel"))}>✕</button>
         </div>
         <div className="ta-page">
       {/* PAGE HEADER */}

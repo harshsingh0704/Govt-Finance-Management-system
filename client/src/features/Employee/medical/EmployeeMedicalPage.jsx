@@ -277,7 +277,7 @@ function EmployeeMedicalPage({ onClose }) {
             onClick={() => onClose?.()}
             aria-label="Close Medical Claim"
           >
-            ×
+            ✕
           </button>
         </header>
         <div className="employee-medical-modal-content">

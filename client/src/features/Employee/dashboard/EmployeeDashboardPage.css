@@ -1819,3 +1819,107 @@ button.finance-sidebar-child:hover {
 .accommodation-sidebar-button:hover > svg {
   color: #ffffff;
 }
+
+
+/* ==========================================================================
+   UNIFIED EMPLOYEE DASHBOARD DESIGN HARMONIZATION
+   ========================================================================== */
+
+/* 1. Currency & Amount Styling */
+.amount-cell {
+  color: #176b54 !important;
+  font-weight: 750 !important;
+  font-size: 13px !important;
+  white-space: nowrap !important;
+  letter-spacing: -0.01em;
+}
+
+/* 2. Stat Cards & Metric Numbers */
+.stat-card {
+  padding: 18px 20px !important;
+  border: 1px solid #e0e8f2 !important;
+  border-radius: 16px !important;
+  background: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(16, 42, 67, 0.03) !important;
+  transition: all 0.18s ease !important;
+}
+
+.stat-card:hover {
+  border-color: #c5d7f7 !important;
+  box-shadow: 0 6px 18px rgba(16, 42, 67, 0.06) !important;
+  transform: translateY(-2px) !important;
+}
+
+.stat-card-top span {
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  color: #718096 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.6px !important;
+}
+
+.stat-value {
+  margin: 8px 0 6px !important;
+  font-size: 26px !important;
+  font-weight: 800 !important;
+  color: #102a43 !important;
+  line-height: 1.1 !important;
+}
+
+/* 3. Claims Table Polish */
+.claims-table th {
+  padding: 12px 16px !important;
+  background: #f8fafc !important;
+  color: #64748b !important;
+  font-size: 10px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.5px !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.claims-table td {
+  padding: 14px 16px !important;
+  border-top: 1px solid #f1f5f9 !important;
+  font-size: 12px !important;
+  color: #334155 !important;
+  vertical-align: middle !important;
+}
+
+.claim-cell strong {
+  font-size: 13px !important;
+  color: #102a43 !important;
+  font-weight: 700 !important;
+}
+
+.claim-cell span {
+  font-size: 11px !important;
+  color: #718096 !important;
+}
+
+.muted-cell {
+  font-size: 11px !important;
+  color: #718096 !important;
+}
+
+/* 4. Action Link / Row Action Button */
+.row-action {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 6px 12px !important;
+  background: #edf3ff !important;
+  color: #285bc7 !important;
+  border: 1px solid #d8e5ff !important;
+  border-radius: 8px !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  transition: all 0.16s ease !important;
+}
+
+.row-action:hover {
+  background: #285bc7 !important;
+  color: #ffffff !important;
+  border-color: #285bc7 !important;
+}

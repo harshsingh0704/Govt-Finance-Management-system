@@ -52,7 +52,7 @@ const claims = [
     type: "TA Final",
     description: "Official travel reimbursement",
     date: "12 Sep 2026",
-    amount: "Ã¢â€šÂ¹18,450",
+    amount: "₹18,450",
     status: "Under Review",
     statusType: "review",
   },
@@ -61,7 +61,7 @@ const claims = [
     type: "Medical",
     description: "Medical reimbursement claim",
     date: "08 Sep 2026",
-    amount: "Ã¢â€šÂ¹7,820",
+    amount: "₹7,820",
     status: "Approved",
     statusType: "approved",
   },
@@ -70,7 +70,7 @@ const claims = [
     type: "LTC",
     description: "Leave travel concession",
     date: "04 Sep 2026",
-    amount: "Ã¢â€šÂ¹25,000",
+    amount: "₹25,000",
     status: "Pending",
     statusType: "pending",
   },
@@ -79,7 +79,7 @@ const claims = [
     type: "TA Advance",
     description: "Advance for official tour",
     date: "28 Aug 2026",
-    amount: "Ã¢â€šÂ¹12,500",
+    amount: "₹12,500",
     status: "Paid",
     statusType: "paid",
   },
@@ -103,7 +103,7 @@ const activities = [
   {
     icon: IndianRupee,
     title: "TA Advance processed",
-    description: "Ã¢â€šÂ¹12,500 has been credited.",
+    description: "₹12,500 has been credited.",
     time: "Yesterday",
     type: "payment",
   },
@@ -308,7 +308,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("TA & Travel")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>TA Claim</span>
                   </button>
                   <button
@@ -316,7 +316,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("TA Advance Claim")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>TA Advance Claim</span>
                   </button>
                 </div>
@@ -346,7 +346,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("LTC Claim")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>LTC Claim</span>
                   </button>
                   <button
@@ -354,7 +354,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("LTC Advance Claim")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>LTC Advance Claim</span>
                   </button>
                 </div>
@@ -384,7 +384,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("Medical Claim")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>Medical Claim</span>
                   </button>
                   <button
@@ -392,7 +392,7 @@ function App() {
                     className="finance-sidebar-child"
                     onClick={() => handleNavigation("Medical Advance Claim")}
                   >
-                    <span className="finance-child-branch">â†³</span>
+                    <span className="finance-child-branch">↳</span>
                     <span>Medical Advance Claim</span>
                   </button>
                 </div>
@@ -500,7 +500,7 @@ function App() {
                 </button>
               )}
 
-              <span className="search-shortcut">Ã¢Å’Ëœ K</span>
+                <span className="search-shortcut">Ctrl + K</span>
             </div>
           </div>
 
@@ -641,7 +641,7 @@ function Dashboard({ onNavigate, onOpenClaim }) {
             Finance Management System
           </div>
 
-          <h2>Good morning, Sahaj Ã°Å¸â€˜â€¹</h2>
+            <h2>Good morning, Sahaj 👋</h2>
           <button type="button" onClick={onOpenClaim} style={{ marginTop: '12px', padding: '8px 18px', background: '#2563eb', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: '6px' }}>+ Submit New Claim</button>
 
           <p>
@@ -697,7 +697,7 @@ function Dashboard({ onNavigate, onOpenClaim }) {
         <StatCard
           icon={IndianRupee}
           label="Last Payslip"
-          value="Ã¢â€šÂ¹48,750"
+            value="₹48,750"
           description="September 2026"
           trend="View"
           trendDirection="action"
@@ -1031,12 +1031,12 @@ function FinancialOverview() {
       <div className="financial-summary">
         <div>
           <span>Total claimed</span>
-          <strong>Ã¢â€šÂ¹86,420</strong>
+          <strong>₹86,420</strong>
         </div>
 
         <div className="financial-approved">
           <span>Approved</span>
-          <strong>Ã¢â€šÂ¹61,250</strong>
+          <strong>₹61,250</strong>
         </div>
       </div>
 

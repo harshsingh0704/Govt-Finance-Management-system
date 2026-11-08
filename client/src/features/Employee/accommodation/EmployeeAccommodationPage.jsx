@@ -161,7 +161,7 @@ export default function EmployeeAccommodationPage({ onClose }) {
             onClick={() => onClose?.()}
             aria-label="Close Accommodation Form"
           >
-            ×
+            ✕
           </button>
         </header>
         <div className="employee-accommodation-content">

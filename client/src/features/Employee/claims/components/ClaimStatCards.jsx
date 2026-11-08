@@ -7,7 +7,7 @@ export default function ClaimStatCards({ stats, loading }) {
     {
       id: 'total',
       title: 'Total Claims',
-      value: loading ? '?' : (stats?.totalCount ?? 0),
+      value: loading ? '—' : (stats?.totalCount ?? 0),
       subtitle: 'All submitted claims',
       icon: FileText,
       iconBg: 'bg-blue-50',
@@ -16,7 +16,7 @@ export default function ClaimStatCards({ stats, loading }) {
     {
       id: 'pending',
       title: 'Pending Review',
-      value: loading ? '?' : (stats?.pendingCount ?? 0),
+      value: loading ? '—' : (stats?.pendingCount ?? 0),
       subtitle: 'Awaiting a decision',
       icon: Clock,
       iconBg: 'bg-amber-50',
@@ -25,7 +25,7 @@ export default function ClaimStatCards({ stats, loading }) {
     {
       id: 'approved',
       title: 'Approved Claims',
-      value: loading ? '?' : (stats?.approvedCount ?? 0),
+      value: loading ? '—' : (stats?.approvedCount ?? 0),
       subtitle: 'Approved, sanctioned or paid',
       icon: CheckCircle2,
       iconBg: 'bg-emerald-50',
@@ -34,7 +34,7 @@ export default function ClaimStatCards({ stats, loading }) {
     {
       id: 'value',
       title: 'Total Claim Value',
-      value: loading ? '?' : formatINR(stats?.totalValue ?? 0),
+      value: loading ? '—' : formatINR(stats?.totalValue ?? 0),
       subtitle: `Approved value: ${formatINR(stats?.approvedValue ?? 0)}`,
       icon: IndianRupee,
       iconBg: 'bg-purple-50',

@@ -9,6 +9,7 @@ const authRoutes = require("./routes/authRoutes");
 const adminRoutes = require("./routes/adminRoutes");
 const approvalRoutes = require("./routes/approvalRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
+const employeeRoutes = require("./routes/employeeRoutes");
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/approvals", approvalRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/employees", employeeRoutes);
 
 app.get("/health", (req, res) => {
   res.json({

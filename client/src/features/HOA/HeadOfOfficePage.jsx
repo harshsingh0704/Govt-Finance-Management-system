@@ -4,10 +4,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
-  Activity, Bell, CalendarDays, Check, CheckCircle2, ChevronLeft,
+  Activity, Bell, CalendarDays, Check, CheckCircle2, ChevronLeft, ArrowLeft,
   ChevronRight, ClipboardCheck, FileCheck2, FileText, FolderOpen,
   LayoutDashboard, LogOut, Menu, Search, Settings, ShieldCheck,
-  Users, X, XCircle, BarChart3, RefreshCw, Clock, ExternalLink, Wallet, BellRing, CheckCheck, Building2, Briefcase, Mail, Phone, Eye, UserCheck,
+  Users, X, XCircle, BarChart3, RefreshCw, Clock, ExternalLink, Wallet, BellRing, CheckCheck, ArrowUpRight, TrendingUp, Building2, Briefcase, Mail, Phone, Eye, UserCheck,
 } from "lucide-react";
 import { logout } from "../auth/authSlice";
 import "../admin/AdminPage.css";
@@ -75,6 +75,22 @@ export default function HeadOfOfficePage() {
   const navigate = useNavigate();
 
   const [activeSection, setActiveSection] = useState("Dashboard");
+  const handleGlobalBack = () => {
+    if (selectedClaim || selectedId) {
+      setSelectedId("");
+      return;
+    }
+    if (selectedEmployee) {
+      setSelectedEmployee(null);
+      return;
+    }
+    if (activeSection !== "Dashboard") {
+      setActiveSection("Dashboard");
+      return;
+    }
+    navigate(-1);
+  };
+
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [claims, setClaims] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -89,6 +105,7 @@ export default function HeadOfOfficePage() {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [quickNotifOpen, setQuickNotifOpen] = useState(false);
   const [notificationBusyId, setNotificationBusyId] = useState("");
   const [officeEmployees, setOfficeEmployees] = useState([]);
   const [employeesLoading, setEmployeesLoading] = useState(false);
@@ -275,6 +292,16 @@ export default function HeadOfOfficePage() {
       setNotificationsLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof fetchNotifications === "function") {
+      fetchNotifications();
+      const interval = setInterval(() => {
+        fetchNotifications();
+      }, 15000);
+      return () => clearInterval(interval);
+    }
+  }, [fetchNotifications]);
 
   useEffect(() => {
     fetchNotifications();
@@ -473,11 +500,116 @@ async function submitDecision(claim, decision) {
             <button className="ad-menu-button" aria-label="Open navigation" onClick={() => setSidebarOpen(true)}><Menu size={20} /></button>
             <label className="ad-search"><Search size={16} /><input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search employees, claims, requests..." />{search && <button aria-label="Clear search" onClick={() => setSearch("")}><X size={14} /></button>}</label>
           </div>
-          <div className="ad-topbar-right"><span className="hoo-top-role"><ShieldCheck size={16} /> HOA Workspace</span><div className="ad-avatar">{initials(name)}</div></div>
+          <div className="ad-topbar-right">
+              {/* Top-Right Quick Notification Bell & Dropdown */}
+              <div className="hoo-topbar-notif-wrapper">
+                <button
+                  type="button"
+                  className={`hoo-topbar-bell-btn ${unreadCount > 0 ? "has-unread" : ""}`}
+                  onClick={() => setQuickNotifOpen((prev) => !prev)}
+                  title="Quick Notifications"
+                  aria-label="Quick Notifications"
+                >
+                  <Bell size={18} />
+                  {unreadCount > 0 && (
+                    <span className="hoo-topbar-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+                  )}
+                </button>
+
+                {quickNotifOpen && (
+                  <div className="hoo-topbar-notif-dropdown">
+                    <div className="hoo-notif-dd-header">
+                      <div>
+                        <strong>Notifications</strong>
+                        <small>{unreadCount > 0 ? `${unreadCount} unread` : "All caught up"}</small>
+                      </div>
+                      <button
+                        type="button"
+                        className="hoo-notif-dd-close"
+                        onClick={() => setQuickNotifOpen(false)}
+                        aria-label="Close"
+                      >
+                        <X size={15} />
+                      </button>
+                    </div>
+
+                    <div className="hoo-notif-dd-list">
+                      {notifications && notifications.length > 0 ? (
+                        notifications.slice(0, 4).map((item) => {
+                          const isUnread = !item.readAt;
+                          return (
+                            <div
+                              key={item._id || item.id}
+                              className={`hoo-notif-dd-item ${isUnread ? "unread" : ""}`}
+                              onClick={() => {
+                                if (typeof markNotificationRead === "function") {
+                                  markNotificationRead(item);
+                                }
+                                setQuickNotifOpen(false);
+                              }}
+                            >
+                              <div className="hoo-notif-dd-dot-col">
+                                <span className={`hoo-dd-dot ${isUnread ? "active" : ""}`} />
+                              </div>
+                              <div className="hoo-notif-dd-text">
+                                <div className="hoo-notif-dd-title-row">
+                                  <strong>{item.title || "Workflow update"}</strong>
+                                  <small>
+                                    {item.createdAt
+                                      ? new Date(item.createdAt).toLocaleDateString("en-IN", {
+                                          day: "2-digit",
+                                          month: "short",
+                                        })
+                                      : ""}
+                                  </small>
+                                </div>
+                                <p>{item.message || "A claim requires your attention or status has changed."}</p>
+                              </div>
+                            </div>
+                          );
+                        })
+                      ) : (
+                        <div className="hoo-notif-dd-empty">
+                          <CheckCircle2 size={24} style={{ color: "#10b981", marginBottom: 6 }} />
+                          <strong>No notifications</strong>
+                          <span>You have no pending office alerts.</span>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="hoo-notif-dd-footer">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setActiveSection("Notifications");
+                          setQuickNotifOpen(false);
+                        }}
+                      >
+                        View all notifications &rarr;
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <span className="hoo-top-role"><ShieldCheck size={16} /> HOA Workspace</span>
+              <div className="ad-avatar">{initials(name)}</div>
+            </div>
         </header>
 
         <div className="ad-content hoo-content">
-          <section className="ad-page-header hoo-page-heading">
+          <div className="hoo-global-back-row">
+              <button
+                type="button"
+                className="hoo-global-back-btn"
+                onClick={handleGlobalBack}
+                title="Go back"
+              >
+                <ArrowLeft size={16} />
+                <span>Back</span>
+              </button>
+            </div>
+            <section className="ad-page-header hoo-page-heading">
             <div><span className="ad-eyebrow">Office Operations / {selectedClaim ? "Claim Review" : activeSection}</span><h1>{selectedClaim ? "Review Claim" : activeSection === "Dashboard" ? "Office Overview" : activeSection}</h1><p className="hoo-subtitle">{selectedClaim ? `Reference ${idOf(selectedClaim)}` : "Review office activity and claims assigned to the Head of Office approval stage."}</p></div>
             <div className="hoo-header-meta"><span>Employee ID <strong>{employeeId}</strong></span><span>Financial Year <strong>2026–2027</strong></span></div>
           </section>
@@ -886,7 +1018,328 @@ async function submitDecision(claim, decision) {
                 )}
               </section>
 
-            ) : <section className="hoo-other-section"><ShieldCheck size={26} /><h2>{activeSection}</h2><p>Use the existing office workspace for this section. Claims awaiting approval are managed in the HOA claims queue.</p><button className="hoo-refresh" onClick={() => setActiveSection("Claims Approval")}>Open claim approvals <ChevronRight size={16} /></button></section>}
+            ) : activeSection === "Dashboard" ? (
+              <section className="hoo-dashboard-container">
+                {/* 1. Executive Metric Ribbons */}
+                <div className="hoo-dash-kpi-grid">
+                  <div
+                    className="hoo-dash-kpi-card highlight-amber"
+                    onClick={() => setActiveSection("Claims Approval")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="hoo-dash-kpi-header">
+                      <span>Awaiting HOA Sanction</span>
+                      <span className="hoo-dash-kpi-icon"><Clock size={19} /></span>
+                    </div>
+                    <div className="hoo-dash-kpi-body">
+                      <strong>{claims.filter((c) => c.status === "PENDING_HOA" || !c.status).length}</strong>
+                      <small>
+                        Liability: {amount(
+                          claims
+                            .filter((c) => c.status === "PENDING_HOA" || !c.status)
+                            .reduce((sum, c) => sum + Number(c.claimAmount || c.totalClaimAmount || 0), 0)
+                        )}
+                      </small>
+                    </div>
+                    <div className="hoo-dash-kpi-footer">
+                      <span>Review Pending Queue</span>
+                      <ArrowUpRight size={14} />
+                    </div>
+                  </div>
+
+                  <div
+                    className="hoo-dash-kpi-card highlight-blue"
+                    onClick={() => setActiveSection("Employee Management")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="hoo-dash-kpi-header">
+                      <span>Office Personnel</span>
+                      <span className="hoo-dash-kpi-icon"><Users size={19} /></span>
+                    </div>
+                    <div className="hoo-dash-kpi-body">
+                      <strong>{officeEmployees.length}</strong>
+                      <small>
+                        {new Set(officeEmployees.map((e) => e.department).filter(Boolean)).size || 1} Functional Sections
+                      </small>
+                    </div>
+                    <div className="hoo-dash-kpi-footer">
+                      <span>View Establishment Directory</span>
+                      <ArrowUpRight size={14} />
+                    </div>
+                  </div>
+
+                  <div
+                    className="hoo-dash-kpi-card highlight-green"
+                    onClick={() => setActiveSection("Claims Approval")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="hoo-dash-kpi-header">
+                      <span>Sanctioned / Cleared</span>
+                      <span className="hoo-dash-kpi-icon"><CheckCircle2 size={19} /></span>
+                    </div>
+                    <div className="hoo-dash-kpi-body">
+                      <strong>
+                        {claims.filter((c) => ["APPROVED", "FORWARDED_DDO", "SANCTIONED"].includes(c.status)).length}
+                      </strong>
+                      <small>Forwarded to DDO for payment</small>
+                    </div>
+                    <div className="hoo-dash-kpi-footer">
+                      <span>Audit Sanction Register</span>
+                      <ArrowUpRight size={14} />
+                    </div>
+                  </div>
+
+                  <div
+                    className="hoo-dash-kpi-card highlight-purple"
+                    onClick={() => setActiveSection("Notifications")}
+                    role="button"
+                    tabIndex={0}
+                  >
+                    <div className="hoo-dash-kpi-header">
+                      <span>Workflow Alerts</span>
+                      <span className="hoo-dash-kpi-icon"><BellRing size={19} /></span>
+                    </div>
+                    <div className="hoo-dash-kpi-body">
+                      <strong>{unreadCount}</strong>
+                      <small>{unreadCount === 0 ? "All updates reviewed" : "Unread approval actions"}</small>
+                    </div>
+                    <div className="hoo-dash-kpi-footer">
+                      <span>Open Notifications</span>
+                      <ArrowUpRight size={14} />
+                    </div>
+                  </div>
+                </div>
+
+                {/* 2. Main Executive Grid: Work Queue (Left 68%) + Action Center (Right 32%) */}
+                <div className="hoo-dash-main-grid">
+                  <div className="hoo-dash-col-primary">
+                    {/* Priority Queue Table */}
+                    <div className="hoo-dash-panel">
+                      <div className="hoo-dash-panel-header">
+                        <div>
+                          <h3>Priority Claims Awaiting Head of Office Review</h3>
+                          <p>Claims forwarded from Head of Department (HOD) review stage</p>
+                        </div>
+                        <button
+                          className="hoo-dash-action-link"
+                          onClick={() => setActiveSection("Claims Approval")}
+                        >
+                          View All ({claims.length}) &rarr;
+                        </button>
+                      </div>
+
+                      {claims.filter((c) => c.status === "PENDING_HOA" || !c.status).length === 0 ? (
+                        <div className="hoo-empty" style={{ padding: "36px 20px" }}>
+                          <CheckCircle2 size={32} style={{ color: "#059669" }} />
+                          <strong>Queue is clear</strong>
+                          <span>No claims currently require Head of Office approval.</span>
+                        </div>
+                      ) : (
+                        <div className="hoo-dash-table-wrap">
+                          <table className="hoo-dash-table">
+                            <thead>
+                              <tr>
+                                <th>Claimant &amp; Code</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Status</th>
+                                <th style={{ textAlign: "right" }}>Sanction Action</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {claims
+                                .filter((c) => c.status === "PENDING_HOA" || !c.status)
+                                .slice(0, 5)
+                                .map((claim) => (
+                                  <tr key={claim._id || claim.id}>
+                                    <td>
+                                      <strong>{claim.employeeId?.name || claim.employee || "Office Staff"}</strong>
+                                      <small>{claim.employeeId?.employeeCode || claim.employeeCode || "GOV-CLAIM"}</small>
+                                    </td>
+                                    <td>
+                                      <span className="hoo-dash-claim-type">
+                                        {claim.claimType || "TA"}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <strong className="hoo-money-text">
+                                        {amount(claim.claimAmount || claim.totalClaimAmount || 0)}
+                                      </strong>
+                                    </td>
+                                    <td>
+                                      <span className="hoo-badge-pending">PENDING_HOA</span>
+                                    </td>
+                                    <td style={{ textAlign: "right" }}>
+                                      <button
+                                        className="hoo-dash-btn-inspect"
+                                        onClick={() => {
+                                          setActiveSection("Claims Approval");
+                                          setSelectedClaim(claim);
+                                        }}
+                                      >
+                                        Inspect &amp; Sanction
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Claims Category Distribution */}
+                    <div className="hoo-dash-panel" style={{ marginTop: "20px" }}>
+                      <div className="hoo-dash-panel-header">
+                        <div>
+                          <h3>Office Sanction Pipeline by Category</h3>
+                          <p>Volume distribution of active claims across official allowance heads</p>
+                        </div>
+                      </div>
+
+                      <div className="hoo-dash-category-bars">
+                        {[
+                          {
+                            type: "Tour Allowance (TA)",
+                            count: claims.filter((c) => (c.claimType || "").toUpperCase() === "TA").length,
+                            total: claims.length || 1,
+                            color: "#2563eb",
+                          },
+                          {
+                            type: "Leave Travel Concession (LTC)",
+                            count: claims.filter((c) => (c.claimType || "").toUpperCase() === "LTC").length,
+                            total: claims.length || 1,
+                            color: "#0891b2",
+                          },
+                          {
+                            type: "Medical / Other Official Claims",
+                            count: claims.filter((c) => !["TA", "LTC"].includes((c.claimType || "").toUpperCase())).length,
+                            total: claims.length || 1,
+                            color: "#7c3aed",
+                          },
+                        ].map((cat) => {
+                          const percent = Math.round((cat.count / cat.total) * 100);
+                          return (
+                            <div key={cat.type} className="hoo-dash-cat-row">
+                              <div className="hoo-dash-cat-meta">
+                                <span>{cat.type}</span>
+                                <strong>{cat.count} claims ({percent}%)</strong>
+                              </div>
+                              <div className="hoo-dash-cat-track">
+                                <div
+                                  className="hoo-dash-cat-fill"
+                                  style={{ width: `${percent}%`, backgroundColor: cat.color }}
+                                />
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Right Column: Quick Administrative Tools & Sanction Feed */}
+                  <div className="hoo-dash-col-secondary">
+                    <div className="hoo-dash-panel">
+                      <div className="hoo-dash-panel-header">
+                        <div>
+                          <h3>Administrative Controls</h3>
+                          <p>Direct workspace actions</p>
+                        </div>
+                      </div>
+                      <div className="hoo-dash-action-list">
+                        <button
+                          className="hoo-dash-quick-btn"
+                          onClick={() => setActiveSection("Claims Approval")}
+                        >
+                          <div className="hoo-dash-btn-icon" style={{ background: "#eff6ff", color: "#2563eb" }}>
+                            <ClipboardCheck size={18} />
+                          </div>
+                          <div>
+                            <strong>Review Claims Queue</strong>
+                            <small>Review claims awaiting sanction</small>
+                          </div>
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <button
+                          className="hoo-dash-quick-btn"
+                          onClick={() => setActiveSection("Employee Management")}
+                        >
+                          <div className="hoo-dash-btn-icon" style={{ background: "#f0fdf4", color: "#16a34a" }}>
+                            <Users size={18} />
+                          </div>
+                          <div>
+                            <strong>Staff Service Dossiers</strong>
+                            <small>Establishment register &amp; cadres</small>
+                          </div>
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <button
+                          className="hoo-dash-quick-btn"
+                          onClick={() => setActiveSection("Notifications")}
+                        >
+                          <div className="hoo-dash-btn-icon" style={{ background: "#fbf5ff", color: "#9333ea" }}>
+                            <BellRing size={18} />
+                          </div>
+                          <div>
+                            <strong>Workflow Activity Feed</strong>
+                            <small>Inspect recent system notifications</small>
+                          </div>
+                          <ChevronRight size={16} />
+                        </button>
+
+                        <button
+                          className="hoo-dash-quick-btn"
+                          onClick={() => {
+                            fetchClaims();
+                            fetchEmployees();
+                            fetchNotifications();
+                          }}
+                        >
+                          <div className="hoo-dash-btn-icon" style={{ background: "#f8fafc", color: "#475569" }}>
+                            <RefreshCw size={18} />
+                          </div>
+                          <div>
+                            <strong>Refresh All Data</strong>
+                            <small>Sync claims and establishment roster</small>
+                          </div>
+                          <ChevronRight size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Financial Year Oversight Box */}
+                    <div className="hoo-dash-panel" style={{ marginTop: "20px" }}>
+                      <div className="hoo-dash-panel-header">
+                        <div>
+                          <h3>Financial Year Record</h3>
+                          <p>Establishment sanction status</p>
+                        </div>
+                      </div>
+                      <div className="hoo-dash-fiscal-box">
+                        <div className="hoo-fiscal-item">
+                          <small>CURRENT FINANCIAL YEAR</small>
+                          <strong>2026?2027</strong>
+                        </div>
+                        <div className="hoo-fiscal-item">
+                          <small>OFFICE JURISDICTION</small>
+                          <strong>Head of Office (HOA)</strong>
+                        </div>
+                        <div className="hoo-fiscal-item">
+                          <small>SANCTION THRESHOLD</small>
+                          <strong style={{ color: "#059669" }}>Competent Authority</strong>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </section>
+            ) : null}
           <footer className="hoo-footer"><span>Government Finance Management System</span><span>Head of Office Workspace</span></footer>
         </div>
       </main>

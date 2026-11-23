@@ -38,6 +38,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
 
 import axios from "axios";
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 import {
 
@@ -678,7 +679,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
 
         const token = reduxToken || getStoredAuthToken();
 
-        const res = await axios.get("http://localhost:5000/api/employees", {
+        const res = await axios.get(`${API_BASE_URL}/api/employees`, {
 
           headers: { Authorization: `Bearer ${token}` },
 
@@ -738,7 +739,7 @@ function GeneratePayslipModal({ isOpen, onClose, onSuccess }) {
 
       await axios.post(
 
-        "http://localhost:5000/api/payslips/generate",
+        `${API_BASE_URL}/api/payslips/generate`,
 
         {
 
@@ -1464,7 +1465,7 @@ export default function AdminPage() {
 
       const token = reduxToken || getStoredAuthToken();
 
-      const res = await axios.get("http://localhost:5000/api/payslips", {
+      const res = await axios.get(`${API_BASE_URL}/api/payslips`, {
 
         headers: { Authorization: `Bearer ${token}` },
 
@@ -1496,7 +1497,7 @@ export default function AdminPage() {
 
       const token = reduxToken || getStoredAuthToken();
 
-      const res = await axios.get(`http://localhost:5000/api/payslips/download/${payslipId}`, {
+      const res = await axios.get(`${API_BASE_URL}/api/payslips/download/${payslipId}`, {
 
         headers: { Authorization: `Bearer ${token}` },
 
@@ -2168,7 +2169,7 @@ export default function AdminPage() {
 
               />
 
-              <kbd>ÃƒÂ¢Ã…â€™Ã‹Å“</kbd>
+              <kbd>Ctrl+K</kbd>
 
             </div>
 

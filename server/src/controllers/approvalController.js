@@ -3,30 +3,65 @@ const AuditLog = require("../models/AuditLog");
 const TAClaim = require("../models/TAClaim");
 const MedicalClaim = require("../models/MedicalClaim");
 const LTCClaim = require("../models/LTCClaim");
-const Employee = require("../models/Employee");
 const { notifyEmployee } = require("../services/notificationService");
+
+let LTCAdvance;
+try {
+  LTCAdvance = require("../models/LTCAdvance");
+} catch (_) {
+  LTCAdvance = null;
+}
 
 const claimModelMap = {
   TAClaim,
   MedicalClaim,
   LTCClaim,
+  ...(LTCAdvance ? { LTCAdvance } : {}),
 };
+
+const APPROVAL_ROLES = [
+  "Establishment",
+  "Super Admin",
+  "Admin",
+  "Head of Office",
+  "Head of Department",
+  "Finance Officer",
+  "Finance Clerk",
+];
 
 // GET /api/approvals - Fetch pending / all approval requests
 exports.getApprovalQueue = async (req, res, next) => {
   try {
-    const { status, claimType } = req.query;
+    const role = req.user?.role;
+    if (!role || !APPROVAL_ROLES.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Role is not authorized to view approval queue.",
+      });
+    }
+
+    const { status, claimType, location } = req.query;
     const filter = {};
     if (status) filter.status = status;
     if (claimType) filter.claimType = claimType;
 
-    const approvals = await Approval.find(filter)
-      .populate("employeeId")
+    let approvals = await Approval.find(filter)
+      .populate("employeeId", "name email employeeCode employeeId location domain department designation")
       .populate("reviewedBy", "name email role")
       .populate("claimId")
       .sort({ createdAt: -1 });
 
-    res.status(200).json({
+    // Scope by location if specified or if role is location-bound and not Admin/Super Admin/Establishment/Head of Office
+    const isGlobalRole = ["Super Admin", "Admin", "Establishment", "Head of Office"].includes(role);
+    const effectiveLocation = location || (!isGlobalRole && req.user?.location ? req.user.location : "");
+
+    if (effectiveLocation) {
+      approvals = approvals.filter(
+        (item) => (item.employeeId?.location || item.location || "") === effectiveLocation
+      );
+    }
+
+    return res.status(200).json({
       success: true,
       count: approvals.length,
       data: approvals,
@@ -39,6 +74,14 @@ exports.getApprovalQueue = async (req, res, next) => {
 // PATCH /api/approvals/:id/action - Approve / Reject / Hold with Audit Log
 exports.processApprovalAction = async (req, res, next) => {
   try {
+    const role = req.user?.role;
+    if (!role || !APPROVAL_ROLES.includes(role)) {
+      return res.status(403).json({
+        success: false,
+        message: "Access denied. Insufficient role privileges for approval action.",
+      });
+    }
+
     const { id } = req.params;
     const { status, remarks } = req.body;
     const validStatuses = ["approved", "rejected", "hold", "verified"];
@@ -50,7 +93,7 @@ exports.processApprovalAction = async (req, res, next) => {
       });
     }
 
-    const approval = await Approval.findById(id);
+    const approval = await Approval.findById(id).populate("employeeId", "location");
     if (!approval) {
       return res.status(404).json({
         success: false,
@@ -58,12 +101,21 @@ exports.processApprovalAction = async (req, res, next) => {
       });
     }
 
+    const isGlobalRole = ["Super Admin", "Admin", "Establishment", "Head of Office"].includes(role);
+    const empLocation = approval.employeeId?.location;
+    if (!isGlobalRole && req.user?.location && empLocation && req.user.location !== empLocation) {
+      return res.status(403).json({
+        success: false,
+        message: `Access denied. Approval belongs to ${empLocation}.`,
+      });
+    }
+
     approval.status = status;
     approval.remarks = remarks || approval.remarks;
-    approval.reviewedBy = req.user ? req.user.id : null;
+    approval.reviewedBy = req.user ? req.user._id || req.user.id : null;
     approval.history.push({
       action: status.toUpperCase(),
-      performedBy: req.user ? req.user.id : null,
+      performedBy: req.user ? req.user._id || req.user.id : null,
       status,
       remarks,
       timestamp: new Date(),
@@ -71,7 +123,6 @@ exports.processApprovalAction = async (req, res, next) => {
 
     await approval.save();
 
-    // Sync status with the actual claim model
     const Model = claimModelMap[approval.claimType];
     if (Model) {
       await Model.findByIdAndUpdate(approval.claimId, {
@@ -80,7 +131,6 @@ exports.processApprovalAction = async (req, res, next) => {
       });
     }
 
-    // Send real-time notification to the claim applicant
     try {
       const claimTypeLabels = {
         TAClaim: "TA Claim",
@@ -112,7 +162,7 @@ exports.processApprovalAction = async (req, res, next) => {
       };
 
       await notifyEmployee(approval.employeeId, {
-        actor: req.user ? req.user.id : null,
+        actor: req.user ? req.user._id || req.user.id : null,
         claimId: approval.claimId,
         claimType: approval.claimType,
         link: "/claims",
@@ -122,16 +172,15 @@ exports.processApprovalAction = async (req, res, next) => {
         metadata: {
           status,
           remarks: remarks || "",
-          reviewedBy: req.user ? req.user.id : null,
+          reviewedBy: req.user ? req.user._id || req.user.id : null,
         },
       });
     } catch (notifErr) {
       console.error("Approval action notification error:", notifErr.message);
     }
 
-    // Create Audit Log
     await AuditLog.create({
-      userId: req.user ? req.user.id : null,
+      userId: req.user ? req.user._id || req.user.id : null,
       action: `CLAIM_${status.toUpperCase()}`,
       module: "APPROVAL",
       targetId: approval._id,
@@ -139,10 +188,11 @@ exports.processApprovalAction = async (req, res, next) => {
         claimId: approval.claimId,
         claimType: approval.claimType,
         remarks,
+        role,
       },
     });
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
       message: `Claim successfully updated to ${status}.`,
       data: approval,
@@ -151,4 +201,3 @@ exports.processApprovalAction = async (req, res, next) => {
     next(error);
   }
 };
-

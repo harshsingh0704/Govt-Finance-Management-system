@@ -1,26 +1,46 @@
-const express = require("express");
+﻿const express = require("express");
 const router = express.Router();
 
 const adminController = require("../controllers/adminController");
 const authMiddleware = require("../middleware/authMiddleware");
 
-// Safely extract controller functions
-const authorizeAdmin = adminController.authorizeAdmin || ((req, res) => res.json({ ok: true }));
-const revokeAdminAuthorization = adminController.revokeAdminAuthorization || ((req, res) => res.json({ ok: true }));
-const getEmployeeMappings = adminController.getEmployeeMappings || ((req, res) => res.json({ ok: true }));
-const saveOrUpdateEmployeeMappings = adminController.saveOrUpdateEmployeeMappings || ((req, res) => res.json({ ok: true }));
+const requireAdminOrSuperAdmin = (req, res, next) => {
+  const role = req.user?.role;
+  if (!role || !["Admin", "Super Admin", "Establishment"].includes(role)) {
+    return res.status(403).json({
+      success: false,
+      message: "Access denied. Admin privileges required.",
+    });
+  }
+  next();
+};
 
-// Safely extract protect middleware
-const protect = typeof authMiddleware === "function" 
-  ? authMiddleware 
-  : (authMiddleware && authMiddleware.protect ? authMiddleware.protect : (req, res, next) => next());
-
-// Super Admin only routes
-router.patch("/authorize/:employeeId", protect, authorizeAdmin);
-router.patch("/revoke/:employeeId", protect, revokeAdminAuthorization);
+// Super Admin / Admin authorization routes
+router.patch(
+  "/authorize/:employeeId",
+  authMiddleware,
+  requireAdminOrSuperAdmin,
+  adminController.authorizeAdmin
+);
+router.patch(
+  "/revoke/:employeeId",
+  authMiddleware,
+  requireAdminOrSuperAdmin,
+  adminController.revokeAdminAuthorization
+);
 
 // Employee Form Mappings
-router.get("/employee-mappings", getEmployeeMappings);
-router.post("/employee-mappings/bulk-save", saveOrUpdateEmployeeMappings);
+router.get(
+  "/employee-mappings",
+  authMiddleware,
+  requireAdminOrSuperAdmin,
+  adminController.getEmployeeMappings
+);
+router.post(
+  "/employee-mappings/bulk-save",
+  authMiddleware,
+  requireAdminOrSuperAdmin,
+  adminController.saveOrUpdateEmployeeMappings
+);
 
 module.exports = router;

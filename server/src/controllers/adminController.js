@@ -1,5 +1,22 @@
-const Employee = require("../models/Employee");
+﻿const Employee = require("../models/Employee");
 const EmployeeFormMapping = require("../models/EmployeeFormMapping");
+
+const ALLOWED_LOCATIONS = Employee.LOCATIONS || [
+  "Main Office",
+  "Peenya Office",
+  "Gottipura Field Station",
+  "Kolkata Field Station",
+];
+
+const ALLOWED_DOMAINS = Employee.DOMAINS || [
+  "Finance",
+  "Admin",
+  "IT Support",
+  "Purchases & Receipts",
+  "Estate Related",
+  "Vehicle Requests",
+  "Research",
+];
 
 // ==========================================
 // AUTHORIZE EMPLOYEE AS ADMIN
@@ -15,8 +32,9 @@ const authorizeAdmin = async (req, res, next) => {
       });
     }
 
+    const normalizedId = employeeId.toUpperCase().trim();
     const employee = await Employee.findOne({
-      employeeId: employeeId.toUpperCase().trim(),
+      $or: [{ employeeId: normalizedId }, { employeeCode: normalizedId }],
     });
 
     if (!employee) {
@@ -26,14 +44,13 @@ const authorizeAdmin = async (req, res, next) => {
       });
     }
 
-    if (!employee.isActive) {
+    if (employee.isActive === false) {
       return res.status(403).json({
         success: false,
         message: "This employee is inactive.",
       });
     }
 
-    // Already authorized
     if (employee.adminEligible) {
       return res.status(400).json({
         success: false,
@@ -43,7 +60,7 @@ const authorizeAdmin = async (req, res, next) => {
 
     employee.adminEligible = true;
     employee.adminApprovedAt = new Date();
-    employee.adminApprovedBy = req.user._id;
+    employee.adminApprovedBy = req.user?._id || null;
 
     await employee.save();
 
@@ -51,8 +68,10 @@ const authorizeAdmin = async (req, res, next) => {
       success: true,
       message: "Employee has been authorized to create an Admin account.",
       employee: {
-        employeeId: employee.employeeId,
-        name: employee.fullName,
+        employeeId: employee.employeeId || employee.employeeCode,
+        name: employee.name,
+        location: employee.location,
+        domain: employee.domain,
         department: employee.department,
         adminEligible: employee.adminEligible,
         adminApprovedAt: employee.adminApprovedAt,
@@ -69,9 +88,10 @@ const authorizeAdmin = async (req, res, next) => {
 const revokeAdminAuthorization = async (req, res, next) => {
   try {
     const { employeeId } = req.params;
+    const normalizedId = String(employeeId || "").toUpperCase().trim();
 
     const employee = await Employee.findOne({
-      employeeId: employeeId.toUpperCase().trim(),
+      $or: [{ employeeId: normalizedId }, { employeeCode: normalizedId }],
     });
 
     if (!employee) {
@@ -104,39 +124,54 @@ const saveOrUpdateEmployeeMappings = async (req, res) => {
     const { mappings } = req.body;
 
     if (!Array.isArray(mappings) || mappings.length === 0) {
-      return res.status(400).json({ success: false, message: "Invalid or empty mappings payload" });
+      return res.status(400).json({
+        success: false,
+        message: "Invalid or empty mappings payload",
+      });
     }
 
-    const bulkOps = mappings.map((item) => ({
-      updateOne: {
-        filter: { employeeId: item.employeeId },
-        update: {
-          $set: {
-            employeeName: item.employeeName || item.name,
-            userType: item.userType || "Employee",
-            department: item.department || "General",
-            designation: item.designation || "Staff",
-            responsibilities: item.responsibilities || {
-              taClaim: !!item.taClaim,
-              taAdvance: !!item.taAdvance,
-              ltcClaim: !!item.ltcClaim,
-              ltcAdvance: !!item.ltcAdvance,
-              medicalClaim: !!item.medicalClaim,
-              medicalAdvance: !!item.medicalAdvance,
-              accommodation: !!item.accommodation,
+    const bulkOps = mappings.map((item) => {
+      const cleanId = String(item.employeeId || "").trim().toUpperCase();
+      const rawLoc = String(item.location || "Main Office").trim();
+      const location = ALLOWED_LOCATIONS.includes(rawLoc) ? rawLoc : "Main Office";
+      const rawDom = String(item.domain || item.department || "Finance").trim();
+      const domain = ALLOWED_DOMAINS.includes(rawDom) ? rawDom : "Finance";
+
+      return {
+        updateOne: {
+          filter: { employeeId: cleanId },
+          update: {
+            $set: {
+              employeeId: cleanId,
+              employeeName: item.employeeName || item.name || cleanId,
+              userType: item.userType || item.functionalRole || "Employee",
+              location,
+              domain,
+              department: item.department || domain || "Finance",
+              designation: item.designation || "Staff",
+              responsibilities: item.responsibilities || {
+                taClaim: !!item.taClaim,
+                taAdvance: !!item.taAdvance,
+                ltcClaim: !!item.ltcClaim,
+                ltcAdvance: !!item.ltcAdvance,
+                medicalClaim: !!item.medicalClaim,
+                medicalAdvance: !!item.medicalAdvance,
+                accommodation: !!item.accommodation,
+              },
+              isLocked: item.isLocked !== undefined ? !!item.isLocked : false,
+              updatedBy: req.user?._id || undefined,
             },
-            isLocked: item.isLocked !== undefined ? item.isLocked : false,
           },
+          upsert: true,
         },
-        upsert: true,
-      },
-    }));
+      };
+    });
 
     await EmployeeFormMapping.bulkWrite(bulkOps);
 
     return res.status(200).json({
       success: true,
-      message: "MongoDB me Employee Mappings successfully update ho gaye hain",
+      message: "Employee mappings saved to MongoDB successfully.",
     });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
@@ -148,14 +183,21 @@ const saveOrUpdateEmployeeMappings = async (req, res) => {
 // ==========================================
 const getEmployeeMappings = async (req, res) => {
   try {
-    const mappings = await EmployeeFormMapping.find().sort({ employeeId: 1 });
+    const filter = {};
+    if (req.query.location && ALLOWED_LOCATIONS.includes(req.query.location)) {
+      filter.location = req.query.location;
+    }
+    if (req.query.domain && ALLOWED_DOMAINS.includes(req.query.domain)) {
+      filter.domain = req.query.domain;
+    }
+
+    const mappings = await EmployeeFormMapping.find(filter).sort({ employeeId: 1 });
     return res.status(200).json({ success: true, data: mappings });
   } catch (error) {
     return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-// SINGLE COMBINED EXPORT FOR ALL CONTROLLERS
 module.exports = {
   authorizeAdmin,
   revokeAdminAuthorization,

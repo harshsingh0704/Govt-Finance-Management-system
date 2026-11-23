@@ -17,6 +17,8 @@ import {
 import axios from "axios";
 import "./MapEmployeePage.css";
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 const FORM_TYPES = [
   { id: "ta-claim", label: "TA Claim" },
   { id: "ta-advance", label: "TA Advance" },
@@ -417,7 +419,7 @@ function MapEmployeePage({ onClose }) {
       formData.append("file", excelFile);
 
       const response = await axios.post(
-        "http://localhost:5000/api/employees/bulk-import",
+        `${API_BASE_URL}/api/employees/bulk-import`,
         formData,
         {
           headers: {
